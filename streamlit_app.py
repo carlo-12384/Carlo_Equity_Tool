@@ -12,6 +12,8 @@ import requests, pandas as pd, numpy as np, yfinance as yf
 import matplotlib.pyplot as plt
 from functools import lru_cache
 from typing import List
+import streamlit as st
+
 
 # -------------------- CONFIG / LOGGING --------------------
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
@@ -1244,16 +1246,78 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
     return df, explanation_md
 
 
-if __name__ == "__main__":
-    # Simple CLI smoke test
-    test_ticker = os.environ.get("TEST_TICKER", "AAPL")
-    print(f"Running quick analysis for {test_ticker}...")
-    view, text_synopsis, metrics_summary, kpi_md, waterfall_md, fig1, fig2, fig3, news_md = run_app(test_ticker, max_peers=4)
-    print(text_synopsis)
-    print()
-    print(metrics_summary)
-    scen_df, scen_md = _scenario_valuation_core(test_ticker, max_peers=4, scenario="Base")
-    print()
-    print(scen_df)
-    print()
-    print(scen_md)
+# -------------------- STREAMLIT UI --------------------
+st.set_page_config(
+    page_title="Carlo Equity Tool",
+    layout="wide"
+)
+
+st.title("Carlo Equity Tool – Equity Research Workbench")
+
+ticker = st.text_input("Ticker (e.g. AAPL, MSFT, HIMS):", "AAPL")
+max_peers = st.slider("Max peers to include", min_value=2, max_value=12, value=6)
+scenario = st.radio(
+    "Market scenario for valuation:",
+    ["Base", "Bull", "Bear"],
+    index=0,
+    horizontal=True
+)
+
+if ticker:
+    with st.spinner("Running analysis…"):
+        view, text_synopsis_md, metrics_summary_md, kpi_ratings_md_val, waterfall_md_val, fig1, fig2, fig3, news_md = run_app(
+            ticker, max_peers=max_peers
+        )
+        scen_df, scen_md = _scenario_valuation_core(
+            ticker, max_peers=max_peers, scenario=scenario
+        )
+
+    # --- Top summary section ---
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+        st.markdown(text_synopsis_md, unsafe_allow_html=True)
+        st.markdown(metrics_summary_md, unsafe_allow_html=True)
+        st.markdown(kpi_ratings_md_val, unsafe_allow_html=True)
+        st.markdown(waterfall_md_val, unsafe_allow_html=True)
+
+    with col2:
+        st.subheader("Scenario valuations")
+        st.dataframe(scen_df, use_container_width=True)
+        st.markdown(scen_md, unsafe_allow_html=True)
+
+    # --- Peer table ---
+    st.subheader("Peer comparison table")
+    st.dataframe(view, use_container_width=True)
+
+    # --- Charts ---
+    st.subheader("Factor & peer visuals")
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
+        st.caption("Composite Score ranking")
+        if fig1 is not None:
+            st.pyplot(fig1)
+        else:
+            st.write("No composite score chart available.")
+
+    with c2:
+        st.caption("EV/EBITDA vs Revenue Growth")
+        if fig2 is not None:
+            st.pyplot(fig2)
+        else:
+            st.write("No scatter chart available.")
+
+    with c3:
+        st.caption("Peer factor heatmap")
+        if fig3 is not None:
+            st.pyplot(fig3)
+        else:
+            st.write("No heatmap available.")
+
+    # --- News ---
+    st.subheader("Recent headlines")
+    st.markdown(news_md, unsafe_allow_html=True)
+else:
+    st.info("Enter a ticker above to run the analysis.")
+

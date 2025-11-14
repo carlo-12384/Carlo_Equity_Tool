@@ -1024,11 +1024,11 @@ def inject_global_css():
         """
         <style>
         /* =========================
-           GLOBAL TEXT COLOR OVERRIDE
+           GLOBAL TEXT / LAYOUT
            ========================= */
         html, body, .stApp, .markdown-text-container, .stMarkdown,
         p, li, span, small, td, th, label, div[data-testid="stMarkdownContainer"] {
-            color: #111827 !important;  /* dark navy/charcoal */
+            color: #111827 !important;
         }
 
         .positive-metric { color: #228B22 !important; } 
@@ -1077,7 +1077,7 @@ def inject_global_css():
            TOP NAV BAR (BLACK STRIP)
            ========================= */
         .top-nav-bar {
-            background: #0d1117;          /* dark bar */
+            background: #0d1117;
             padding: 12px 0;
             width: 100vw;
             position: relative;
@@ -1087,37 +1087,32 @@ def inject_global_css():
             margin-right: -50vw;
         }
 
-        /* ======================================
-           FIRST ROW OF COLUMNS = NAV BUTTON ROW
-           ====================================== */
-        /* The first st.columns row after the bar */
-        div[data-testid="stHorizontalBlock"]:first-of-type {
+        .top-nav-inner {
             max-width: 1100px;
             margin: 0 auto;
-            gap: 0 !important;  /* remove gaps between columns */
         }
 
-        /* Remove side padding so buttons touch */
-        div[data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"] {
+        /* Remove column padding so buttons touch */
+        .top-nav-container [data-testid="column"] {
             padding-left: 0 !important;
             padding-right: 0 !important;
         }
 
         /* Make each nav button fill its column */
-        div[data-testid="stHorizontalBlock"]:first-of-type .stButton {
+        .top-nav-container .stButton {
             width: 100%;
             margin: 0 !important;
         }
 
-        /* Blue rectangles, WHITE text, white borders between them */
-        div[data-testid="stHorizontalBlock"]:first-of-type .stButton > button,
-        div[data-testid="stHorizontalBlock"]:first-of-type .stButton > button * {
+        /* NAV BUTTONS: blue bar, white text, white separators */
+        .top-nav-container .stButton > button,
+        .top-nav-container .stButton > button * {
             width: 100%;
             padding: 14px 0;
-            border: 1px solid rgba(255,255,255,0.9);     /* white separators */
+            border: 1px solid rgba(255,255,255,0.9);     /* white line between */
             border-radius: 0;                             /* merged look */
             background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            color: #ffffff !important;                    /* WHITE TEXT */
+            color: #ffffff !important;
             font-size: 15px;
             font-weight: 600;
             letter-spacing: 0.05em;
@@ -1126,27 +1121,28 @@ def inject_global_css():
             cursor: pointer;
         }
 
-        /* Hover effect for nav */
-        div[data-testid="stHorizontalBlock"]:first-of-type .stButton > button:hover {
+        .top-nav-container .stButton > button:hover {
             filter: brightness(1.15);
         }
 
         /* Rounded corners only on outer nav buttons */
-        div[data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:first-child .stButton > button {
+        .top-nav-container [data-testid="column"]:first-child .stButton > button {
             border-top-left-radius: 12px;
             border-bottom-left-radius: 12px;
         }
-        div[data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:last-child .stButton > button {
+        .top-nav-container [data-testid="column"]:last-child .stButton > button {
             border-top-right-radius: 12px;
             border-bottom-right-radius: 12px;
         }
 
-        /* ===== your existing factor / card / valuation styles stay below ===== */
-        /* (you can keep everything you already had here: factor bars, cards, etc.) */
+        /* ====== keep your existing factor / card / valuation styles below ====== */
+        /* (You can paste all the factor-bar, card, valuation styles you already had) */
+
         </style>
         """,
         unsafe_allow_html=True,
     )
+
 
 
 # ---------- DASHBOARD ----------

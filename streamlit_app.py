@@ -1023,9 +1023,7 @@ def inject_global_css():
     st.markdown(
         """
         <style>
-        /* =========================
-           GLOBAL LAYOUT / THEME
-           ========================= */
+        /* ===== GLOBAL LAYOUT ===== */
         html, body, .stApp {
             background: #ffffff;
             color: #111827;
@@ -1043,11 +1041,9 @@ def inject_global_css():
             color: #0d1117 !important;
         }
 
-        /* =========================
-           TOP NAV BAR (ONE LONG BAR)
-           ========================= */
+        /* ===== TOP NAV BAR (FULL-WIDTH STRIP) ===== */
         .top-nav-bar {
-            background: #0d1117;          /* dark strip at very top */
+            background: #0d1117;      /* dark bar at very top */
             padding: 0;
             width: 100vw;
             position: relative;
@@ -1057,30 +1053,29 @@ def inject_global_css():
             margin-right: -50vw;
         }
 
-        /* Flex container that holds the nav columns */
         .top-nav-inner {
             max-width: 1100px;
             margin: 0 auto;
             display: flex;
         }
 
-        /* Remove padding between nav columns so buttons touch */
+        /* Remove gaps between columns so buttons touch */
         .top-nav-inner [data-testid="column"] {
             padding-left: 0 !important;
             padding-right: 0 !important;
         }
 
-        /* Make each nav button fill its column */
+        /* Nav buttons container */
         .top-nav-container .stButton {
             width: 100%;
             margin: 0 !important;
         }
 
-        /* NAV BUTTONS – blue bar, white text, white borders */
+        /* NAV BUTTONS – blue, white text, white separators */
         .top-nav-container .stButton > button {
             width: 100%;
             padding: 14px 0;
-            border: 1px solid rgba(255,255,255,0.85);        /* white separators */
+            border: 1px solid rgba(255,255,255,0.85);        /* white borders between tabs */
             border-radius: 0;                                 /* merged bar look */
             background: linear-gradient(135deg, #3b82f6, #1d4ed8);
             color: #ffffff !important;
@@ -1095,7 +1090,7 @@ def inject_global_css():
             filter: brightness(1.08);
         }
 
-        /* Rounded corners only at the outer edges of the bar */
+        /* Rounded corners only on the outer edges of the bar */
         .top-nav-inner [data-testid="column"]:first-child .stButton > button {
             border-top-left-radius: 12px;
             border-bottom-left-radius: 12px;
@@ -1105,9 +1100,7 @@ def inject_global_css():
             border-bottom-right-radius: 12px;
         }
 
-        /* =========================
-           NORMAL BUTTONS (BODY)
-           ========================= */
+        /* ===== NORMAL BODY BUTTONS (inside main-content only) ===== */
         .main-content .stButton > button {
             border-radius: 8px;
             padding: 0.45rem 1.3rem;
@@ -1122,217 +1115,11 @@ def inject_global_css():
             filter: brightness(1.1);
             color: #ffffff !important;
         }
-
-        /* (You can keep any other card/table/input styles below this line) */
         </style>
         """,
         unsafe_allow_html=True,
     )
 
-
-# ---------- DASHBOARD ----------
-def render_dashboard():
-    # --- MODIFICATION: Removed the light-theme override CSS block ---
-    # It is no longer needed as this is now the default.
-
-    st.markdown(
-        """
-        <div class="hero-card">
-            <div class="hero-title">Equity Research Platform</div>
-            <div class="hero-subtitle">Analyze companies, build valuations, and create investment theses.</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.write("")
-    
-    col_search, col_btn = st.columns([4, 1])
-
-    with col_search:
-        ticker = st.text_input(
-            "Search ticker symbol (e.g., AAPL, MSFT).",
-            key="ticker_input",
-            label_visibility="collapsed",
-            placeholder="ENTER TICKER SYMBOL TO ANALYZE (E.G., AAPL)",
-        ).upper()
-
-    with col_btn:
-        st.write("")
-        analyze_clicked = st.button("Analyze", use_container_width=True)
-
-    # max_peers = st.slider("Max peers to compare", 2, 15, 6, key="max_peers_dashboard") # <-- REMOVED
-    max_peers = 6 # Set default since slider is removed
-
-    if analyze_clicked and ticker:
-        with st.spinner(f"Analyzing {ticker.upper()}..."):
-            try:
-                results = run_equity_analysis(ticker, max_peers=max_peers)
-                st.session_state.last_results = results
-                st.session_state.recent_tickers.insert(
-                    0,
-                    {"ticker": results["ticker"], "time": datetime.now().strftime("%Y-%m-%d %H:%M")},
-                )
-                st.session_state.recent_tickers = st.session_state.recent_tickers[:12]
-                st.success(f"Analysis updated for {results['ticker']}")
-                # Set the ticker input for valuation page
-                st.session_state.valuation_ticker_input = results['ticker']
-            except Exception as e:
-                st.session_state.last_results = None # Clear last results
-                logging.error(f"Error during analysis for {ticker}: {e}", exc_info=True)
-                st.error(f"Analysis failed for {ticker.upper()}. The ticker might be invalid, delisted, or have no data. Error: {e}")
-
-
-    st.write("")
-    
-    companies_tracked = len({x["ticker"] for x in st.session_state.recent_tickers}) or 0
-    active_theses = len(st.session_state.theses_store)
-    research_docs = len(st.session_state.notes_store)
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.markdown(
-            f"""
-            <div class="kpi-card-new">
-                <div class="kpi-label-new">Companies Tracked</div>
-                <div class="kpi-value-new">{companies_tracked}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    with col2:
-        st.markdown(
-            f"""
-            <div class="kpi-card-new">
-                <div class="kpi-label-new">Active Theses</div>
-                <div class="kpi-value-new">{active_theses}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    with col3:
-        st.markdown(
-            f"""
-            <div class="kpi-card-new">
-                <div class="kpi-label-new">Research Documents</div>
-                <div class="kpi-value-new">{research_docs}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        
-    st.write("")
-    st.markdown(
-        """
-        <div class="section-card">
-            <div class="section-title">Quick Actions</div>
-            <div class="section-subtitle">Common workflows</div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    qa_col1, qa_col2, qa_col3 = st.columns(3)
-
-    with qa_col1:
-        if st.button("Start New Analysis", use_container_width=True):
-            st.session_state.top_nav_radio = "📈  Analysis"
-            st.rerun() # Rerun to switch page
-    with qa_col2:
-        if st.button("Draft Thesis", use_container_width=True):
-            st.session_state.top_nav_radio = "📝  Theses"
-            st.rerun() # Rerun to switch page
-    with qa_col3:
-        if st.button("Open Research Notes", use_container_width=True):
-            st.session_state.top_nav_radio = "📚  Research"
-            st.rerun() # Rerun to switch page
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-
-    # --- MODIFICATION: "Recently Analyzed" section removed ---
-    # st.write("")
-    # st.markdown( ... ) -> This block was removed
-
-
-# ---------- ANALYSIS PAGE ----------
-def render_analysis_page():
-    # inject_global_css() # Removed, now global in main()
-
-    st.markdown(
-        """
-        <div class="hero-card">
-            <div class="hero-title">Company Analysis</div>
-            <div class="hero-subtitle">Review fundamental metrics, peer comparisons, and recent news.</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    st.write("")
-
-    ticker = st.text_input(
-        "Enter stock ticker (e.g., AAPL):",
-        key="analysis_ticker",
-        value=st.session_state.get("ticker_input", ""),
-    ).upper()
-    max_peers = st.slider("Max peers to compare", 2, 15, 6, key="max_peers_analysis")
-
-    if st.button("Run Analysis", key="run_analysis_btn"):
-        if ticker:
-            with st.spinner(f"Analyzing {ticker.upper()}..."):
-                # --- MODIFICATION: Wrap in try/except ---
-                try:
-                    results = run_equity_analysis(ticker, max_peers=max_peers)
-                    st.session_state.last_results = results
-                    st.session_state.recent_tickers.insert(
-                        0,
-                        {"ticker": results["ticker"], "time": datetime.now().strftime("%Y-%m-%d %H:%M")},
-                    )
-                    st.session_state.recent_tickers = st.session_state.recent_tickers[:12]
-                    st.success(f"Analysis complete for {results['ticker']}.")
-                    # Set the ticker input for valuation page
-                    st.session_state.valuation_ticker_input = results['ticker']
-                except Exception as e:
-                    st.session_state.last_results = None # Clear last results
-                    logging.error(f"Error during analysis for {ticker}: {e}", exc_info=True)
-                    st.error(f"Analysis failed for {ticker.upper()}. The ticker might be invalid, delisted, or have no data. Error: {e}")
-                # --- END MODIFICATION ---
-        else:
-            st.warning("Please enter a ticker symbol.")
-
-    if st.session_state.last_results:
-        res = st.session_state.last_results
-        
-        # --- NEW: Two-column layout for Overview and Ratings ---
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            st.markdown(
-                """
-                <div class="section-card">
-                """,
-                unsafe_allow_html=True
-            )
-            # overview_md already contains "### Company Overview"
-            st.markdown(res.get("overview_md", "Overview not available."), unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
-        
-        with col2:
-            # --- MODIFICATION: Render new Factor Score Breakdown (Z-Score) ---
-            st.markdown(
-                f"""
-                <div class="section-card">
-                    <div style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem; color: #0d1117;">
-                        Factor Score Breakdown
-                    </div>
-                    <div style="font-size: 14px; color: #4a5568; margin-top: -1rem; margin-bottom: 1.5rem;">
-                        Individual factor analysis across key dimensions (z-score)
-                    </div>
-                """,
-                unsafe_allow_html=True
-            )
             
             focus_row = res.get("focus_row") # This is now a dict
             if focus_row is not None:
@@ -2001,7 +1788,6 @@ def main():
         initial_sidebar_state="collapsed",
     )
 
-    # Font import (keep as you had it)
     st.markdown(
         """
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2011,14 +1797,12 @@ def main():
         unsafe_allow_html=True,
     )
 
-    # Track which page is active
     if "top_nav_page" not in st.session_state:
         st.session_state.top_nav_page = "Dashboard"
 
-    # Inject ALL CSS (including the new nav styles)
     inject_global_css()
 
-    # --- TOP NAV BAR WITH BUTTONS ---
+    # --- TOP NAV BAR ---
     st.markdown(
         """
         <div class="top-nav-bar">
@@ -2047,28 +1831,149 @@ def main():
 
     st.markdown("</div></div>", unsafe_allow_html=True)
 
-    # Center main content
+    # --- MAIN CONTENT WRAPPER ---
     st.markdown(
-    "<div class='main-content' style='max-width:1100px;margin:0 auto;'>",
-    unsafe_allow_html=True,
+        "<div class='main-content' style='max-width:1100px;margin:0 auto;'>",
+        unsafe_allow_html=True,
     )
 
-    # Global title
     st.markdown(
-            """
-            <h1 style='text-align: center; margin-bottom: 1rem; padding-top: 1rem; 
-                       font-weight: 400; font-family: "DM Serif Display", serif;
-                       font-size: 2.75rem; 
-                       color: #0d1117;'> 
-                Equity Research Platform
-            </h1>
+        """
+        <h1 style='text-align: center; margin-bottom: 1rem; padding-top: 1rem; 
+                   font-weight: 400; font-family: "DM Serif Display", serif;
+                   font-size: 2.75rem; 
+                   color: #0d1117;'> 
+            Equity Research Platform
+        </h1>
+        """,
+        unsafe_allow_html=True,
+    )
+    # ---------- DASHBOARD ----------
+def render_dashboard():
+    st.markdown(
+        """
+        <div class="hero-card">
+            <div class="hero-title">Equity Research Platform</div>
+            <div class="hero-subtitle">
+                Analyze companies, build valuations, and create investment theses.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.write("")
+    
+    # --- Ticker input + Analyze button ---
+    col_search, col_btn = st.columns([4, 1])
+
+    with col_search:
+        ticker = st.text_input(
+            "Search ticker symbol (e.g., AAPL, MSFT).",
+            key="ticker_input",
+            label_visibility="collapsed",
+            placeholder="ENTER TICKER SYMBOL TO ANALYZE (E.G., AAPL)",
+        ).upper()
+
+    with col_btn:
+        st.write("")
+        analyze_clicked = st.button("Analyze", use_container_width=True)
+
+    max_peers = 6  # default peers
+
+    if analyze_clicked and ticker:
+        with st.spinner(f"Analyzing {ticker.upper()}..."):
+            try:
+                results = run_equity_analysis(ticker, max_peers=max_peers)
+                st.session_state.last_results = results
+                st.session_state.recent_tickers.insert(
+                    0,
+                    {"ticker": results["ticker"], "time": datetime.now().strftime("%Y-%m-%d %H:%M")},
+                )
+                st.session_state.recent_tickers = st.session_state.recent_tickers[:12]
+                st.success(f"Analysis updated for {results['ticker']}")
+                # make valuation tab default to this ticker
+                st.session_state.valuation_ticker_input = results["ticker"]
+            except Exception as e:
+                st.session_state.last_results = None
+                logging.error(f"Error during analysis for {ticker}: {e}", exc_info=True)
+                st.error(
+                    f"Analysis failed for {ticker.upper()}. "
+                    f"The ticker might be invalid, delisted, or have no data. Error: {e}"
+                )
+
+    st.write("")
+    
+    # --- KPI cards ---
+    companies_tracked = len({x["ticker"] for x in st.session_state.recent_tickers}) or 0
+    active_theses = len(st.session_state.theses_store)
+    research_docs = len(st.session_state.notes_store)
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.markdown(
+            f"""
+            <div class="kpi-card-new">
+                <div class="kpi-label-new">Companies Tracked</div>
+                <div class="kpi-value-new">{companies_tracked}</div>
+            </div>
             """,
             unsafe_allow_html=True,
+        )
+
+    with col2:
+        st.markdown(
+            f"""
+            <div class="kpi-card-new">
+                <div class="kpi-label-new">Active Theses</div>
+                <div class="kpi-value-new">{active_theses}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with col3:
+        st.markdown(
+            f"""
+            <div class="kpi-card-new">
+                <div class="kpi-label-new">Research Documents</div>
+                <div class="kpi-value-new">{research_docs}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        
+    st.write("")
+    st.markdown(
+        """
+        <div class="section-card">
+            <div class="section-title">Quick Actions</div>
+            <div class="section-subtitle">Common workflows</div>
+        """,
+        unsafe_allow_html=True,
     )
 
-    # Route based on selected page
-    page = st.session_state.top_nav_page
+    qa_col1, qa_col2, qa_col3 = st.columns(3)
 
+    # 🔁 Use top_nav_page to switch tabs from here
+    with qa_col1:
+        if st.button("Start New Analysis", use_container_width=True):
+            st.session_state.top_nav_page = "Analysis"
+            st.rerun()
+    with qa_col2:
+        if st.button("Draft Thesis", use_container_width=True):
+            st.session_state.top_nav_page = "Theses"
+            st.rerun()
+    with qa_col3:
+        if st.button("Open Research Notes", use_container_width=True):
+            st.session_state.top_nav_page = "Research"
+            st.rerun()
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
+    page = st.session_state.top_nav_page
     if page == "Dashboard":
         render_dashboard()
     elif page == "Analysis":
@@ -2080,8 +1985,8 @@ def main():
     elif page == "Theses":
         render_theses_page()
 
-    # Close centering div
     st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 if __name__ == "__main__":

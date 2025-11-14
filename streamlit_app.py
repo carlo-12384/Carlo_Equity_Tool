@@ -1,4 +1,4 @@
-        # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """Carlo Equity Tool — Streamlit App (Blocks-style UI)"""
 
 import os, time, math, logging, textwrap, datetime as dt
@@ -8,14 +8,12 @@ from functools import lru_cache
 from typing import List, Dict, Any
 from datetime import datetime
 import streamlit as st
-
-# from scipy.stats import norm # REMOVED: This caused the ModuleNotFoundError
+import json
 
 # -------------------- CONFIG / LOGGING --------------------
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
 
-# Note: Removed an invalid character from the end of your key string
-FINNHUB_KEY = os.getenv("FINNHUB_KEY", "d49tfm9r01qlaebj5lkgd49tfm9r01qlaebj5ll0") # peers/profile/news
+FINNHUB_KEY = os.getenv("FINNHUB_KEY", "d49tfm9r01qlaebj5lkgd49tfm9r01qlaebj5ll0")  # peers/profile/news
 BASE = "https://finnhub.io/api/v1"
 
 # -------------------- GENERIC HELPERS --------------------
@@ -483,14 +481,21 @@ def get_metrics(symbol: str) -> dict:
 
 # -------------------- FACTOR PIPELINE --------------------
 FACTOR_BUCKETS = {
-    "Valuation": ["P/E Ratio","P/B Ratio","EV/EBITDA","Price/Sales"],
-    "Quality":     ["ROE%","GrossMargin%","EBITDAMargin%","InterestCoverage"],
-    "Growth":      ["RevenueGrowth%","AssetGrowth%"],
-    "Momentum":    ["TTM-Return","Mom_VWAP_Diff%"],
-    "Leverage":    ["DebtToEquity"],
-    "Efficiency":["GrossProfitability","Accruals%"]
+    "Valuation":  ["P/E Ratio","P/B Ratio","EV/EBITDA","Price/Sales"],
+    "Quality":    ["ROE%","GrossMargin%","EBITDAMargin%","InterestCoverage"],
+    "Growth":     ["RevenueGrowth%","AssetGrowth%"],
+    "Momentum":   ["TTM-Return","Mom_VWAP_Diff%"],
+    "Leverage":   ["DebtToEquity"],
+    "Efficiency": ["GrossProfitability","Accruals%"],
 }
-BUCKET_WEIGHTS = {"Valuation":0.25,"Quality":0.20,"Growth":0.20,"Momentum":0.20,"Leverage":0.10,"Efficiency":0.05}
+BUCKET_WEIGHTS = {
+    "Valuation": 0.25,
+    "Quality":   0.20,
+    "Growth":    0.20,
+    "Momentum":  0.20,
+    "Leverage":  0.10,
+    "Efficiency":0.05,
+}
 
 def winsorize(s: pd.Series, p=0.01) -> pd.Series:
     s = pd.to_numeric(s, errors="coerce")
@@ -573,9 +578,6 @@ def build_waterfall_dict(row: pd.Series):
             parts[k] = BUCKET_WEIGHTS[k] * v
     return parts
 
-# --- REMOVED HELPER ---
-# def _z_to_percentile(z_score: float) -> float: ...
-
 # -------------------- ORCHESTRATOR (CORE ANALYSIS) --------------------
 def analyze_ticker_pro(ticker: str, peer_cap: int = 6):
     """
@@ -620,32 +622,22 @@ def analyze_ticker_pro(ticker: str, peer_cap: int = 6):
         if m.any():
             focus_row = scored.loc[m].iloc[0]
 
-    # --- MODIFICATION: Removed percentile calculation ---
-    # factor_percentiles = {}
-    # ...
-    # --- END MODIFICATION ---
-
     parts = build_waterfall_dict(focus_row) if focus_row is not None else {}
-    peers_used = [p for p in peers if p in list(scored.get("Ticker", []))] if not scored.empty else []
+    _ = parts  # currently unused in UI
 
     text_synopsis_md = get_company_text_summary(ticker, focus_row if focus_row is not None else {})
     metrics_summary_md = get_company_metrics_summary(focus_row if focus_row is not None else {})
 
-    # --- REMOVED kpi_ratings_md and waterfall_md generation ---
-    # We will build this manually in the UI layer now
-
     news_items = get_company_news(ticker, n=8)
     news_md = "### Recent Headlines\n" + render_news_md(news_items)
 
-    # --- NEW: Convert focus_row to dict for stable storage ---
     focus_row_dict = focus_row.to_dict() if isinstance(focus_row, pd.Series) else None
 
     return (
         scored,
         text_synopsis_md,
         metrics_summary_md,
-        # factor_percentiles, # REMOVED
-        focus_row_dict,       # MODIFIED: Return dict
+        focus_row_dict,
         news_md,
     )
 
@@ -681,15 +673,13 @@ def charts(scored: pd.DataFrame, focus: str):
                      / pd.to_numeric(dfx["MarketCap"], errors="coerce").max()) * 800,
                     20, 800
                 )
-                sc_ = ax2.scatter(dfx["EV/EBITDA"], dfx["RevenueGrowth%"], s=sizes,
-                                  c=dfx["CompositeScore"], alpha=0.0) # Changed alpha to 0 for invisible points
+                ax2.scatter(dfx["EV/EBITDA"], dfx["RevenueGrowth%"], s=sizes, alpha=0.0)
                 ax2.set_title("EV/EBITDA vs Revenue Growth (size≈MktCap, color=Composite)")
                 ax2.set_xlabel("EV/EBITDA"); ax2.set_ylabel("Revenue Growth %")
                 if focus in set(dfx["Ticker"]):
                     row = dfx[dfx["Ticker"] == focus].iloc[0]
                     ax2.annotate(focus, (row["EV/EBITDA"], row["RevenueGrowth%"]),
                                  xytext=(5, 5), textcoords="offset points")
-                # Removed colorbar as points are invisible
     except Exception:
         fig2 = None
 
@@ -725,14 +715,104 @@ def five_day_price_plot(ticker: str):
         plt_fig = None
     return plt_fig
 
-# -------------------- THESIS / LIBRARY HELPERS --------------------
-# (unchanged from your version; omitted here for brevity if you like,
-# but you can keep them exactly as in your original file)
-# NOTE: they are not used by the new Blocks UI yet, so they are optional.
+# -------------------- LOCAL STORAGE HELPERS --------------------
+NOTES_FILE = "research_notes.json"
+THESES_FILE = "theses.json"
 
-# -------------------- VALUATION / SCENARIO HELPERS --------------------
-# *** IMPLEMENTED MISSING FUNCTIONS ***
+def _load_json(path: str, default):
+    try:
+        with open(path, "r") as f:
+            return json.load(f)
+    except Exception:
+        return default
 
+def _save_json(path: str, obj):
+    try:
+        with open(path, "w") as f:
+            json.dump(obj, f, indent=2)
+    except Exception as e:
+        logging.warning(f"Failed to save {path}: {e}")
+
+# ---------- SESSION SETUP ----------
+if "recent_tickers" not in st.session_state:
+    st.session_state.recent_tickers = []    # list[{"ticker","time"}]
+if "last_results" not in st.session_state:
+    st.session_state.last_results = None    # latest analysis bundle
+if "notes_store" not in st.session_state:
+    st.session_state.notes_store = _load_json(NOTES_FILE, {})
+if "theses_store" not in st.session_state:
+    st.session_state.theses_store = _load_json(THESES_FILE, [])
+
+# ======================================================================
+# ANALYSIS WRAPPER
+# ======================================================================
+def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
+    """
+    Wraps analyze_ticker_pro + valuation + charts into a single object
+    that the UI can reuse across pages.
+    """
+    ticker = ticker.upper().strip()
+
+    try:
+        (
+            scored,
+            text_synopsis_md,
+            metrics_summary_md,
+            focus_row,
+            news_md,
+        ) = analyze_ticker_pro(ticker, peer_cap=max_peers)
+    except Exception as e:
+        logging.error(f"analyze_ticker_pro failed for {ticker}: {e}", exc_info=True)
+        raise Exception(f"Failed to analyze {ticker}. Ticker may be invalid or data unavailable. (Internal error: {e})")
+
+    overview_md = (
+        "### Company Overview\n\n"
+        + text_synopsis_md
+        + "\n\n"
+        + metrics_summary_md
+    )
+
+    raw_metrics = None
+    if isinstance(scored, pd.DataFrame) and not scored.empty:
+        if "Ticker" in scored.columns:
+            focus_df = scored[scored["Ticker"] == ticker]
+            if not focus_df.empty:
+                raw_metrics = focus_df
+            else:
+                raw_metrics = scored.head(1)
+        else:
+            raw_metrics = scored.head(1)
+
+    valuation: Dict[str, Dict[str, Any]] = {}
+    base_metrics = get_metrics(ticker)
+    base_params = _build_scenario_params(base_metrics, "Base")
+
+    for scen in ["Base", "Bull", "Bear"]:
+        try:
+            df_val, md_val = _scenario_valuation_core(ticker, max_peers, scen)
+        except Exception as e:
+            df_val, md_val = pd.DataFrame(), f"_Error in {scen} scenario: {e}_"
+        valuation[scen] = {"df": df_val, "md": md_val}
+
+    fig_comp, fig_scatter, _ = charts(scored, ticker)
+    fig_price = five_day_price_plot(ticker)
+
+    return {
+        "ticker": ticker,
+        "overview_md": overview_md,
+        "focus_row": focus_row,
+        "peers_df": scored,
+        "valuation": valuation,
+        "news_md": news_md,
+        "raw_metrics": raw_metrics,
+        "charts": {"price": fig_price, "scatter": fig_scatter},
+        "base_params": base_params,
+        "current_price": get_price_and_shares(ticker)[0],
+    }
+
+# ======================================================================
+# VALUATION / SCENARIO HELPERS
+# ======================================================================
 def _estimate_fcff_and_net_debt(symbol: str):
     """Estimates TTM FCFF and latest Net Debt."""
     try:
@@ -745,9 +825,9 @@ def _estimate_fcff_and_net_debt(symbol: str):
         
         fcff_ttm = np.nan
         if np.isfinite(cfo_ttm) and np.isfinite(capex_ttm):
-            fcff_ttm = cfo_ttm - abs(capex_ttm) # Capex is often negative
+            fcff_ttm = cfo_ttm - abs(capex_ttm)
         elif np.isfinite(cfo_ttm):
-            fcff_ttm = cfo_ttm # Fallback to CFO if capex is missing
+            fcff_ttm = cfo_ttm
 
         total_debt_aliases = ["Total Debt", "Long Term Debt", "Total Liabilities Net Minority Interest"]
         total_debt = last_q_from_rows(q_bs, total_debt_aliases)
@@ -759,7 +839,7 @@ def _estimate_fcff_and_net_debt(symbol: str):
         if np.isfinite(total_debt) and np.isfinite(cash):
             net_debt = total_debt - cash
         elif np.isfinite(total_debt):
-            net_debt = total_debt # Fallback if cash is missing
+            net_debt = total_debt
         
         return fcff_ttm, net_debt
     except Exception as e:
@@ -771,7 +851,6 @@ def _build_scenario_params(metrics, scenario):
     base_g = metrics.get("RevenueGrowth%")
     base_m = metrics.get("EBITDAMargin%")
 
-    # Fallbacks for missing data
     if not np.isfinite(base_g): base_g = 5.0
     if not np.isfinite(base_m): base_m = 15.0
 
@@ -780,13 +859,13 @@ def _build_scenario_params(metrics, scenario):
     if scenario == "Bull":
         params["wacc"] = 0.075
         params["terminal_g"] = 0.025
-        params["g_proj"] = base_g * 1.2 + 2.0  # 20% faster + 200bps
-        params["m_proj"] = base_m + 2.0        # 200bps margin expansion
+        params["g_proj"] = base_g * 1.2 + 2.0
+        params["m_proj"] = base_m + 2.0
     elif scenario == "Bear":
         params["wacc"] = 0.09
         params["terminal_g"] = 0.015
-        params["g_proj"] = base_g * 0.8 - 1.0  # 20% slower - 100bps
-        params["m_proj"] = base_m - 2.0        # 200bps margin compression
+        params["g_proj"] = base_g * 0.8 - 1.0
+        params["m_proj"] = base_m - 2.0
     
     return params
 
@@ -795,7 +874,6 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
     price, shares = np.nan, np.nan
     metrics = {}
     try:
-        # 1. Get Base Data
         metrics = get_metrics(ticker)
         fcff_ttm, net_debt = _estimate_fcff_and_net_debt(ticker)
         price, shares = get_price_and_shares(ticker)
@@ -808,24 +886,23 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
             ebitda_ttm = metrics.get("EBITDAMargin%") * rev_ttm / 100.0
 
         if not np.isfinite(ebitda_ttm):
-             ebit_ttm = ttm_from_rows(t_is, ["Ebit","EBIT","Operating Income"])
-             dep_ttm = ttm_from_rows(yf.Ticker(ticker).quarterly_cashflow, ["Depreciation","Depreciation And Amortization"])
-             if np.isfinite(ebit_ttm) and np.isfinite(dep_ttm):
-                  ebitda_ttm = ebit_ttm + dep_ttm
+            ebit_ttm = ttm_from_rows(t_is, ["Ebit","EBIT","Operating Income"])
+            dep_ttm = ttm_from_rows(yf.Ticker(ticker).quarterly_cashflow,
+                                    ["Depreciation","Depreciation And Amortization"])
+            if np.isfinite(ebit_ttm) and np.isfinite(dep_ttm):
+                ebitda_ttm = ebit_ttm + dep_ttm
 
-        # 2. Get Scenario Params
         params = _build_scenario_params(metrics, scenario)
         wacc = params["wacc"]
         term_g = params["terminal_g"]
         g_proj_frac = params["g_proj"] / 100.0
 
-        # 3. DCF Valuation
         implied_price_dcf = np.nan
         if all(np.isfinite([fcff_ttm, g_proj_frac, wacc, term_g, net_debt, shares])) and shares > 0 and wacc > term_g:
             try:
                 pv_fcffs = []
                 last_fcff = fcff_ttm
-                for i in range(1, 6): # 5-year projection
+                for i in range(1, 6):
                     last_fcff = last_fcff * (1 + g_proj_frac)
                     pv_fcffs.append(last_fcff / ((1 + wacc) ** i))
                 
@@ -839,8 +916,6 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
                 logging.warning(f"DCF calculation failed for {ticker}: {e}")
                 implied_price_dcf = np.nan
 
-
-        # 4. Comps Valuation
         implied_price_ev_ebitda, implied_price_ps = np.nan, np.nan
         try:
             peers = build_peerset(ticker, final_cap=max_peers)
@@ -862,7 +937,6 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
         except Exception as e:
             logging.warning(f"Comps valuation failed for {ticker}: {e}")
 
-        # 5. Format Output
         df_data = {
             "Method": ["DCF (5y)", "Comps (EV/EBITDA)", "Comps (P/S)"],
             "Implied Price": [implied_price_dcf, implied_price_ev_ebitda, implied_price_ps]
@@ -876,11 +950,11 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
         
         if df.empty:
             md += "\n_Insufficient data for valuation._"
-        elif np.isfinite(price):
-            df["Premium"] = (df["Implied Price"] / price) - 1.0
-            df["Premium"] = df["Premium"].map(lambda x: f"{x:+.1%}")
-        
-        df["Implied Price"] = df["Implied Price"].map(lambda x: f"${x:.2f}")
+        else:
+            if np.isfinite(price):
+                df["Premium"] = (df["Implied Price"] / price) - 1.0
+                df["Premium"] = df["Premium"].map(lambda x: f"{x:+.1%}")
+            df["Implied Price"] = df["Implied Price"].map(lambda x: f"${x:.2f}")
 
         return df, md
     
@@ -888,136 +962,8 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
         logging.error(f"Failed _scenario_valuation_core for {ticker} ({scenario}): {e}")
         return pd.DataFrame(), f"_Valuation failed for {scenario}: {e}_"
 
-
 # ======================================================================
-# BLOCKS-STYLE STREAMLIT UI
-# ======================================================================
-# =========================================================
-# LOCAL STORAGE + BLOCKS-STYLE STREAMLIT UI
-# =========================================================
-import json
-from datetime import datetime
-from typing import Dict, Any
-
-# ---------- LOCAL STORAGE HELPERS ----------
-NOTES_FILE = "research_notes.json"
-THESES_FILE = "theses.json"
-
-
-def _load_json(path: str, default):
-    try:
-        with open(path, "r") as f:
-            return json.load(f)
-    except Exception:
-        return default
-
-
-def _save_json(path: str, obj):
-    try:
-        with open(path, "w") as f:
-            json.dump(obj, f, indent=2)
-    except Exception as e:
-        logging.warning(f"Failed to save {path}: {e}")
-
-
-# ---------- SESSION SETUP ----------
-if "recent_tickers" not in st.session_state:
-    st.session_state.recent_tickers = []    # list[{"ticker","time"}]
-if "last_results" not in st.session_state:
-    st.session_state.last_results = None    # latest analysis bundle
-if "notes_store" not in st.session_state:
-    # dict: {ticker: notes_str}
-    st.session_state.notes_store = _load_json(NOTES_FILE, {})
-if "theses_store" not in st.session_state:
-    # list of dicts
-    st.session_state.theses_store = _load_json(THESES_FILE, [])
-
-
-# ======================================================================
-# ANALYSIS WRAPPER (hooks into your existing pipeline)
-# ======================================================================
-def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
-    """
-    Wraps analyze_ticker_pro + valuation + charts into a single object
-    that the UI can reuse across pages.
-    """
-    ticker = ticker.upper().strip()
-
-    # --- MODIFICATION: Wrap call in try/except ---
-    try:
-        (
-            scored,
-            text_synopsis_md,
-            metrics_summary_md,
-            focus_row,      # Changed (now a dict or None)
-            news_md,
-        ) = analyze_ticker_pro(ticker, peer_cap=max_peers)
-    except Exception as e:
-        logging.error(f"analyze_ticker_pro failed for {ticker}: {e}", exc_info=True)
-        # Re-raise a more informative error to be caught by the UI
-        raise Exception(f"Failed to analyze {ticker}. Ticker may be invalid or data unavailable. (Internal error: {e})")
-    # --- END MODIFICATION ---
-
-
-    # --- 1) High-level company summary markdown (split into two) ---
-    overview_md = (
-        "### Company Overview\n\n"
-        + text_synopsis_md
-        + "\n\n"
-        + metrics_summary_md
-    )
-    
-    # --- MODIFICATION: `ratings_md` is no longer created here ---
-    # ratings_md = ( ... ) -> REMOVED
-
-    # --- 2) Raw metrics row for the focus ticker ---
-    raw_metrics = None
-    if isinstance(scored, pd.DataFrame) and not scored.empty:
-        if "Ticker" in scored.columns:
-            focus = scored[scored["Ticker"] == ticker]
-            if not focus.empty:
-                raw_metrics = focus
-            else:
-                raw_metrics = scored.head(1)
-        else:
-            raw_metrics = scored.head(1)
-
-    # --- 3) Valuation scenarios (Base/Bull/Bear) via your DCF/multiples engine ---
-    valuation: Dict[str, Dict[str, Any]] = {}
-    
-    # Store the actual parameters from the base run
-    base_metrics = get_metrics(ticker)
-    base_params = _build_scenario_params(base_metrics, "Base")
-    
-    for scen in ["Base", "Bull", "Bear"]:
-        try:
-            df_val, md_val = _scenario_valuation_core(ticker, max_peers, scen)
-        except Exception as e:
-            df_val, md_val = pd.DataFrame(), f"_Error in {scen} scenario: {e}_"
-        valuation[scen] = {"df": df_val, "md": md_val}
-
-
-    # --- 4) Charts (5d price + EV/EBITDA vs growth scatter) ---
-    fig_comp, fig_scatter, _ = charts(scored, ticker)
-    fig_price = five_day_price_plot(ticker)
-
-    return {
-        "ticker": ticker,
-        "overview_md": overview_md, # Added
-        # "factor_percentiles": factor_percentiles, # REMOVED
-        "focus_row": focus_row,             # Kept (now a dict or None)
-        "peers_df": scored,
-        "valuation": valuation,
-        "news_md": news_md,
-        "raw_metrics": raw_metrics,
-        "charts": {"price": fig_price, "scatter": fig_scatter},
-        "base_params": base_params, # Add base parameters to results
-        "current_price": get_price_and_shares(ticker)[0] # Get current price
-    }
-
-
-# ======================================================================
-# GLOBAL STYLING (Blocks-style + nicer sidebar)
+# GLOBAL STYLING
 # ======================================================================
 def inject_global_css():
     st.markdown(
@@ -1043,7 +989,7 @@ def inject_global_css():
 
         /* ===== TOP NAV BAR (FULL-WIDTH STRIP) ===== */
         .top-nav-bar {
-            background: #0d1117;      /* dark bar at very top */
+            background: #0d1117;
             padding: 0;
             width: 100vw;
             position: relative;
@@ -1059,24 +1005,21 @@ def inject_global_css():
             display: flex;
         }
 
-        /* Remove gaps between columns so buttons touch */
         .top-nav-inner [data-testid="column"] {
             padding-left: 0 !important;
             padding-right: 0 !important;
         }
 
-        /* Nav buttons container */
         .top-nav-container .stButton {
             width: 100%;
             margin: 0 !important;
         }
 
-        /* NAV BUTTONS – blue, white text, white separators */
         .top-nav-container .stButton > button {
             width: 100%;
             padding: 14px 0;
-            border: 1px solid rgba(255,255,255,0.85);        /* white borders between tabs */
-            border-radius: 0;                                 /* merged bar look */
+            border: 1px solid rgba(255,255,255,0.85);
+            border-radius: 0;
             background: linear-gradient(135deg, #3b82f6, #1d4ed8);
             color: #ffffff !important;
             font-size: 15px;
@@ -1090,7 +1033,6 @@ def inject_global_css():
             filter: brightness(1.08);
         }
 
-        /* Rounded corners only on the outer edges of the bar */
         .top-nav-inner [data-testid="column"]:first-child .stButton > button {
             border-top-left-radius: 12px;
             border-bottom-left-radius: 12px;
@@ -1100,7 +1042,6 @@ def inject_global_css():
             border-bottom-right-radius: 12px;
         }
 
-        /* ===== NORMAL BODY BUTTONS (inside main-content only) ===== */
         .main-content .stButton > button {
             border-radius: 8px;
             padding: 0.45rem 1.3rem;
@@ -1115,127 +1056,250 @@ def inject_global_css():
             filter: brightness(1.1);
             color: #ffffff !important;
         }
+
+        /* Simple cards */
+        .hero-card {
+            background: #f9fafb;
+            border-radius: 16px;
+            padding: 24px 28px;
+            margin-top: 16px;
+            margin-bottom: 16px;
+            border: 1px solid #e5e7eb;
+        }
+        .hero-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .hero-subtitle {
+            font-size: 14px;
+            color: #6b7280;
+        }
+        .section-card {
+            background: #ffffff;
+            border-radius: 16px;
+            padding: 18px 20px;
+            margin-top: 18px;
+            margin-bottom: 18px;
+            border: 1px solid #e5e7eb;
+        }
+        .section-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .section-subtitle {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 12px;
+        }
+        .kpi-card-new {
+            background: #f3f4f6;
+            border-radius: 16px;
+            padding: 14px 16px;
+            border: 1px solid #e5e7eb;
+        }
+        .kpi-label-new {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .kpi-value-new {
+            font-size: 22px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
         </style>
         """,
         unsafe_allow_html=True,
     )
 
-            
-            focus_row = res.get("focus_row") # This is now a dict
-            if focus_row is not None:
-                for factor in FACTOR_BUCKETS.keys():
-                    z_score = focus_row.get(factor) # .get() works on dicts
-                    score_display = f"{z_score:+.2f}" if (z_score is not None and np.isfinite(z_score)) else "N/A"
-                    
-                    # Map z-score (-3 to +3) to a 0-100% range for the bar
-                    # A z-score of 0 is 50%. A z-score of 3 is 100%. A z-score of -3 is 0%.
-                    bar_width_pct = max(0, min(100, (z_score + 3) / 6 * 100)) if (z_score is not None and np.isfinite(z_score)) else 0
-                    
-                    fill_class = "factor-bar-fill-positive" if (z_score is not None and z_score > 0) else "factor-bar-fill-negative"
-                    width_val = (abs(z_score) / 3) * 50 if (z_score is not None and np.isfinite(z_score)) else 0 # Scale to 50% max (3 std devs)
-                    width_val = max(0, min(50, width_val))
+# ======================================================================
+# PAGE RENDER FUNCTIONS
+# ======================================================================
+def render_dashboard():
+    st.markdown(
+        """
+        <div class="hero-card">
+            <div class="hero-title">Equity Research Platform</div>
+            <div class="hero-subtitle">
+                Analyze companies, build valuations, and create investment theses.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-                    st.markdown(
-                        f"""
-                        <div class="factor-bar-container">
-                            <div class="factor-bar-label">
-                                {factor}
-                                <span class="factor-bar-score">{score_display}</span>
-                            </div>
-                            <div class="factor-bar-bg">
-                                <div class="{fill_class}" style="width: {width_val}%;"></div>
-                            </div>
-                        </div>
-                        """,
-                        unsafe_allow_html=True
-                    )
-            else:
-                st.markdown("_Factor scores not available._")
+    st.write("")
+    
+    col_search, col_btn = st.columns([4, 1])
 
-            st.markdown("</div>", unsafe_allow_html=True)
-            # --- END MODIFICATION ---
+    with col_search:
+        ticker = st.text_input(
+            "Search ticker symbol (e.g., AAPL, MSFT).",
+            key="ticker_input",
+            label_visibility="collapsed",
+            placeholder="ENTER TICKER SYMBOL TO ANALYZE (E.G., AAPL)",
+        ).upper()
 
-        # --- NEW: Factor Calculation Methodology Card ---
-        st.write("") # Spacer
+    with col_btn:
+        st.write("")
+        analyze_clicked = st.button("Analyze", use_container_width=True)
+
+    max_peers = 6
+
+    if analyze_clicked and ticker:
+        with st.spinner(f"Analyzing {ticker.upper()}..."):
+            try:
+                results = run_equity_analysis(ticker, max_peers=max_peers)
+                st.session_state.last_results = results
+                st.session_state.recent_tickers.insert(
+                    0,
+                    {"ticker": results["ticker"], "time": datetime.now().strftime("%Y-%m-%d %H:%M")},
+                )
+                st.session_state.recent_tickers = st.session_state.recent_tickers[:12]
+                st.success(f"Analysis updated for {results['ticker']}")
+                st.session_state.valuation_ticker_input = results["ticker"]
+            except Exception as e:
+                st.session_state.last_results = None
+                logging.error(f"Error during analysis for {ticker}: {e}", exc_info=True)
+                st.error(
+                    f"Analysis failed for {ticker.upper()}. "
+                    f"The ticker might be invalid, delisted, or have no data. Error: {e}"
+                )
+
+    st.write("")
+    
+    companies_tracked = len({x["ticker"] for x in st.session_state.recent_tickers}) or 0
+    active_theses = len(st.session_state.theses_store)
+    research_docs = len(st.session_state.notes_store)
+
+    c1, c2, c3 = st.columns(3)
+
+    with c1:
         st.markdown(
-            """
-            <div class="methodology-card">
-                <h4>Factor Calculation Methodology</h4>
-                <p>
-                    Each factor score is an industry-neutral <strong>z-score</strong> based on a blend of underlying metrics. 
-                    A score of 0 is average, +1 is one standard deviation above average, and -1 is one standard deviation below.
-                </p>
-                <p><strong>Valuation:</strong>
-                    Blend of P/E Ratio, P/B Ratio, EV/EBITDA, and Price/Sales. 
-                    Lower multiples result in a higher score.
-                </p>
-                <p><strong>Quality:</strong>
-                    Blend of ROE (Return on Equity), Gross Margin, EBITDA Margin, and Interest Coverage. 
-                    Higher profitability and coverage result in a higher score.
-                </p>
-                <p><strong>Growth:</strong>
-                    Blend of TTM Revenue Growth (YoY) and Quarterly Asset Growth. 
-                    Higher growth rates result in a higher score.
-                </p>
-                <p><strong>Momentum:</strong>
-                    Blend of 12-Month Total Return and 5-Day Price vs. VWAP. 
-                    Stronger recent price performance results in a higher score.
-                </p>
-                <p><strong>Leverage:</strong>
-                    Based on Debt-to-Equity ratio. 
-                    Lower leverage (less debt) results in a higher score.
-                </p>
-                <p><strong>Efficiency:</strong>
-                    Blend of Gross Profitability (Gross Profit / Avg. Assets) and Accruals %. 
-                    Higher profitability and lower accruals result in a higher score.
-                </p>
+            f"""
+            <div class="kpi-card-new">
+                <div class="kpi-label-new">Companies Tracked</div>
+                <div class="kpi-value-new">{companies_tracked}</div>
             </div>
             """,
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
-        # --- END NEW SECTION ---
 
+    with c2:
+        st.markdown(
+            f"""
+            <div class="kpi-card-new">
+                <div class="kpi-label-new">Active Theses</div>
+                <div class="kpi-value-new">{active_theses}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with c3:
+        st.markdown(
+            f"""
+            <div class="kpi-card-new">
+                <div class="kpi-label-new">Research Documents</div>
+                <div class="kpi-value-new">{research_docs}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         
-        st.write("")
-        st.markdown(
-            """
-            <div class="section-card">
-                <div class="section-title">Peer Analysis Table</div>
-            """,
-            unsafe_allow_html=True
-        )
-        st.dataframe(res["peers_df"], use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+    st.write("")
+    st.markdown(
+        """
+        <div class="section-card">
+            <div class="section-title">Quick Actions</div>
+            <div class="section-subtitle">Common workflows</div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-        st.write("")
-        st.markdown(
-            """
-            <div class="section-card">
-                <div class="section-title">Key Metrics (Raw)</div>
-            """,
-            unsafe_allow_html=True
-        )
-        if isinstance(res["raw_metrics"], pd.DataFrame):
-            st.dataframe(res["raw_metrics"], use_container_width=True)
-        else:
-            st.markdown("_Raw metrics view not available yet._")
-        st.markdown("</div>", unsafe_allow_html=True)
+    qa_col1, qa_col2, qa_col3 = st.columns(3)
 
+    with qa_col1:
+        if st.button("Start New Analysis", use_container_width=True):
+            st.session_state.top_nav_page = "Analysis"
+            st.rerun()
+    with qa_col2:
+        if st.button("Draft Thesis", use_container_width=True):
+            st.session_state.top_nav_page = "Theses"
+            st.rerun()
+    with qa_col3:
+        if st.button("Open Research Notes", use_container_width=True):
+            st.session_state.top_nav_page = "Research"
+            st.rerun()
 
-        # --- MODIFICATION: Charts section removed ---
-        # st.write("")
-        # st.markdown( ... "Charts" ... ) -> This block was removed
-        # --- END MODIFICATION ---
+    st.markdown("</div>", unsafe_allow_html=True)
 
+def render_analysis_page():
+    st.markdown(
+        """
+        <div class="hero-card">
+            <div class="hero-title">Analysis</div>
+            <div class="hero-subtitle">
+                Review factor scores, peer set, charts, and recent headlines for the last analyzed company.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-# ---------- VALUATION PAGE (NEW STREAMLIT VERSION) ----------
+    res = st.session_state.get("last_results")
+    if not res:
+        st.info("Run an analysis from the Dashboard first.")
+        return
+
+    st.markdown(
+        """
+        <div class="section-card">
+            <div class="section-title">Company Overview</div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(res.get("overview_md", ""), unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown(
+        """
+        <div class="section-card">
+            <div class="section-title">Recent Headlines</div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(res.get("news_md", ""), unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown(
+        """
+        <div class="section-card">
+            <div class="section-title">Peer Table</div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.dataframe(res.get("peers_df"), use_container_width=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown(
+        """
+        <div class="section-card">
+            <div class="section-title">Charts</div>
+        """,
+        unsafe_allow_html=True,
+    )
+    charts_dict = res.get("charts", {})
+    if charts_dict.get("price") is not None:
+        st.pyplot(charts_dict["price"])
+    if charts_dict.get("scatter") is not None:
+        st.pyplot(charts_dict["scatter"])
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# ---------- VALUATION PAGE ----------
 def render_valuation_page():
-    # inject_global_css() # Removed, now global in main()
-    import numpy as np
-    import pandas as pd
-
-
-    # Hero card
     st.markdown(
         """
         <div class="hero-card">
@@ -1249,7 +1313,6 @@ def render_valuation_page():
     )
     st.write("")
 
-    # ---------- Small helpers (local to this page) ----------
     def format_currency(x: float) -> str:
         if x is None or (isinstance(x, float) and (np.isnan(x))):
             return "N/A"
@@ -1267,13 +1330,6 @@ def render_valuation_page():
         terminal_growth_pct: float,
         years: int = 5,
     ) -> float:
-        """
-        Very simple DCF per-share:
-        - Use EPS_TTM as proxy for FCFE per share.
-        - Project for N years at growth_rate_pct.
-        - Terminal value at year N with terminal_growth_pct.
-        - Discount at discount_rate_pct.
-        """
         if eps is None or not np.isfinite(eps) or eps <= 0:
             return np.nan
 
@@ -1325,7 +1381,6 @@ def render_valuation_page():
             return np.nan
         return (target - current) / current * 100.0
 
-    # ---------- Select Company Card ----------
     st.markdown(
         """
         <div class="section-card">
@@ -1335,14 +1390,12 @@ def render_valuation_page():
         unsafe_allow_html=True,
     )
 
-    # Default ticker: last analyzed ticker if available
     default_ticker = ""
     if "valuation_ticker" in st.session_state:
         default_ticker = st.session_state.valuation_ticker
     elif st.session_state.get("last_results"):
         default_ticker = st.session_state.last_results.get("ticker", "")
 
-    # --- START FIX: Button Alignment ---
     st.markdown('<div class="valuation-load-section">', unsafe_allow_html=True)
     
     selected_ticker = st.text_input(
@@ -1350,15 +1403,13 @@ def render_valuation_page():
         value=default_ticker,
         key="valuation_ticker_input",
         placeholder="Enter ticker symbol (e.g., AAPL, MSFT)",
-        label_visibility="collapsed", # Hides the label to improve alignment
+        label_visibility="collapsed",
     ).upper()
     
     load_clicked = st.button("Load Company", use_container_width=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
-    # --- END FIX ---
 
-    # Load company metrics when button clicked
     if load_clicked and selected_ticker:
         tkr = selected_ticker.upper().strip()
         with st.spinner(f"Loading data for {tkr}..."):
@@ -1375,13 +1426,11 @@ def render_valuation_page():
     st.markdown("</div>", unsafe_allow_html=True)
     st.write("")
 
-    # Pull what we have in session
     metrics = st.session_state.get("valuation_metrics")
     current_ticker = st.session_state.get("valuation_ticker")
     current_price = st.session_state.get("valuation_price")
 
     if metrics and current_ticker:
-        # ---------- Company Snapshot ----------
         prof = get_profile(current_ticker) or {}
         company_name = prof.get("name") or current_ticker
         eps = metrics.get("EPS_TTM")
@@ -1415,7 +1464,6 @@ def render_valuation_page():
         st.markdown("</div>", unsafe_allow_html=True)
         st.write("")
 
-        # ---------- Scenario Selection ----------
         st.markdown(
             """
             <div class="section-card">
@@ -1431,7 +1479,6 @@ def render_valuation_page():
             "Bear Case": {"revenue_growth": 5.0,  "discount_rate": 12.0, "terminal_growth": 2.0, "pe_multiple": 15.0},
         }
 
-        # --- START FIX: Black Bar ---
         st.markdown('<div class="scenario-radio-group">', unsafe_allow_html=True)
         selected_scenario = st.radio(
             "Scenario",
@@ -1441,12 +1488,10 @@ def render_valuation_page():
             key="valuation_scenario_radio",
         )
         st.markdown('</div>', unsafe_allow_html=True)
-        # --- END FIX ---
 
         st.markdown("</div>", unsafe_allow_html=True)
         st.write("")
 
-        # ---------- Valuation Assumptions ----------
         st.markdown(
             """
             <div class="section-card">
@@ -1495,10 +1540,8 @@ def render_valuation_page():
         st.markdown("</div>", unsafe_allow_html=True)
         st.write("")
 
-        # ---------- Run valuation ----------
         if st.button("Run Valuation", use_container_width=True, key="run_valuation_btn"):
             with st.spinner(f"Running valuation for {current_ticker} ({selected_scenario})..."):
-                # DCF valuation
                 dcf_price = compute_dcf_price(
                     eps=eps if eps is not None else np.nan,
                     growth_rate_pct=revenue_growth,
@@ -1507,13 +1550,11 @@ def render_valuation_page():
                     years=5,
                 )
 
-                # P/E valuation
                 if eps is not None and np.isfinite(eps) and eps > 0:
                     pe_val = eps * pe_multiple
                 else:
                     pe_val = np.nan
 
-                # P/S valuation: if we have P/S (raw), back into price
                 ps_val = np.nan
                 ps_raw = metrics.get("P/S (raw)")
                 if (
@@ -1523,18 +1564,14 @@ def render_valuation_page():
                     and metrics.get("MarketCap")
                     and np.isfinite(metrics["MarketCap"])
                 ):
-                    # Value per share = P/S * Sales_per_share
-                    # MarketCap = P/S * Sales_TTM => implied price ≈ current_price * (target P/S / current P/S)
-                    # Here we proxy target P/S from P/E multiple (loose, but keeps it simple)
                     if current_price and np.isfinite(current_price):
-                        target_ps = ps_raw * (pe_multiple / preset["pe_multiple"])  # scale vs base case
+                        target_ps = ps_raw * (pe_multiple / preset["pe_multiple"])
                         ps_val = current_price * (target_ps / ps_raw)
 
                 dcf_upside = compute_upside(dcf_price, current_price)
                 pe_upside = compute_upside(pe_val, current_price)
                 ps_upside = compute_upside(ps_val, current_price)
 
-                # ---------- Valuation Results ----------
                 st.markdown(
                     """
                     <div class="section-card">
@@ -1543,7 +1580,6 @@ def render_valuation_page():
                     unsafe_allow_html=True,
                 )
 
-                # DCF
                 st.markdown(
                     "<div class='valuation-metric-label'>DCF Valuation (5-year, terminal at year 5)</div>",
                     unsafe_allow_html=True,
@@ -1563,7 +1599,6 @@ def render_valuation_page():
 
                 st.markdown("<hr style='border-top: 1px solid #e1e4e8;'>", unsafe_allow_html=True)
 
-                # P/E
                 st.markdown(
                     "<div class='valuation-metric-label'>P/E-Based Valuation</div>",
                     unsafe_allow_html=True,
@@ -1583,7 +1618,6 @@ def render_valuation_page():
 
                 st.markdown("<hr style='border-top: 1px solid #e1e4e8;'>", unsafe_allow_html=True)
 
-                # P/S-ish valuation
                 st.markdown(
                     "<div class='valuation-metric-label'>P/S-Based Valuation (scaled vs current P/S)</div>",
                     unsafe_allow_html=True,
@@ -1604,7 +1638,6 @@ def render_valuation_page():
                 st.markdown("</div>", unsafe_allow_html=True)
                 st.write("")
 
-                # ---------- Sensitivity Analysis ----------
                 st.markdown(
                     """
                     <div class="section-card">
@@ -1626,7 +1659,6 @@ def render_valuation_page():
                         terminal_growth_pct=terminal_growth,
                         years=5,
                     )
-                    # Format as currency for display
                     sens_display = sens_df.applymap(format_currency)
                     st.dataframe(sens_display, use_container_width=True)
                     st.caption(
@@ -1644,11 +1676,8 @@ def render_valuation_page():
     else:
         st.info("Load a company first, then run valuation.")
 
-
-
-# ---------- RESEARCH PAGE (PERSISTENT NOTES) ----------
+# ---------- RESEARCH PAGE ----------
 def render_research_page():
-    # inject_global_css() # Removed, now global in main()
     st.markdown(
         """
         <div class="hero-card">
@@ -1705,10 +1734,8 @@ def render_research_page():
         
     st.markdown("</div>", unsafe_allow_html=True)
 
-
-# ---------- THESES PAGE (PERSISTENT THESES) ----------
+# ---------- THESES PAGE ----------
 def render_theses_page():
-    # inject_global_css() # Removed, now global in main()
     st.markdown(
         """
         <div class="hero-card">
@@ -1719,7 +1746,6 @@ def render_theses_page():
         unsafe_allow_html=True
     )
     st.write("")
-
 
     st.markdown(
         """
@@ -1776,7 +1802,6 @@ def render_theses_page():
         st.dataframe(df_theses, use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
-
 # ======================================================================
 # MAIN APP
 # ======================================================================
@@ -1802,7 +1827,6 @@ def main():
 
     inject_global_css()
 
-    # --- TOP NAV BAR ---
     st.markdown(
         """
         <div class="top-nav-bar">
@@ -1831,7 +1855,6 @@ def main():
 
     st.markdown("</div></div>", unsafe_allow_html=True)
 
-    # --- MAIN CONTENT WRAPPER ---
     st.markdown(
         "<div class='main-content' style='max-width:1100px;margin:0 auto;'>",
         unsafe_allow_html=True,
@@ -1848,130 +1871,6 @@ def main():
         """,
         unsafe_allow_html=True,
     )
-    # ---------- DASHBOARD ----------
-def render_dashboard():
-    st.markdown(
-        """
-        <div class="hero-card">
-            <div class="hero-title">Equity Research Platform</div>
-            <div class="hero-subtitle">
-                Analyze companies, build valuations, and create investment theses.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.write("")
-    
-    # --- Ticker input + Analyze button ---
-    col_search, col_btn = st.columns([4, 1])
-
-    with col_search:
-        ticker = st.text_input(
-            "Search ticker symbol (e.g., AAPL, MSFT).",
-            key="ticker_input",
-            label_visibility="collapsed",
-            placeholder="ENTER TICKER SYMBOL TO ANALYZE (E.G., AAPL)",
-        ).upper()
-
-    with col_btn:
-        st.write("")
-        analyze_clicked = st.button("Analyze", use_container_width=True)
-
-    max_peers = 6  # default peers
-
-    if analyze_clicked and ticker:
-        with st.spinner(f"Analyzing {ticker.upper()}..."):
-            try:
-                results = run_equity_analysis(ticker, max_peers=max_peers)
-                st.session_state.last_results = results
-                st.session_state.recent_tickers.insert(
-                    0,
-                    {"ticker": results["ticker"], "time": datetime.now().strftime("%Y-%m-%d %H:%M")},
-                )
-                st.session_state.recent_tickers = st.session_state.recent_tickers[:12]
-                st.success(f"Analysis updated for {results['ticker']}")
-                # make valuation tab default to this ticker
-                st.session_state.valuation_ticker_input = results["ticker"]
-            except Exception as e:
-                st.session_state.last_results = None
-                logging.error(f"Error during analysis for {ticker}: {e}", exc_info=True)
-                st.error(
-                    f"Analysis failed for {ticker.upper()}. "
-                    f"The ticker might be invalid, delisted, or have no data. Error: {e}"
-                )
-
-    st.write("")
-    
-    # --- KPI cards ---
-    companies_tracked = len({x["ticker"] for x in st.session_state.recent_tickers}) or 0
-    active_theses = len(st.session_state.theses_store)
-    research_docs = len(st.session_state.notes_store)
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.markdown(
-            f"""
-            <div class="kpi-card-new">
-                <div class="kpi-label-new">Companies Tracked</div>
-                <div class="kpi-value-new">{companies_tracked}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    with col2:
-        st.markdown(
-            f"""
-            <div class="kpi-card-new">
-                <div class="kpi-label-new">Active Theses</div>
-                <div class="kpi-value-new">{active_theses}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    with col3:
-        st.markdown(
-            f"""
-            <div class="kpi-card-new">
-                <div class="kpi-label-new">Research Documents</div>
-                <div class="kpi-value-new">{research_docs}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        
-    st.write("")
-    st.markdown(
-        """
-        <div class="section-card">
-            <div class="section-title">Quick Actions</div>
-            <div class="section-subtitle">Common workflows</div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    qa_col1, qa_col2, qa_col3 = st.columns(3)
-
-    # 🔁 Use top_nav_page to switch tabs from here
-    with qa_col1:
-        if st.button("Start New Analysis", use_container_width=True):
-            st.session_state.top_nav_page = "Analysis"
-            st.rerun()
-    with qa_col2:
-        if st.button("Draft Thesis", use_container_width=True):
-            st.session_state.top_nav_page = "Theses"
-            st.rerun()
-    with qa_col3:
-        if st.button("Open Research Notes", use_container_width=True):
-            st.session_state.top_nav_page = "Research"
-            st.rerun()
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
 
     page = st.session_state.top_nav_page
     if page == "Dashboard":
@@ -1987,8 +1886,5 @@ def render_dashboard():
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-
-
 if __name__ == "__main__":
     main()
-

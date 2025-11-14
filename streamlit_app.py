@@ -1071,48 +1071,65 @@ def inject_global_css():
              color: #213547 !important;
         }
 
-        /* --- TOP NAVIGATION TABS (kept light on dark bar) --- */
+        /* --- TOP NAVIGATION BUTTONS (GHOST STYLE LIKE SCREENSHOT) --- */
         div.top-nav-container div[data-testid="stRadio"] { 
-            background: #0d1117; /* Black background */
-            padding: 0;  
+            background: #0d1117; /* Dark bar behind buttons */
+            padding: 12px 0;
             position: relative;
-            width: 100vw; /* 100% of viewport width */
+            width: 100vw;
             left: 50%;
             right: 50%;
             margin-left: -50vw;
             margin-right: -50vw;
         }
+
+        /* Center content and align buttons to the LEFT (like screenshot) */
         div.top-nav-container div[data-testid="stRadio"] > div {
-             gap: 8px;
-             max-width: 1100px;
-             margin: 0 auto;
-             justify-content: flex-end;
+            gap: 12px;
+            max-width: 1100px;
+            margin: 0 auto;
+            justify-content: flex-start;  /* left-align buttons */
         }
+
+        /* Each nav option becomes a ghost button */
         div.top-nav-container div[data-testid="stRadio"] label {
-            padding: 12px 16px;
+            padding: 10px 26px;
             margin: 0;
             border-radius: 0;
             background: transparent;
-            color: #8b949e; /* Inactive tab color */
-            border-bottom: 3px solid transparent;
+            color: #ffffff;
+            border: 1px solid rgba(255,255,255,0.85);
+            box-shadow: none;
+            transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
         }
+
+        /* Hide the little radio-circle */
         div.top-nav-container div[data-testid="stRadio"] label > div:first-child {
             display: none;
         }
+
+        /* Text styling: uppercase, spaced out like in the image */
         div.top-nav-container div[data-testid="stRadio"] label span {
-             font-size: 14px;
-             font-weight: 500;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
         }
+
+        /* Hover state: slightly brighter background */
         div.top-nav-container div[data-testid="stRadio"] label:hover {
-            background: rgba(139, 148, 158, 0.1);
-            color: #f0f6fc; /* White text on hover */
+            background: rgba(255,255,255,0.08);
+            border-color: #ffffff;
         }
+
+        /* Active page button: stronger border + subtle fill */
         div.top-nav-container div[data-testid="stRadio"] label[data-checked="true"] {
-            background: transparent;
-            color: #f0f6fc; /* Active tab color (white) */
-            border-bottom: 3px solid #3b82f6;
+            background: rgba(255,255,255,0.13);
+            color: #ffffff;
+            border-color: #ffffff;
         }
-        /* --- End Top Nav --- */
+
+                /* --- End Top Nav --- */
 
         /* --- FACTOR BAR CHART STYLES --- */
         .factor-bar-container { margin-bottom: 12px; }

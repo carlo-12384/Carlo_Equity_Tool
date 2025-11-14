@@ -1042,8 +1042,8 @@ def inject_global_css():
         
         /* --- MAIN APP STYLING --- */
         .stApp {
-            /* Professional Dark Theme */
-            background: #0d1117;
+            /* --- MODIFICATION: Blueish-Gray Background --- */
+            background: #1f2a38; 
             color: #c9d1d9; /* Lighter grey text */
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
         }
@@ -1052,7 +1052,9 @@ def inject_global_css():
 
         /* --- NEW TOP NAVIGATION TABS --- */
         div[data-testid="stRadio"] {
-            border-bottom: 1px solid #30363d; /* Separator line */
+            /* --- MODIFICATION: White Background Nav --- */
+            background: #ffffff;
+            border-bottom: 1px solid #dfe6ed; /* Light border */
             padding-bottom: 0px;
             margin: -2rem -2rem 1.5rem -2rem; /* Full-bleed hack */
             padding-left: 2rem;
@@ -1069,7 +1071,7 @@ def inject_global_css():
             margin: 0;
             border-radius: 0;
             background: transparent;
-            color: #8b949e; /* Inactive tab color (grey) */
+            color: #555555; /* Dark grey text */
             border-bottom: 3px solid transparent;
             transition: all 0.2s ease;
             cursor: pointer;
@@ -1087,19 +1089,19 @@ def inject_global_css():
 
         /* Hover style for inactive tabs */
         div[data-testid="stRadio"] label:hover {
-            background: rgba(139, 148, 158, 0.1);
-            color: #c9d1d9; /* Lighter grey on hover */
+            background: #f4f4f4; /* Light gray hover */
+            color: #111111;
         }
 
         /* Selected tab style */
         div[data-testid="stRadio"] label[data-checked="true"] {
             background: transparent;
-            color: #f0f6fc; /* Active tab color (white) */
+            color: #3b82f6; /* Blue text */
             border-bottom: 3px solid #3b82f6; /* Blue accent line */
         }
         /* --- End Top Nav --- */
 
-
+        /* --- CARD STYLING (Same as before) --- */
         .hero-card {
             border-radius: 12px; /* Sharper corners */
             padding: 28px 28px 24px 28px;
@@ -1163,7 +1165,6 @@ def inject_global_css():
             font-weight: 600;
             color: #f0f6fc;
         }
-
 
         .section-card {
             padding: 18px 20px;
@@ -1357,22 +1358,9 @@ def render_dashboard():
         unsafe_allow_html=True,
     )
 
-    st.write("")
-    st.markdown(
-        """
-        <div class="section-card">
-            <div class="section-title">Recently Analyzed</div>
-            <div class="section-subtitle">Quick jump to your latest tickers.</div>
-        """,
-        unsafe_allow_html=True,
-    )
-    if st.session_state.recent_tickers:
-        for item in st.session_state.recent_tickers:
-            st.markdown(f"- **{item['ticker']}** · _{item['time']}_")
-    else:
-        st.markdown("_No companies analyzed yet. Run your first analysis above._")
-    st.markdown("</div>", unsafe_allow_html=True)
-    # --- END OF MODIFICATION ---
+    # --- MODIFICATION: "Recently Analyzed" section removed ---
+    # st.write("")
+    # st.markdown( ... ) -> This block was removed
 
 
 # ---------- ANALYSIS PAGE ----------

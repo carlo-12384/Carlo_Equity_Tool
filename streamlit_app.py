@@ -45,7 +45,7 @@ def _first_row(df: pd.DataFrame, aliases) -> pd.Series:
 
 def yf_quarterly(symbol: str):
     t = yf.Ticker(symbol)
-    return t.quarterl_income_stmt, t.quarterly_balance_sheet, t.quarterly_cashflow
+    return t.quarterly_income_stmt, t.quarterly_balance_sheet, t.quarterly_cashflow
 
 def ttm_from_rows(df: pd.DataFrame, aliases) -> float:
     try:
@@ -1030,23 +1030,22 @@ def inject_global_css():
         
         /* --- GLOBAL TITLE --- */
         h1 {
-            /* --- MODIFICATION: Removed !important, will be set by page --- */
-            color: #f0f6fc; /* Light text for dark pages */
+            color: #0d1117 !important; /* Default to black/navy */
         }
         
-        /* --- MAIN APP STYLING (DARK DEFAULT) --- */
+        /* --- MAIN APP STYLING (LIGHT THEME DEFAULT) --- */
         .stApp {
-            background: #1f2a38; 
-            color: #c9d1d9; /* Lighter grey text */
+            background: #ffffff; 
+            color: #213547; /* Dark Navy text */
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
         }
         header[data-testid="stHeader"] {background: transparent;}
         footer {visibility: hidden;}
 
-        /* --- NEW TOP NAVIGATION TABS --- */
+        /* --- TOP NAVIGATION TABS (LIGHT THEME) --- */
         div[data-testid="stRadio"] {
-            background: #1f2a38; /* Match app background */
-            border-bottom: 1px solid #30363d; /* Separator line */
+            background: #ffffff; /* White background */
+            border-bottom: 1px solid #e1e4e8; /* Light grey border */
             padding-bottom: 0px;
             margin: 1rem -2rem 1.5rem -2rem; /* Full-bleed hack */
             padding-left: 2rem;
@@ -1063,7 +1062,7 @@ def inject_global_css():
             margin: 0;
             border-radius: 0;
             background: transparent;
-            color: #8b949e; /* Inactive tab color (grey) */
+            color: #4a5568; /* Inactive tab color (medium grey) */
             border-bottom: 3px solid transparent;
             transition: all 0.2s ease;
             cursor: pointer;
@@ -1081,49 +1080,41 @@ def inject_global_css():
 
         /* Hover style for inactive tabs */
         div[data-testid="stRadio"] label:hover {
-            background: rgba(139, 148, 158, 0.1); /* Faint grey hover */
-            color: #c9d1d9; /* Lighter grey on hover */
+            background: #f0f0f0; /* Faint grey hover */
+            color: #0d1117; /* Darker grey on hover */
         }
 
         /* Selected tab style */
         div[data-testid="stRadio"] label[data-checked="true"] {
             background: transparent;
-            color: #f0f6fc; /* Active tab color (white) */
+            color: #3b82f6; /* Active tab color (blue) */
             border-bottom: 3px solid #3b82f6; /* Blue accent line */
         }
         /* --- End Top Nav --- */
 
-        /* --- NEW: Factor Bar Chart Styles --- */
+        /* --- FACTOR BAR CHART STYLES (LIGHT THEME) --- */
         .factor-bar-container {
             margin-bottom: 12px;
         }
         .factor-bar-label {
             font-size: 14px;
-            color: #c9d1d9;
+            color: #213547; /* Navy text */
             margin-bottom: 6px;
         }
         .factor-bar-score {
             float: right;
             font-weight: 500;
-            color: #f0f6fc;
+            color: #0d1117; /* Black/navy text */
         }
         .factor-bar-bg {
             width: 100%;
             height: 10px;
-            background-color: #30363d; /* Dark bar background */
+            background-color: #e1e4e8; /* Light grey bar background */
             border-radius: 5px;
             overflow: hidden;
             position: relative; /* Added for centering line */
         }
-        .factor-bar-fill {
-            height: 100%;
-            background-color: #f0f6fc; /* White/light-grey fill */
-            border-radius: 5px;
-            transition: width 0.5s ease-in-out;
-            position: absolute; /* Added */
-            left: 50%; /* Start fill from center */
-        }
-        /* New: Center line for z-score */
+        /* Center line for z-score */
         .factor-bar-bg::before {
             content: '';
             position: absolute;
@@ -1131,7 +1122,7 @@ def inject_global_css():
             top: 0;
             bottom: 0;
             width: 2px;
-            background-color: #1f2a38; /* Background color */
+            background-color: #ffffff; /* White background */
             z-index: 1; /* Above bg, below fill */
         }
         .factor-bar-fill-positive {
@@ -1154,9 +1145,9 @@ def inject_global_css():
         .methodology-card {
             padding: 18px 20px;
             border-radius: 12px;
-            background: #161b22;
-            border: 1px solid #30363d;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            background: #f9f9f9; /* Light card */
+            border: 1px solid #e1e4e8; /* Light border */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05); /* Light shadow */
             height: 100%;
         }
         .methodology-card h4 {
@@ -1164,107 +1155,66 @@ def inject_global_css():
             font-weight: 600;
             margin-top: 0;
             margin-bottom: 12px;
-            color: #f0f6fc;
+            color: #0d1117; /* Dark title */
         }
         .methodology-card p {
             font-size: 13px;
-            color: #8b949e;
+            color: #4a5568; /* Medium text */
             margin-bottom: 4px;
         }
         .methodology-card strong {
-            color: #c9d1d9;
+            color: #213547; /* Navy text */
             font-weight: 600;
         }
         /* --- End Factor Bar --- */
 
-        /* --- CARD STYLING (DARK MODE) --- */
-        .hero-card {
+        /* --- CARD STYLING (LIGHT MODE) --- */
+        .hero-card, .section-card, .kpi-card-new {
             border-radius: 12px; /* Sharper corners */
             padding: 28px 28px 24px 28px;
-            background: #161b22; /* Darker card */
-            border: 1px solid #30363d; /* Subtler border */
-            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            background: #f9f9f9; /* Off-white card */
+            border: 1px solid #e1e4e8; /* Light grey border */
+            box-shadow: 0 8px 24px rgba(0,0,0,0.05); /* Lighter shadow */
+            color: #213547; /* Navy text */
         }
-        .hero-title {
-            font-size: 30px; /* Slightly smaller title */
+        .kpi-card-new {
+             padding: 18px 20px;
+             margin-bottom: 16px;
+        }
+        .section-card {
+            padding: 18px 20px;
+            height: 100%;
+        }
+        
+        .hero-title, .section-title, .kpi-value-new {
+            font-size: 30px; 
             font-weight: 600;
             letter-spacing: 0.01em;
             margin-bottom: 4px;
-            color: #f0f6fc; /* Near white for title */
-        }
-        .hero-subtitle {
-            font-size: 14px;
-            color: #8b949e; /* Medium grey text */
-            margin-bottom: 20px;
-        }
-
-        .kpi-card {
-            padding: 18px 18px 16px 18px;
-            border-radius: 12px;
-            background: #161b22;
-            border: 1px solid #30363d;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            min-height: 90px;
-        }
-        .kpi-label {
-            font-size: 13px;
-            color: #8b949e;
-            margin-bottom: 4px;
-        }
-        .kpi-value {
-            font-size: 26px;
-            font-weight: 600;
-            color: #f0f6fc;
-        }
-        .kpi-trend {
-            font-size: 11px;
-            color: #8b949e; /* Made trend neutral grey, was green */
-            margin-top: 2px;
-        }
-        
-        /* New KPI Card style for Dashboard (Dark) */
-        .kpi-card-new {
-            padding: 18px 20px;
-            border-radius: 12px;
-            background: #161b22;
-            border: 1px solid #30363d;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            margin-bottom: 16px; /* Stack them */
-        }
-        .kpi-label-new {
-            font-size: 14px;
-            color: #8b949e;
-            margin-bottom: 4px;
-        }
-        .kpi-value-new {
-            font-size: 28px;
-            font-weight: 600;
-            color: #f0f6fc;
-        }
-
-        .section-card {
-            padding: 18px 20px;
-            border-radius: 12px;
-            background: #161b22;
-            border: 1px solid #30363d;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            height: 100%; /* Make card fill column height */
+            color: #0d1117; /* Black/darkest navy title */
         }
         .section-title {
             font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #f0f6fc;
         }
-        .section-subtitle {
-            font-size: 12px;
-            color: #8b949e;
-            margin-bottom: 12px;
+        .kpi-value-new {
+             font-size: 28px;
         }
         
+        .hero-subtitle, .section-subtitle, .kpi-label-new {
+            font-size: 14px;
+            color: #4a5568; /* Medium grey/navy text */
+            margin-bottom: 20px;
+        }
+        .section-subtitle {
+             margin-bottom: 12px;
+        }
+        .kpi-label-new {
+            margin-bottom: 4px;
+        }
+
         /* Metric colors (Green/Red is standard for finance) */
-        .positive-metric { color: #3fb950; } /* GitHub green */
-        .negative-metric { color: #f85149; } /* GitHub red */
+        .positive-metric { color: #228B22; } /* Darker Green for light bg */
+        .negative-metric { color: #D90429; } /* Darker Red for light bg */
 
         /* Button Styling - Blue Accent */
         .stButton > button {
@@ -1281,34 +1231,48 @@ def inject_global_css():
             color: #ffffff;
         }
         
-        /* Input boxes */
-        .stTextInput, .stTextArea, .stSelectbox {
-             border-radius: 8px;
+        /* Input boxes (Light Theme) */
+        .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
+             border-radius: 8px !important;
+             background: #ffffff !important;
+             border: 1px solid #d1d5db !important;
+             color: #0d1117 !important;
+        }
+        /* Placeholder text for light mode */
+        .stTextInput input::placeholder {
+            color: #6b7280;
+        }
+        /* Command bar input on light */
+        .stTextInput input[type="text"] {
+            border-radius: 999px !important;
+            padding-left: 14px;
+            font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            text-transform: uppercase;
         }
         
-        /* Dataframe styling */
+        /* Dataframe styling (Light Theme) */
         .stDataFrame {
             border-radius: 8px;
             overflow: hidden;
-            border: 1px solid #30363d;
+            border: 1px solid #e1e4e8;
         }
 
-        /* Custom styles for Valuation Page */
+        /* Custom styles for Valuation Page (Light Theme) */
         .valuation-metric-label {
             font-size: 16px;
-            color: #8b949e;
+            color: #4a5568;
             margin-bottom: 5px;
             font-weight: 400;
         }
         .valuation-metric-value {
             font-size: 38px; /* Larger for implied price */
             font-weight: 600;
-            color: #f0f6fc;
+            color: #0d1117;
             line-height: 1.2;
         }
         .valuation-current-price {
             font-size: 14px;
-            color: #8b949e;
+            color: #4a5568;
             margin-top: 10px;
         }
         .valuation-upside {
@@ -1316,30 +1280,30 @@ def inject_global_css():
             font-weight: 500;
         }
         .valuation-upside.positive {
-            color: #3fb950;
+            color: #228B22; /* Darker Green */
         }
         .valuation-upside.negative {
-            color: #f85149;
+            color: #D90429; /* Darker Red */
         }
         .scenario-button-group .stRadio > label {
-            border: 1px solid #30363d;
-            background: #161b22;
+            border: 1px solid #d1d5db;
+            background: #ffffff;
             border-radius: 8px;
             padding: 8px 12px;
             margin-right: 5px;
         }
         .scenario-button-group .stRadio > label:hover {
-            background: #21262d;
+            background: #f9f9f9;
         }
         .scenario-button-group .stRadio > label[data-baseweb="radio"] > div:first-child {
             display: none;
         }
         .scenario-button-group .stRadio > label span {
-            color: #c9d1d9;
+            color: #213547;
         }
         .scenario-button-group .stRadio > label[data-checked="true"] {
             border-color: #d4af37;
-            background: #2c271e; /* Darker gold-ish background for selected */
+            background: #fefce8; /* Light yellow */
         }
         
         /* Make sure number input arrows are styled */
@@ -1348,16 +1312,6 @@ def inject_global_css():
             flex-direction: column;
             justify-content: center;
         }
-        /* Command-bar style ticker input */
-        .stTextInput input {
-            border-radius: 999px !important;
-            background: #0d1117;
-            border: 1px solid #30363d;
-            padding-left: 14px;
-            font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-            text-transform: uppercase;
-        }
-
 
         </style>
         """,
@@ -1371,65 +1325,8 @@ def inject_global_css():
 
 # ---------- DASHBOARD ----------
 def render_dashboard():
-    # --- NEW: Inject Dashboard-specific white theme ---
-    st.markdown(
-        """
-        <style>
-        /* --- Dashboard Light Mode Override --- */
-        .stApp {
-            background: #ffffff;
-            color: #0d1117;
-        }
-        /* Override card styles for light mode */
-        .hero-card, .kpi-card-new, .section-card {
-            background: #f9f9f9; /* Off-white card */
-            border: 1px solid #e1e4e8; /* Light grey border */
-            color: #0d1117;
-        }
-        /* Override card titles and text */
-        .hero-title, .kpi-value-new, .section-title {
-            color: #0d1117; /* Dark text */
-        }
-        /* --- MODIFICATION: Make h1 black on this page --- */
-        h1 {
-            color: #0d1117 !important; /* Dark text */
-        }
-        .hero-subtitle, .kpi-label-new, .section-subtitle {
-            color: #4a5568; /* Medium-dark grey text */
-        }
-        /* Override nav for light bg */
-        div[data-testid="stRadio"] {
-            background: #ffffff; /* Explicitly white */
-            border-bottom: 1px solid #e1e4e8; /* Light border */
-        }
-        /* --- MODIFICATION: Make inactive nav text black --- */
-        div[data-testid="stRadio"] label {
-            color: #0d1117; /* Inactive tabs dark text */
-        }
-        div[data-testid="stRadio"] label:hover {
-            color: #0d1117; /* Inactive tabs hover dark */
-            background: #f0f0f0;
-        }
-        div[data-testid="stRadio"] label[data-checked="true"] {
-            color: #3b82f6; /* Active tab blue */
-            border-bottom: 3px solid #3b82f6;
-            background: transparent;
-        }
-        /* Override ticker input for light mode */
-        .stTextInput input {
-            background: #ffffff;
-            border: 1px solid #d1d5db;
-            color: #0d1117;
-        }
-        /* Override placeholder text for light mode */
-        .stTextInput input::placeholder {
-            color: #6b7280;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
-    # --- END THEME OVERRIDE ---
+    # --- MODIFICATION: Removed the light-theme override CSS block ---
+    # It is no longer needed as this is now the default.
 
     st.markdown(
         """
@@ -1620,10 +1517,10 @@ def render_analysis_page():
             st.markdown(
                 """
                 <div class="section-card">
-                    <div style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem; color: #f0f6fc;">
+                    <div style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem; color: #0d1117;">
                         Factor Score Breakdown
                     </div>
-                    <div style="font-size: 14px; color: #8b949e; margin-top: -1rem; margin-bottom: 1.5rem;">
+                    <div style="font-size: 14px; color: #4a5568; margin-top: -1rem; margin-bottom: 1.5rem;">
                         Individual factor analysis across key dimensions (z-score)
                     </div>
                 """,
@@ -2061,7 +1958,7 @@ def render_valuation_page():
                 else:
                     st.markdown("<div class='valuation-metric-value'>N/A</div>", unsafe_allow_html=True)
 
-                st.markdown("<hr style='border-top: 1px solid #30363d;'>", unsafe_allow_html=True)
+                st.markdown("<hr style='border-top: 1px solid #e1e4e8;'>", unsafe_allow_html=True)
 
                 # P/E
                 st.markdown(
@@ -2081,7 +1978,7 @@ def render_valuation_page():
                 else:
                     st.markdown("<div class='valuation-metric-value'>N/A</div>", unsafe_allow_html=True)
 
-                st.markdown("<hr style='border-top: 1px solid #30363d;'>", unsafe_allow_html=True)
+                st.markdown("<hr style='border-top: 1px solid #e1e4e8;'>", unsafe_allow_html=True)
 
                 # P/S-ish valuation
                 st.markdown(
@@ -2267,7 +2164,7 @@ def render_theses_page():
     if st.session_state.theses_store:
         st.markdown(
             """
-            <div classs="section-card">
+            <div class.section-card">
                 <div class="section-title">Saved Theses</div>
             """,
             unsafe_allow_html=True
@@ -2300,9 +2197,10 @@ def main():
 
     # --- NEW: Global Title (with font and default color) ---
     st.markdown(
-        """
+        f"""
         <h1 style='text-align: center; margin-bottom: 0; padding-top: 1rem; 
                    font-weight: 400; font-family: "DM Serif Display", serif;
+                   font-size: 2.75rem; /* --- MODIFICATION: Made title bigger --- */
                    color: #0d1117;'> 
             Equity Research Platform
         </h1>
@@ -2326,7 +2224,7 @@ def main():
     )
     
     # Inject CSS *after* the radio button to ensure it can be styled
-    # This function now contains the default DARK theme
+    # This function now contains the default LIGHT theme
     inject_global_css()
 
     # --- Center content + workspace badge ---

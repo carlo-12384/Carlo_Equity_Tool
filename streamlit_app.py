@@ -8,7 +8,7 @@ from functools import lru_cache
 from typing import List, Dict, Any
 from datetime import datetime
 import streamlit as st
-from scipy.stats import norm # Added for percentile conversion
+# from scipy.stats import norm # REMOVED: This caused the ModuleNotFoundError
 
 # -------------------- CONFIG / LOGGING --------------------
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
@@ -572,13 +572,8 @@ def build_waterfall_dict(row: pd.Series):
             parts[k] = BUCKET_WEIGHTS[k] * v
     return parts
 
-# --- NEW HELPER ---
-def _z_to_percentile(z_score: float) -> float:
-    """Converts a z-score to a percentile (0-100)."""
-    if z_score is None or not np.isfinite(z_score):
-        return np.nan
-    # norm.cdf returns a value from 0.0 to 1.0
-    return norm.cdf(z_score) * 100.0
+# --- REMOVED HELPER ---
+# def _z_to_percentile(z_score: float) -> float: ...
 
 # -------------------- ORCHESTRATOR (CORE ANALYSIS) --------------------
 def analyze_ticker_pro(ticker: str, peer_cap: int = 6):
@@ -624,12 +619,9 @@ def analyze_ticker_pro(ticker: str, peer_cap: int = 6):
         if m.any():
             focus_row = scored.loc[m].iloc[0]
 
-    # --- MODIFICATION: Create percentile scores for the bar chart ---
-    factor_percentiles = {}
-    if focus_row is not None:
-        for factor in FACTOR_BUCKETS.keys():
-            z_score = focus_row.get(factor)
-            factor_percentiles[factor] = _z_to_percentile(z_score)
+    # --- MODIFICATION: Removed percentile calculation ---
+    # factor_percentiles = {}
+    # ...
     # --- END MODIFICATION ---
 
     parts = build_waterfall_dict(focus_row) if focus_row is not None else {}
@@ -648,8 +640,8 @@ def analyze_ticker_pro(ticker: str, peer_cap: int = 6):
         scored,
         text_synopsis_md,
         metrics_summary_md,
-        factor_percentiles, # Replaced kpi_ratings_md
-        focus_row,          # Replaced waterfall_md
+        # factor_percentiles, # REMOVED
+        focus_row,          # Return the whole row (contains z-scores)
         news_md,
     )
 
@@ -953,7 +945,6 @@ def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
             scored,
             text_synopsis_md,
             metrics_summary_md,
-            factor_percentiles, # Changed
             focus_row,          # Changed
             news_md,
         ) = analyze_ticker_pro(ticker, peer_cap=max_peers)
@@ -1009,8 +1000,8 @@ def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
     return {
         "ticker": ticker,
         "overview_md": overview_md, # Added
-        "factor_percentiles": factor_percentiles, # Changed
-        "focus_row": focus_row,                 # Changed
+        # "factor_percentiles": factor_percentiles, # REMOVED
+        "focus_row": focus_row,                 # Kept
         "peers_df": scored,
         "valuation": valuation,
         "news_md": news_md,
@@ -1113,13 +1104,44 @@ def inject_global_css():
             background-color: #30363d; /* Dark bar background */
             border-radius: 5px;
             overflow: hidden;
+            position: relative; /* Added for centering line */
         }
         .factor-bar-fill {
             height: 100%;
             background-color: #f0f6fc; /* White/light-grey fill */
             border-radius: 5px;
             transition: width 0.5s ease-in-out;
+            position: absolute; /* Added */
+            left: 50%; /* Start fill from center */
         }
+        /* New: Center line for z-score */
+        .factor-bar-bg::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #1f2a38; /* Background color */
+            z-index: 1; /* Above bg, below fill */
+        }
+        .factor-bar-fill-positive {
+            height: 100%;
+            background-color: #3fb950; /* Green for positive */
+            border-radius: 0 5px 5px 0;
+            transition: width 0.5s ease-in-out;
+            position: absolute;
+            left: 50%;
+        }
+        .factor-bar-fill-negative {
+            height: 100%;
+            background-color: #f85149; /* Red for negative */
+            border-radius: 5px 0 0 5px;
+            transition: width 0.5s ease-in-out;
+            position: absolute;
+            right: 50%; /* Anchor to the right of center */
+        }
+
         .methodology-card {
             padding: 18px 20px;
             border-radius: 12px;
@@ -1446,12 +1468,15 @@ def render_dashboard():
     with qa_col1:
         if st.button("Start New Analysis", use_container_width=True):
             st.session_state.top_nav_radio = "📈  Analysis"
+            st.experimental_rerun() # Rerun to switch page
     with qa_col2:
         if st.button("Draft Thesis", use_container_width=True):
             st.session_state.top_nav_radio = "📝  Theses"
+            st.experimental_rerun() # Rerun to switch page
     with qa_col3:
         if st.button("Open Research Notes", use_container_width=True):
             st.session_state.top_nav_radio = "📚  Research"
+            st.experimental_rerun() # Rerun to switch page
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -1480,7 +1505,7 @@ def render_analysis_page():
         "Enter stock ticker (e.g., AAPL):",
         key="analysis_ticker",
         value=st.session_state.get("ticker_input", ""),
-    )
+    ).upper()
     max_peers = st.slider("Max peers to compare", 2, 15, 6, key="max_peers_analysis")
 
     if st.button("Run Analysis", key="run_analysis_btn"):
@@ -1515,7 +1540,7 @@ def render_analysis_page():
         with col1:
             st.markdown(
                 """
-                <div class.="section-card">
+                <div class="section-card">
                 """,
                 unsafe_allow_html=True
             )
@@ -1524,26 +1549,34 @@ def render_analysis_page():
             st.markdown("</div>", unsafe_allow_html=True)
         
         with col2:
-            # --- MODIFICATION: Render new Factor Score Breakdown ---
+            # --- MODIFICATION: Render new Factor Score Breakdown (Z-Score) ---
             st.markdown(
                 """
-                <div class.="section-card">
+                <div class="section-card">
                     <div style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem; color: #f0f6fc;">
                         Factor Score Breakdown
                     </div>
                     <div style="font-size: 14px; color: #8b949e; margin-top: -1rem; margin-bottom: 1.5rem;">
-                        Individual factor analysis across key dimensions (0-100 percentile rank)
+                        Individual factor analysis across key dimensions (z-score)
                     </div>
                 """,
                 unsafe_allow_html=True
             )
             
-            factor_percentiles = res.get("factor_percentiles", {})
-            if factor_percentiles:
-                for factor, score in factor_percentiles.items():
-                    score_val = score if np.isfinite(score) else 0
-                    score_display = f"{score:.1f}" if np.isfinite(score) else "N/A"
+            focus_row = res.get("focus_row")
+            if focus_row is not None:
+                for factor in FACTOR_BUCKETS.keys():
+                    z_score = focus_row.get(factor)
+                    score_display = f"{z_score:+.2f}" if np.isfinite(z_score) else "N/A"
                     
+                    # Map z-score (-3 to +3) to a 0-100% range for the bar
+                    # A z-score of 0 is 50%. A z-score of 3 is 100%. A z-score of -3 is 0%.
+                    bar_width_pct = max(0, min(100, (z_score + 3) / 6 * 100)) if np.isfinite(z_score) else 0
+                    
+                    fill_class = "factor-bar-fill-positive" if z_score and z_score > 0 else "factor-bar-fill-negative"
+                    width_val = (abs(z_score) / 3) * 50 # Scale to 50% max (3 std devs)
+                    width_val = max(0, min(50, width_val))
+
                     st.markdown(
                         f"""
                         <div class="factor-bar-container">
@@ -1551,8 +1584,8 @@ def render_analysis_page():
                                 {factor}
                                 <span class="factor-bar-score">{score_display}</span>
                             </div>
-                            <div class="factor-bar-bg">
-                                <div class="factor-bar-fill" style="width: {score_val}%;"></div>
+                            <div class.="factor-bar-bg">
+                                <div class="{fill_class}" style="width: {width_val}%;"></div>
                             </div>
                         </div>
                         """,
@@ -1571,8 +1604,8 @@ def render_analysis_page():
             <div class="methodology-card">
                 <h4>Factor Calculation Methodology</h4>
                 <p>
-                    Each factor score is an industry-neutral percentile rank (0-100) based on a blend of underlying metrics. 
-                    A score of 50 is average relative to peers.
+                    Each factor score is an industry-neutral <strong>z-score</strong> based on a blend of underlying metrics. 
+                    A score of 0 is average, +1 is one standard deviation above average, and -1 is one standard deviation below.
                 </p>
                 <p><strong>Valuation:</strong>
                     Blend of P/E Ratio, P/B Ratio, EV/EBITDA, and Price/Sales. 
@@ -1767,7 +1800,7 @@ def render_valuation_page():
             value=default_ticker,
             key="valuation_ticker_input",
             placeholder="Enter ticker symbol (e.g., AAPL, MSFT)",
-        )
+        ).upper()
     with col_btn:
         load_clicked = st.button("Load Company", use_container_width=True)
 
@@ -1947,7 +1980,7 @@ def render_valuation_page():
                 st.markdown(
                     """
                     <div class="section-card">
-                        <div class="section-title">Valuation Results</div>
+                        <div class.="section-title">Valuation Results</div>
                     """,
                     unsafe_allow_html=True,
                 )
@@ -2016,7 +2049,7 @@ def render_valuation_page():
                 # ---------- Sensitivity Analysis ----------
                 st.markdown(
                     """
-                    <div class="section-card">
+                    <div class.="section-card">
                         <div class="section-title">DCF Sensitivity Analysis</div>
                         <div class="section-subtitle">
                             Price targets across different growth and discount rate assumptions
@@ -2062,7 +2095,7 @@ def render_research_page():
         """
         <div class="hero-card">
             <div class="hero-title">Research Library</div>
-            <div class="hero-subtitle">Create and manage private research notes for your tracked companies.</div>
+            <div class.="hero-subtitle">Create and manage private research notes for your tracked companies.</div>
         </div>
         """,
         unsafe_allow_html=True
@@ -2145,7 +2178,7 @@ def render_theses_page():
 
     col1, col2 = st.columns(2)
     with col1:
-        ticker = st.text_input("Ticker", value=current_from_recent, key="thesis_ticker")
+        ticker = st.text_input("Ticker", value=current_from_recent, key="thesis_ticker").upper()
         rating = st.selectbox("Rating", ["Buy", "Hold", "Sell"], key="thesis_rating")
         horizon = st.text_input("Time Horizon", value="12–18 months", key="thesis_horizon")
     with col2:
@@ -2176,7 +2209,7 @@ def render_theses_page():
     if st.session_state.theses_store:
         st.markdown(
             """
-            <div class="section-card">
+            <div class.="section-card">
                 <div class="section-title">Saved Theses</div>
             """,
             unsafe_allow_html=True

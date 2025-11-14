@@ -2294,8 +2294,8 @@ def main():
         """,
         unsafe_allow_html=True,
     )
-    /* ------------------------------
-   TOP NAV BAR (FULL-WIDTH BAR)
+            /* ------------------------------
+           TOP NAV BAR (FULL-WIDTH BAR)
         ------------------------------ */
         .top-nav-bar {
             background: #0d1117;        /* dark background bar */

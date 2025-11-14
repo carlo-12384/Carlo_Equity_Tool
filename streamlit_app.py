@@ -484,10 +484,10 @@ def get_metrics(symbol: str) -> dict:
 # -------------------- FACTOR PIPELINE --------------------
 FACTOR_BUCKETS = {
     "Valuation": ["P/E Ratio","P/B Ratio","EV/EBITDA","Price/Sales"],
-    "Quality":   ["ROE%","GrossMargin%","EBITDAMargin%","InterestCoverage"],
-    "Growth":    ["RevenueGrowth%","AssetGrowth%"],
-    "Momentum":  ["TTM-Return","Mom_VWAP_Diff%"],
-    "Leverage":  ["DebtToEquity"],
+    "Quality":     ["ROE%","GrossMargin%","EBITDAMargin%","InterestCoverage"],
+    "Growth":      ["RevenueGrowth%","AssetGrowth%"],
+    "Momentum":    ["TTM-Return","Mom_VWAP_Diff%"],
+    "Leverage":    ["DebtToEquity"],
     "Efficiency":["GrossProfitability","Accruals%"]
 }
 BUCKET_WEIGHTS = {"Valuation":0.25,"Quality":0.20,"Growth":0.20,"Momentum":0.20,"Leverage":0.10,"Efficiency":0.05}
@@ -645,7 +645,7 @@ def analyze_ticker_pro(ticker: str, peer_cap: int = 6):
         text_synopsis_md,
         metrics_summary_md,
         # factor_percentiles, # REMOVED
-        focus_row_dict,          # MODIFIED: Return dict
+        focus_row_dict,       # MODIFIED: Return dict
         news_md,
     )
 
@@ -682,7 +682,7 @@ def charts(scored: pd.DataFrame, focus: str):
                     20, 800
                 )
                 sc_ = ax2.scatter(dfx["EV/EBITDA"], dfx["RevenueGrowth%"], s=sizes,
-                                    c=dfx["CompositeScore"], alpha=0.0) # Changed alpha to 0 for invisible points
+                                  c=dfx["CompositeScore"], alpha=0.0) # Changed alpha to 0 for invisible points
                 ax2.set_title("EV/EBITDA vs Revenue Growth (size≈MktCap, color=Composite)")
                 ax2.set_xlabel("EV/EBITDA"); ax2.set_ylabel("Revenue Growth %")
                 if focus in set(dfx["Ticker"]):
@@ -811,7 +811,7 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
              ebit_ttm = ttm_from_rows(t_is, ["Ebit","EBIT","Operating Income"])
              dep_ttm = ttm_from_rows(yf.Ticker(ticker).quarterly_cashflow, ["Depreciation","Depreciation And Amortization"])
              if np.isfinite(ebit_ttm) and np.isfinite(dep_ttm):
-                 ebitda_ttm = ebit_ttm + dep_ttm
+                  ebitda_ttm = ebit_ttm + dep_ttm
 
         # 2. Get Scenario Params
         params = _build_scenario_params(metrics, scenario)
@@ -949,7 +949,7 @@ def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
             scored,
             text_synopsis_md,
             metrics_summary_md,
-            focus_row,          # Changed (now a dict or None)
+            focus_row,      # Changed (now a dict or None)
             news_md,
         ) = analyze_ticker_pro(ticker, peer_cap=max_peers)
     except Exception as e:
@@ -1005,7 +1005,7 @@ def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
         "ticker": ticker,
         "overview_md": overview_md, # Added
         # "factor_percentiles": factor_percentiles, # REMOVED
-        "focus_row": focus_row,                 # Kept (now a dict or None)
+        "focus_row": focus_row,             # Kept (now a dict or None)
         "peers_df": scored,
         "valuation": valuation,
         "news_md": news_md,
@@ -1016,12 +1016,6 @@ def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
     }
 
 
-# ======================================================================
-# GLOBAL STYLING (Blocks-style + nicer sidebar)
-# ======================================================================
-# ======================================================================
-# GLOBAL STYLING (Blocks-style + nicer sidebar)
-# ======================================================================
 # ======================================================================
 # GLOBAL STYLING (Blocks-style + nicer sidebar)
 # ======================================================================
@@ -1048,13 +1042,21 @@ def inject_global_css():
         header[data-testid="stHeader"] {background: transparent;}
         footer {visibility: hidden;}
 
+        /* --- NEW: Make all widget labels dark --- */
+        .st-emotion-cache-16txtl3, label, .stTextInput > label, .stSlider > label, .stSelectbox > label, .stNumberInput > label {
+            color: #213547 !important; /* Dark Navy text */
+            font-weight: 500;
+        }
+        /* Make captions dark */
+        .stCaption {
+             color: #213547 !important;
+        }
+
         /* --- TOP NAVIGATION TABS (LIGHT THEME) --- */
-        /* --- MODIFICATION: Full-width black bar --- */
-        div.top-nav-container div[data-testid="stRadio"] { /* TARGET ONLY TOP NAV */
+        /* --- MODIFICATION: Target *only* the top nav --- */
+        div.top-nav-container div[data-testid="stRadio"] { 
             background: #0d1117; /* Black background */
             padding: 0;  
-            
-            /* --- NEW: Full-width "bust-out" --- */
             position: relative;
             width: 100vw; /* 100% of viewport width */
             left: 50%;
@@ -1062,47 +1064,32 @@ def inject_global_css():
             margin-left: -50vw;
             margin-right: -50vw;
         }
-        
-        /* --- MODIFICATION: Centered, right-aligned buttons --- */
-        div.top-nav-container div[data-testid="stRadio"] > div { /* TARGET ONLY TOP NAV */
-             /* This is the flex container for the buttons */
+        div.top-nav-container div[data-testid="stRadio"] > div {
              gap: 8px;
              max-width: 1100px; /* Center the buttons with the content */
              margin: 0 auto; /* Center the button group */
              justify-content: flex-end; /* Align buttons to the right */
         }
-
-        /* --- MODIFICATION: Light text for buttons --- */
-        div.top-nav-container div[data-testid="stRadio"] label { /* TARGET ONLY TOP NAV */
-            display: inline-block;
+        div.top-nav-container div[data-testid="stRadio"] label {
             padding: 12px 16px;
             margin: 0;
             border-radius: 0;
             background: transparent;
             color: #8b949e; /* Inactive tab color (light grey) */
             border-bottom: 3px solid transparent;
-            transition: all 0.2s ease;
-            cursor: pointer;
         }
-        
-        /* Hide the radio circle */
-        div.top-nav-container div[data-testid="stRadio"] label > div:first-child { /* TARGET ONLY TOP NAV */
+        div.top-nav-container div[data-testid="stRadio"] label > div:first-child {
             display: none;
         }
-        
-        div.top-nav-container div[data-testid="stRadio"] label span { /* TARGET ONLY TOP NAV */
+        div.top-nav-container div[data-testid="stRadio"] label span {
              font-size: 14px;
              font-weight: 500;
         }
-
-        /* Hover style for inactive tabs */
-        div.top-nav-container div[data-testid="stRadio"] label:hover { /* TARGET ONLY TOP NAV */
+        div.top-nav-container div[data-testid="stRadio"] label:hover {
             background: rgba(139, 148, 158, 0.1); /* Faint light hover */
             color: #f0f6fc; /* White text on hover */
         }
-
-        /* Selected tab style */
-        div.top-nav-container div[data-testid="stRadio"] label[data-checked="true"] { /* TARGET ONLY TOP NAV */
+        div.top-nav-container div[data-testid="stRadio"] label[data-checked="true"] {
             background: transparent;
             color: #f0f6fc; /* Active tab color (white) */
             border-bottom: 3px solid #3b82f6; /* Blue accent line */
@@ -1110,276 +1097,85 @@ def inject_global_css():
         /* --- End Top Nav --- */
 
         /* --- FACTOR BAR CHART STYLES (LIGHT THEME) --- */
-        .factor-bar-container {
-            margin-bottom: 12px;
-        }
-        .factor-bar-label {
-            font-size: 14px;
-            color: #213547; /* Navy text */
-            margin-bottom: 6px;
-        }
-        .factor-bar-score {
-            float: right;
-            font-weight: 500;
-            color: #0d1117; /* Black/navy text */
-        }
-        .factor-bar-bg {
-            width: 100%;
-            height: 10px;
-            background-color: #e1e4e8; /* Light grey bar background */
-            border-radius: 5px;
-            overflow: hidden;
-            position: relative; /* Added for centering line */
-        }
-        /* Center line for z-score */
-        .factor-bar-bg::before {
-            content: '';
-            position: absolute;
-            left: 50%;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background-color: #ffffff; /* White background */
-            z-index: 1; /* Above bg, below fill */
-        }
-        .factor-bar-fill-positive {
-            height: 100%;
-            background-color: #3fb950; /* Green for positive */
-            border-radius: 0 5px 5px 0;
-            transition: width 0.5s ease-in-out;
-            position: absolute;
-            left: 50%;
-        }
-        .factor-bar-fill-negative {
-            height: 100%;
-            background-color: #f85149; /* Red for negative */
-            border-radius: 5px 0 0 5px;
-            transition: width 0.5s ease-in-out;
-            position: absolute;
-            right: 50%; /* Anchor to the right of center */
-        }
+        .factor-bar-container { margin-bottom: 12px; }
+        .factor-bar-label { font-size: 14px; color: #213547; margin-bottom: 6px; }
+        .factor-bar-score { float: right; font-weight: 500; color: #0d1117; }
+        .factor-bar-bg { width: 100%; height: 10px; background-color: #e1e4e8; border-radius: 5px; overflow: hidden; position: relative; }
+        .factor-bar-bg::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background-color: #ffffff; z-index: 1; }
+        .factor-bar-fill-positive { height: 100%; background-color: #3fb950; border-radius: 0 5px 5px 0; transition: width 0.5s ease-in-out; position: absolute; left: 50%; }
+        .factor-bar-fill-negative { height: 100%; background-color: #f85149; border-radius: 5px 0 0 5px; transition: width 0.5s ease-in-out; position: absolute; right: 50%; }
 
-        .methodology-card {
-            padding: 18px 20px;
-            border-radius: 12px;
-            background: #f9f9f9; /* Light card */
-            border: 1px solid #e1e4e8; /* Light border */
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05); /* Light shadow */
-            height: 100%;
-        }
-        .methodology-card h4 {
-            font-size: 16px;
-            font-weight: 600;
-            margin-top: 0;
-            margin-bottom: 12px;
-            color: #0d1117; /* Dark title */
-        }
-        .methodology-card p {
-            font-size: 13px;
-            color: #213547; /* MODIFIED: Dark Navy text */
-            margin-bottom: 4px;
-        }
-        .methodology-card strong {
-            color: #213547; /* Navy text */
-            font-weight: 600;
-        }
+        .methodology-card { padding: 18px 20px; border-radius: 12px; background: #f9f9f9; border: 1px solid #e1e4e8; box-shadow: 0 4px 12px rgba(0,0,0,0.05); height: 100%; }
+        .methodology-card h4 { font-size: 16px; font-weight: 600; margin-top: 0; margin-bottom: 12px; color: #0d1117; }
+        .methodology-card p { font-size: 13px; color: #213547; margin-bottom: 4px; }
+        .methodology-card strong { color: #213547; font-weight: 600; }
         /* --- End Factor Bar --- */
 
         /* --- CARD STYLING (LIGHT MODE) --- */
-        .hero-card, .section-card, .kpi-card-new {
-            border-radius: 12px; /* Sharper corners */
-            padding: 28px 28px 24px 28px;
-            background: #f9f9f9; /* Off-white card */
-            border: 1px solid #e1e4e8; /* Light grey border */
-            box-shadow: 0 8px 24px rgba(0,0,0,0.05); /* Lighter shadow */
-            color: #213547; /* Navy text */
-        }
-        .kpi-card-new {
-             padding: 18px 20px;
-             margin-bottom: 16px;
-        }
-        .section-card {
-            padding: 18px 20px;
-            height: 100%;
-        }
-        
-        .hero-title, .section-title, .kpi-value-new {
-            font-size: 30px;  
-            font-weight: 600;
-            letter-spacing: 0.01em;
-            margin-bottom: 4px;
-            color: #0d1117; /* Black/darkest navy title */
-        }
-        .section-title {
-            font-size: 16px;
-        }
-        .kpi-value-new {
-             font-size: 28px;
-        }
-        
-        .hero-subtitle, .section-subtitle, .kpi-label-new {
-            font-size: 14px;
-            color: #213547; /* MODIFIED: Dark Navy text */
-            margin-bottom: 20px;
-        }
-        .section-subtitle {
-             margin-bottom: 12px;
-        }
-        .kpi-label-new {
-            margin-bottom: 4px;
-        }
+        .hero-card, .section-card, .kpi-card-new { padding: 28px 28px 24px 28px; background: #f9f9f9; border: 1px solid #e1e4e8; box-shadow: 0 8px 24px rgba(0,0,0,0.05); color: #213547; border-radius: 12px; }
+        .kpi-card-new { padding: 18px 20px; margin-bottom: 16px; }
+        .section-card { padding: 18px 20px; height: 100%; }
+        .hero-title, .section-title, .kpi-value-new { font-size: 30px; font-weight: 600; margin-bottom: 4px; color: #0d1117; letter-spacing: 0.01em; }
+        .section-title { font-size: 16px; }
+        .kpi-value-new { font-size: 28px; }
+        .hero-subtitle, .section-subtitle, .kpi-label-new { font-size: 14px; color: #213547; margin-bottom: 20px; }
+        .section-subtitle { margin-bottom: 12px; }
+        .kpi-label-new { margin-bottom: 4px; }
 
-        /* Metric colors (Green/Red is standard for finance) */
-        .positive-metric { color: #228B22; } /* Darker Green for light bg */
-        .negative-metric { color: #D90429; } /* Darker Red for light bg */
+        .positive-metric { color: #228B22; } 
+        .negative-metric { color: #D90429; } 
 
-        /* Button Styling - Blue Accent */
-        .stButton > button {
-            border-radius: 8px; /* Sharper */
-            padding: 0.45rem 1.3rem;
-            font-weight: 500;
-            border: 1px solid #1c64f2; /* Blue border */
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8); /* Blue gradient */
-            color: #ffffff; /* White text */
-        }
-        .stButton > button:hover {
-            border-color: #60a5fa;
-            filter: brightness(1.1);
-            color: #ffffff;
-        }
+        /* --- Button Styling - Blue Accent --- */
+        .stButton > button { border-radius: 8px; padding: 0.45rem 1.3rem; font-weight: 500; border: 1px solid #1c64f2; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #ffffff; }
+        .stButton > button:hover { border-color: #60a5fa; filter: brightness(1.1); color: #ffffff; }
         
-        /* Input boxes (Light Theme) */
-        .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
-             border-radius: 8px !important;
-             background: #ffffff !important;
-             border: 1px solid #d1d5db !important;
-             color: #0d1117 !important; /* Ensure input text is dark */
-        }
-        /* Placeholder text for light mode */
-        .stTextInput input::placeholder {
-            color: #4a5568 !important; /* MODIFIED: Darker placeholder */
-        }
-        /* Command bar input on light */
-        .stTextInput input[type="text"] {
-            border-radius: 999px !important;
-            padding-left: 14px;
-            font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-            text-transform: uppercase;
-        }
+        /* --- Input boxes (Light Theme) --- */
+        .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] { border-radius: 8px !important; background: #ffffff !important; border: 1px solid #d1d5db !important; color: #0d1117 !important; }
+        .stTextInput input::placeholder { color: #4a5568 !important; }
+        .stTextInput input[type="text"] { border-radius: 999px !important; padding-left: 14px; font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; text-transform: uppercase; }
         
-        /* Dataframe styling (Light Theme) */
-        .stDataFrame {
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid #e1e4e8;
-        }
+        .stDataFrame { border-radius: 8px; overflow: hidden; border: 1px solid #e1e4e8; }
 
-        /* Custom styles for Valuation Page (Light Theme) */
-        .valuation-metric-label {
-            font-size: 16px;
-            color: #213547; /* MODIFIED: Dark Navy text */
-            margin-bottom: 5px;
-            font-weight: 400;
-        }
-        .valuation-metric-value {
-            font-size: 38px; /* Larger for implied price */
-            font-weight: 600;
-            color: #0d1117;
-            line-height: 1.2;
-        }
-        .valuation-current-price {
-            font-size: 14px;
-            color: #213547; /* MODIFIED: Dark Navy text */
-            margin-top: 10px;
-        }
-        .valuation-upside {
-            font-size: 14px;
-            font-weight: 500;
-        }
-        .valuation-upside.positive {
-            color: #228B22; /* Darker Green */
-        }
-        .valuation-upside.negative {
-            color: #D90429; /* Darker Red */
-        }
+        /* --- Custom styles for Valuation Page (Light Theme) --- */
+        .valuation-metric-label { font-size: 16px; color: #213547; margin-bottom: 5px; font-weight: 400; }
+        .valuation-metric-value { font-size: 38px; font-weight: 600; color: #0d1117; line-height: 1.2; }
+        .valuation-current-price { font-size: 14px; color: #213547; margin-top: 10px; }
+        .valuation-upside { font-size: 14px; font-weight: 500; }
+        .valuation-upside.positive { color: #228B22; }
+        .valuation-upside.negative { color: #D90429; }
         
-        /* Scenario Button Group - Target specifically by class to avoid clashes */
+        /* --- FIX: Scenario Button Group (removes black bar) --- */
         div.scenario-radio-group div[data-testid="stRadio"] label {
-            border: 1px solid #d1d5db; /* Light grey border */
-            background: #ffffff; /* White background */
-            border-radius: 8px;
-            padding: 8px 12px;
-            margin-right: 5px;
-            color: #213547; /* Dark navy text for labels */
+            border: 1px solid #d1d5db; background: #ffffff; border-radius: 8px;
+            padding: 8px 12px; margin-right: 5px; color: #213547;
         }
-        div.scenario-radio-group div[data-testid="stRadio"] label:hover {
-            background: #f9f9f9; /* Lighter hover */
-        }
-        div.scenario-radio-group div[data-testid="stRadio"] label > div:first-child {
-            display: none; /* Hide radio circle */
-        }
-        div.scenario-radio-group div[data-testid="stRadio"] label span {
-            color: #213547 !important; /* Ensure span text is dark navy */
-            font-size: 14px; /* Consistent font size */
-        }
+        div.scenario-radio-group div[data-testid="stRadio"] label:hover { background: #f9f9f9; }
+        div.scenario-radio-group div[data-testid="stRadio"] label > div:first-child { display: none; }
+        div.scenario-radio-group div[data-testid="stRadio"] label span { color: #213547 !important; font-size: 14px; }
         div.scenario-radio-group div[data-testid="stRadio"] label[data-checked="true"] {
-            border-color: #d4af37; /* Gold accent */
-            background: #fefce8; /* Light yellow background when selected */
-            color: #0d1117; /* Darker text for selected */
+            border-color: #d4af37; background: #fefce8; color: #0d1117;
         }
         div.scenario-radio-group div[data-testid="stRadio"] label[data-checked="true"] span {
-            color: #0d1117 !important; /* Darker text for selected span */
+            color: #0d1117 !important;
         }
-
-        /* Number Input specific styling for valuation assumptions */
-        .assumption-input-group .stNumberInput {
-            background: #f9f9f9; /* Light grey background for the container */
-            border: 1px solid #e1e4e8; /* Light grey border */
-            border-radius: 8px;
-            padding: 5px 10px;
-            margin-bottom: 10px;
-        }
-        .assumption-input-group .stNumberInput input {
-            background: transparent !important; /* Transparent background for input field */
-            border: none !important; /* Remove border from input field */
-            font-size: 18px;
-            font-weight: 500;
-            color: #0d1117 !important; /* Dark text for numbers */
-        }
-        .assumption-input-group .stNumberInput button {
-            background: #e1e4e8; /* Light grey buttons */
-            color: #0d1117; /* Dark text for +/- buttons */
-            border: none;
-            border-radius: 4px;
-            padding: 2px 5px;
-            font-size: 16px;
-        }
-        .assumption-input-group .stNumberInput button:hover {
-            background: #d1d5db; /* Slightly darker grey on hover */
-        }
-
-
-        /* Make sure number input arrows are styled */
-        .stNumberInput div[data-testid="stVerticalBlock"] > div:last-child {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        /* Load Company button alignment */
+        
+        /* --- FIX: Load Company button alignment --- */
         .valuation-load-section {
             display: flex;
-            align-items: flex-end; /* Aligns the button to the bottom of the input */
-            gap: 10px; /* Space between input and button */
+            align-items: flex-end; /* Aligns button to bottom of input */
+            gap: 10px; 
         }
-        /* Style for the ticker input in the valuation page specifically */
         .valuation-load-section div[data-testid="stTextInput"] {
-            flex-grow: 1; /* Allows the input to take available space */
+            flex-grow: 1; /* Input takes up available space */
         }
-        .valuation-load-section button {
-            /* Adjust button padding/height if needed to match input visual height */
-            height: 38px; /* Approximate height of default Streamlit input */
-            margin-bottom: 0px; /* Reset any default button margin */
+        .valuation-load-section .stButton {
+             width: 150px; /* Give button a fixed width */
+             flex-shrink: 0; /* Don't let button shrink */
+             margin-bottom: 2px; /* Fine-tune alignment */
+        }
+
+        .stNumberInput div[data-testid="stVerticalBlock"] > div:last-child {
+            display: flex; flex-direction: column; justify-content: center;
         }
         </style>
         """,
@@ -1391,7 +1187,6 @@ def inject_global_css():
 # PAGES
 # ======================================================================
 
-# ---------- DASHBOARD ----------
 # ---------- DASHBOARD ----------
 def render_dashboard():
     # --- MODIFICATION: Removed the light-theme override CSS block ---
@@ -1513,10 +1308,6 @@ def render_dashboard():
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-
-    # --- MODIFICATION: "Recently Analyzed" section removed ---
-    # st.write("")
-    # st.markdown( ... ) -> This block was removed
 
     # --- MODIFICATION: "Recently Analyzed" section removed ---
     # st.write("")
@@ -1708,369 +1499,420 @@ def render_analysis_page():
 
 
 # ---------- VALUATION PAGE (NEW STREAMLIT VERSION) ----------
-# ======================================================================
-# GLOBAL STYLING (Blocks-style + nicer sidebar)
-# ======================================================================
-def inject_global_css():
+def render_valuation_page():
+    # inject_global_css() # Removed, now global in main()
+    import numpy as np
+    import pandas as pd
+
+
+    # Hero card
     st.markdown(
         """
-        <style>
-        /* --- HIDE SIDEBAR --- */
-        section[data-testid="stSidebar"] {
-            display: none !important;
-        }
-        
-        /* --- GLOBAL TITLE --- */
-        h1 {
-            color: #0d1117 !important; /* Default to black/navy */
-        }
-        
-        /* --- MAIN APP STYLING (LIGHT THEME DEFAULT) --- */
-        .stApp {
-            background: #ffffff;  
-            color: #213547; /* Dark Navy text */
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-        }
-        header[data-testid="stHeader"] {background: transparent;}
-        footer {visibility: hidden;}
-
-        /* --- TOP NAVIGATION TABS (LIGHT THEME) --- */
-        /* --- MODIFICATION: Full-width black bar --- */
-        div.top-nav-container div[data-testid="stRadio"] { /* TARGET ONLY TOP NAV */
-            background: #0d1117; /* Black background */
-            padding: 0;  
-            
-            /* --- NEW: Full-width "bust-out" --- */
-            position: relative;
-            width: 100vw; /* 100% of viewport width */
-            left: 50%;
-            right: 50%;
-            margin-left: -50vw;
-            margin-right: -50vw;
-        }
-        
-        /* --- MODIFICATION: Centered, right-aligned buttons --- */
-        div.top-nav-container div[data-testid="stRadio"] > div { /* TARGET ONLY TOP NAV */
-             /* This is the flex container for the buttons */
-             gap: 8px;
-             max-width: 1100px; /* Center the buttons with the content */
-             margin: 0 auto; /* Center the button group */
-             justify-content: flex-end; /* Align buttons to the right */
-        }
-
-        /* --- MODIFICATION: Light text for buttons --- */
-        div.top-nav-container div[data-testid="stRadio"] label { /* TARGET ONLY TOP NAV */
-            display: inline-block;
-            padding: 12px 16px;
-            margin: 0;
-            border-radius: 0;
-            background: transparent;
-            color: #8b949e; /* Inactive tab color (light grey) */
-            border-bottom: 3px solid transparent;
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-        
-        /* Hide the radio circle */
-        div.top-nav-container div[data-testid="stRadio"] label > div:first-child { /* TARGET ONLY TOP NAV */
-            display: none;
-        }
-        
-        div.top-nav-container div[data-testid="stRadio"] label span { /* TARGET ONLY TOP NAV */
-             font-size: 14px;
-             font-weight: 500;
-        }
-
-        /* Hover style for inactive tabs */
-        div.top-nav-container div[data-testid="stRadio"] label:hover { /* TARGET ONLY TOP NAV */
-            background: rgba(139, 148, 158, 0.1); /* Faint light hover */
-            color: #f0f6fc; /* White text on hover */
-        }
-
-        /* Selected tab style */
-        div.top-nav-container div[data-testid="stRadio"] label[data-checked="true"] { /* TARGET ONLY TOP NAV */
-            background: transparent;
-            color: #f0f6fc; /* Active tab color (white) */
-            border-bottom: 3px solid #3b82f6; /* Blue accent line */
-        }
-        /* --- End Top Nav --- */
-
-        /* --- FACTOR BAR CHART STYLES (LIGHT THEME) --- */
-        .factor-bar-container {
-            margin-bottom: 12px;
-        }
-        .factor-bar-label {
-            font-size: 14px;
-            color: #213547; /* Navy text */
-            margin-bottom: 6px;
-        }
-        .factor-bar-score {
-            float: right;
-            font-weight: 500;
-            color: #0d1117; /* Black/navy text */
-        }
-        .factor-bar-bg {
-            width: 100%;
-            height: 10px;
-            background-color: #e1e4e8; /* Light grey bar background */
-            border-radius: 5px;
-            overflow: hidden;
-            position: relative; /* Added for centering line */
-        }
-        /* Center line for z-score */
-        .factor-bar-bg::before {
-            content: '';
-            position: absolute;
-            left: 50%;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background-color: #ffffff; /* White background */
-            z-index: 1; /* Above bg, below fill */
-        }
-        .factor-bar-fill-positive {
-            height: 100%;
-            background-color: #3fb950; /* Green for positive */
-            border-radius: 0 5px 5px 0;
-            transition: width 0.5s ease-in-out;
-            position: absolute;
-            left: 50%;
-        }
-        .factor-bar-fill-negative {
-            height: 100%;
-            background-color: #f85149; /* Red for negative */
-            border-radius: 5px 0 0 5px;
-            transition: width 0.5s ease-in-out;
-            position: absolute;
-            right: 50%; /* Anchor to the right of center */
-        }
-
-        .methodology-card {
-            padding: 18px 20px;
-            border-radius: 12px;
-            background: #f9f9f9; /* Light card */
-            border: 1px solid #e1e4e8; /* Light border */
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05); /* Light shadow */
-            height: 100%;
-        }
-        .methodology-card h4 {
-            font-size: 16px;
-            font-weight: 600;
-            margin-top: 0;
-            margin-bottom: 12px;
-            color: #0d1117; /* Dark title */
-        }
-        .methodology-card p {
-            font-size: 13px;
-            color: #213547; /* MODIFIED: Dark Navy text */
-            margin-bottom: 4px;
-        }
-        .methodology-card strong {
-            color: #213547; /* Navy text */
-            font-weight: 600;
-        }
-        /* --- End Factor Bar --- */
-
-        /* --- CARD STYLING (LIGHT MODE) --- */
-        .hero-card, .section-card, .kpi-card-new {
-            border-radius: 12px; /* Sharper corners */
-            padding: 28px 28px 24px 28px;
-            background: #f9f9f9; /* Off-white card */
-            border: 1px solid #e1e4e8; /* Light grey border */
-            box-shadow: 0 8px 24px rgba(0,0,0,0.05); /* Lighter shadow */
-            color: #213547; /* Navy text */
-        }
-        .kpi-card-new {
-             padding: 18px 20px;
-             margin-bottom: 16px;
-        }
-        .section-card {
-            padding: 18px 20px;
-            height: 100%;
-        }
-        
-        .hero-title, .section-title, .kpi-value-new {
-            font-size: 30px;  
-            font-weight: 600;
-            letter-spacing: 0.01em;
-            margin-bottom: 4px;
-            color: #0d1117; /* Black/darkest navy title */
-        }
-        .section-title {
-            font-size: 16px;
-        }
-        .kpi-value-new {
-             font-size: 28px;
-        }
-        
-        .hero-subtitle, .section-subtitle, .kpi-label-new {
-            font-size: 14px;
-            color: #213547; /* MODIFIED: Dark Navy text */
-            margin-bottom: 20px;
-        }
-        .section-subtitle {
-             margin-bottom: 12px;
-        }
-        .kpi-label-new {
-            margin-bottom: 4px;
-        }
-
-        /* Metric colors (Green/Red is standard for finance) */
-        .positive-metric { color: #228B22; } /* Darker Green for light bg */
-        .negative-metric { color: #D90429; } /* Darker Red for light bg */
-
-        /* Button Styling - Blue Accent */
-        .stButton > button {
-            border-radius: 8px; /* Sharper */
-            padding: 0.45rem 1.3rem;
-            font-weight: 500;
-            border: 1px solid #1c64f2; /* Blue border */
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8); /* Blue gradient */
-            color: #ffffff; /* White text */
-        }
-        .stButton > button:hover {
-            border-color: #60a5fa;
-            filter: brightness(1.1);
-            color: #ffffff;
-        }
-        
-        /* Input boxes (Light Theme) */
-        .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] {
-             border-radius: 8px !important;
-             background: #ffffff !important;
-             border: 1px solid #d1d5db !important;
-             color: #0d1117 !important; /* Ensure input text is dark */
-        }
-        /* Placeholder text for light mode */
-        .stTextInput input::placeholder {
-            color: #4a5568 !important; /* MODIFIED: Darker placeholder */
-        }
-        /* Command bar input on light */
-        .stTextInput input[type="text"] {
-            border-radius: 999px !important;
-            padding-left: 14px;
-            font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-            text-transform: uppercase;
-        }
-        
-        /* Dataframe styling (Light Theme) */
-        .stDataFrame {
-            border-radius: 8px;
-            overflow: hidden;
-            border: 1px solid #e1e4e8;
-        }
-
-        /* Custom styles for Valuation Page (Light Theme) */
-        .valuation-metric-label {
-            font-size: 16px;
-            color: #213547; /* MODIFIED: Dark Navy text */
-            margin-bottom: 5px;
-            font-weight: 400;
-        }
-        .valuation-metric-value {
-            font-size: 38px; /* Larger for implied price */
-            font-weight: 600;
-            color: #0d1117;
-            line-height: 1.2;
-        }
-        .valuation-current-price {
-            font-size: 14px;
-            color: #213547; /* MODIFIED: Dark Navy text */
-            margin-top: 10px;
-        }
-        .valuation-upside {
-            font-size: 14px;
-            font-weight: 500;
-        }
-        .valuation-upside.positive {
-            color: #228B22; /* Darker Green */
-        }
-        .valuation-upside.negative {
-            color: #D90429; /* Darker Red */
-        }
-        
-        /* Scenario Button Group - Target specifically by class to avoid clashes */
-        div.scenario-radio-group div[data-testid="stRadio"] label {
-            border: 1px solid #d1d5db; /* Light grey border */
-            background: #ffffff; /* White background */
-            border-radius: 8px;
-            padding: 8px 12px;
-            margin-right: 5px;
-            color: #213547; /* Dark navy text for labels */
-        }
-        div.scenario-radio-group div[data-testid="stRadio"] label:hover {
-            background: #f9f9f9; /* Lighter hover */
-        }
-        div.scenario-radio-group div[data-testid="stRadio"] label > div:first-child {
-            display: none; /* Hide radio circle */
-        }
-        div.scenario-radio-group div[data-testid="stRadio"] label span {
-            color: #213547 !important; /* Ensure span text is dark navy */
-            font-size: 14px; /* Consistent font size */
-        }
-        div.scenario-radio-group div[data-testid="stRadio"] label[data-checked="true"] {
-            border-color: #d4af37; /* Gold accent */
-            background: #fefce8; /* Light yellow background when selected */
-            color: #0d1117; /* Darker text for selected */
-        }
-        div.scenario-radio-group div[data-testid="stRadio"] label[data-checked="true"] span {
-            color: #0d1117 !important; /* Darker text for selected span */
-        }
-
-        /* Number Input specific styling for valuation assumptions */
-        .assumption-input-group .stNumberInput {
-            background: #f9f9f9; /* Light grey background for the container */
-            border: 1px solid #e1e4e8; /* Light grey border */
-            border-radius: 8px;
-            padding: 5px 10px;
-            margin-bottom: 10px;
-        }
-        .assumption-input-group .stNumberInput input {
-            background: transparent !important; /* Transparent background for input field */
-            border: none !important; /* Remove border from input field */
-            font-size: 18px;
-            font-weight: 500;
-            color: #0d1117 !important; /* Dark text for numbers */
-        }
-        .assumption-input-group .stNumberInput button {
-            background: #e1e4e8; /* Light grey buttons */
-            color: #0d1117; /* Dark text for +/- buttons */
-            border: none;
-            border-radius: 4px;
-            padding: 2px 5px;
-            font-size: 16px;
-        }
-        .assumption-input-group .stNumberInput button:hover {
-            background: #d1d5db; /* Slightly darker grey on hover */
-        }
-
-
-        /* Make sure number input arrows are styled */
-        .stNumberInput div[data-testid="stVerticalBlock"] > div:last-child {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        /* Load Company button alignment */
-        .valuation-load-section {
-            display: flex;
-            align-items: flex-end; /* Aligns the button to the bottom of the input */
-            gap: 10px; /* Space between input and button */
-        }
-        /* Style for the ticker input in the valuation page specifically */
-        .valuation-load-section div[data-testid="stTextInput"] {
-            flex-grow: 1; /* Allows the input to take available space */
-        }
-        .valuation-load-section button {
-            /* Adjust button padding/height if needed to match input visual height */
-            height: 38px; /* Approximate height of default Streamlit input */
-            margin-bottom: 0px; /* Reset any default button margin */
-        }
-        </style>
+        <div class="hero-card">
+            <div class="hero-title">Valuation Modeling</div>
+            <div class="hero-subtitle">
+                Build DCF and multiples-based valuations with scenario analysis.
+            </div>
+        </div>
         """,
         unsafe_allow_html=True,
     )
+    st.write("")
+
+    # ---------- Small helpers (local to this page) ----------
+    def format_currency(x: float) -> str:
+        if x is None or (isinstance(x, float) and (np.isnan(x))):
+            return "N/A"
+        return f"${x:,.2f}"
+
+    def format_percent(x: float) -> str:
+        if x is None or (isinstance(x, float) and (np.isnan(x))):
+            return "N/A"
+        return f"{x:.1f}%"
+
+    def compute_dcf_price(
+        eps: float,
+        growth_rate_pct: float,
+        discount_rate_pct: float,
+        terminal_growth_pct: float,
+        years: int = 5,
+    ) -> float:
+        """
+        Very simple DCF per-share:
+        - Use EPS_TTM as proxy for FCFE per share.
+        - Project for N years at growth_rate_pct.
+        - Terminal value at year N with terminal_growth_pct.
+        - Discount at discount_rate_pct.
+        """
+        if eps is None or not np.isfinite(eps) or eps <= 0:
+            return np.nan
+
+        g = growth_rate_pct / 100.0
+        r = discount_rate_pct / 100.0
+        gt = terminal_growth_pct / 100.0
+
+        if r <= gt:
+            return np.nan
+
+        pv_flows = []
+        cf_t = eps
+        for t in range(1, years + 1):
+            cf_t = cf_t * (1 + g)
+            pv_flows.append(cf_t / ((1 + r) ** t))
+
+        cf_n = cf_t
+        cf_n_plus_1 = cf_n * (1 + gt)
+        terminal_value_n = cf_n_plus_1 / (r - gt)
+        pv_terminal = terminal_value_n / ((1 + r) ** years)
+
+        return sum(pv_flows) + pv_terminal
+
+    def build_sensitivity_table(
+        eps: float,
+        growth_rates: list,
+        discount_rates: list,
+        terminal_growth_pct: float,
+        years: int = 5,
+    ) -> pd.DataFrame:
+        data = {}
+        for dr in discount_rates:
+            row_vals = []
+            for gr in growth_rates:
+                price = compute_dcf_price(
+                    eps=eps,
+                    growth_rate_pct=gr,
+                    discount_rate_pct=dr,
+                    terminal_growth_pct=terminal_growth_pct,
+                    years=years,
+                )
+                row_vals.append(price)
+            data[f"{dr}%"] = row_vals
+        df = pd.DataFrame(data, index=[f"{g}%" for g in growth_rates])
+        return df
+
+    def compute_upside(target: float, current: float) -> float:
+        if target is None or not np.isfinite(target) or not np.isfinite(current) or current <= 0:
+            return np.nan
+        return (target - current) / current * 100.0
+
+    # ---------- Select Company Card ----------
+    st.markdown(
+        """
+        <div class="section-card">
+            <div class="section-title">Select Company</div>
+            <div class="section-subtitle">Choose a company to value</div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # Default ticker: last analyzed ticker if available
+    default_ticker = ""
+    if "valuation_ticker" in st.session_state:
+        default_ticker = st.session_state.valuation_ticker
+    elif st.session_state.get("last_results"):
+        default_ticker = st.session_state.last_results.get("ticker", "")
+
+    # --- START FIX: Button Alignment ---
+    st.markdown('<div class="valuation-load-section">', unsafe_allow_html=True)
+    
+    selected_ticker = st.text_input(
+        "Ticker symbol",
+        value=default_ticker,
+        key="valuation_ticker_input",
+        placeholder="Enter ticker symbol (e.g., AAPL, MSFT)",
+        label_visibility="collapsed", # Hides the label to improve alignment
+    ).upper()
+    
+    load_clicked = st.button("Load Company", use_container_width=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
+    # --- END FIX ---
+
+    # Load company metrics when button clicked
+    if load_clicked and selected_ticker:
+        tkr = selected_ticker.upper().strip()
+        with st.spinner(f"Loading data for {tkr}..."):
+            try:
+                metrics = get_metrics(tkr)
+                price, _ = get_price_and_shares(tkr)
+                st.session_state.valuation_ticker = tkr
+                st.session_state.valuation_metrics = metrics
+                st.session_state.valuation_price = price
+                st.success(f"Loaded metrics for {tkr}")
+            except Exception as e:
+                logging.error(f"Failed to load metrics for {selected_ticker}: {e}")
+                st.error(f"Could not load data for {selected_ticker.upper()}.")
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.write("")
+
+    # Pull what we have in session
+    metrics = st.session_state.get("valuation_metrics")
+    current_ticker = st.session_state.get("valuation_ticker")
+    current_price = st.session_state.get("valuation_price")
+
+    if metrics and current_ticker:
+        # ---------- Company Snapshot ----------
+        prof = get_profile(current_ticker) or {}
+        company_name = prof.get("name") or current_ticker
+        eps = metrics.get("EPS_TTM")
+
+        st.markdown(
+            """
+            <div class="section-card">
+                <div class="section-title">Company Snapshot</div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.metric("Ticker", current_ticker)
+        with c2:
+            st.metric("Company", company_name)
+        with c3:
+            st.metric("Current Price", format_currency(current_price or np.nan))
+
+        if metrics.get("MarketCap"):
+            mc = metrics["MarketCap"]
+            if np.isfinite(mc):
+                st.caption(f"Approx. market cap: ${mc:,.0f}M")
+
+        if eps is None or not np.isfinite(eps):
+            st.warning(
+                "EPS_TTM is not available. DCF and P/E valuations may be limited or N/A."
+            )
+
+        st.markdown("</div>", unsafe_allow_html=True)
+        st.write("")
+
+        # ---------- Scenario Selection ----------
+        st.markdown(
+            """
+            <div class="section-card">
+                <div class="section-title">Scenario Selection</div>
+                <div class="section-subtitle">Choose valuation scenario assumptions</div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        scenario_presets = {
+            "Bull Case": {"revenue_growth": 25.0, "discount_rate": 8.0, "terminal_growth": 4.0, "pe_multiple": 35.0},
+            "Base Case": {"revenue_growth": 15.0, "discount_rate": 10.0, "terminal_growth": 3.0, "pe_multiple": 25.0},
+            "Bear Case": {"revenue_growth": 5.0,  "discount_rate": 12.0, "terminal_growth": 2.0, "pe_multiple": 15.0},
+        }
+
+        # --- START FIX: Black Bar ---
+        st.markdown('<div class="scenario-radio-group">', unsafe_allow_html=True)
+        selected_scenario = st.radio(
+            "Scenario",
+            ["Bull Case", "Base Case", "Bear Case"],
+            index=1,
+            horizontal=True,
+            key="valuation_scenario_radio",
+        )
+        st.markdown('</div>', unsafe_allow_html=True)
+        # --- END FIX ---
+
+        st.markdown("</div>", unsafe_allow_html=True)
+        st.write("")
+
+        # ---------- Valuation Assumptions ----------
+        st.markdown(
+            """
+            <div class="section-card">
+                <div class="section-title">Valuation Assumptions</div>
+                <div class="section-subtitle">Adjust key assumptions for your valuation model</div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        preset = scenario_presets[selected_scenario]
+
+        col_a, col_b, col_c, col_d = st.columns(4)
+        with col_a:
+            revenue_growth = st.number_input(
+                "Revenue / EPS Growth (%)",
+                value=float(preset["revenue_growth"]),
+                step=1.0,
+                format="%.1f",
+                key="val_rev_growth",
+            )
+        with col_b:
+            discount_rate = st.number_input(
+                "Discount Rate / WACC (%)",
+                value=float(preset["discount_rate"]),
+                step=0.5,
+                format="%.1f",
+                key="val_discount_rate",
+            )
+        with col_c:
+            terminal_growth = st.number_input(
+                "Terminal Growth Rate (%)",
+                value=float(preset["terminal_growth"]),
+                step=0.5,
+                format="%.1f",
+                key="val_terminal_growth",
+            )
+        with col_d:
+            pe_multiple = st.number_input(
+                "Target P/E Multiple",
+                value=float(preset["pe_multiple"]),
+                step=1.0,
+                format="%.1f",
+                key="val_pe_multiple",
+            )
+
+        st.markdown("</div>", unsafe_allow_html=True)
+        st.write("")
+
+        # ---------- Run valuation ----------
+        if st.button("Run Valuation", use_container_width=True, key="run_valuation_btn"):
+            with st.spinner(f"Running valuation for {current_ticker} ({selected_scenario})..."):
+                # DCF valuation
+                dcf_price = compute_dcf_price(
+                    eps=eps if eps is not None else np.nan,
+                    growth_rate_pct=revenue_growth,
+                    discount_rate_pct=discount_rate,
+                    terminal_growth_pct=terminal_growth,
+                    years=5,
+                )
+
+                # P/E valuation
+                if eps is not None and np.isfinite(eps) and eps > 0:
+                    pe_val = eps * pe_multiple
+                else:
+                    pe_val = np.nan
+
+                # P/S valuation: if we have P/S (raw), back into price
+                ps_val = np.nan
+                ps_raw = metrics.get("P/S (raw)")
+                if (
+                    ps_raw is not None
+                    and np.isfinite(ps_raw)
+                    and ps_raw > 0
+                    and metrics.get("MarketCap")
+                    and np.isfinite(metrics["MarketCap"])
+                ):
+                    # Value per share = P/S * Sales_per_share
+                    # MarketCap = P/S * Sales_TTM => implied price ≈ current_price * (target P/S / current P/S)
+                    # Here we proxy target P/S from P/E multiple (loose, but keeps it simple)
+                    if current_price and np.isfinite(current_price):
+                        target_ps = ps_raw * (pe_multiple / preset["pe_multiple"])  # scale vs base case
+                        ps_val = current_price * (target_ps / ps_raw)
+
+                dcf_upside = compute_upside(dcf_price, current_price)
+                pe_upside = compute_upside(pe_val, current_price)
+                ps_upside = compute_upside(ps_val, current_price)
+
+                # ---------- Valuation Results ----------
+                st.markdown(
+                    """
+                    <div class="section-card">
+                        <div class="section-title">Valuation Results</div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+                # DCF
+                st.markdown(
+                    "<div class='valuation-metric-label'>DCF Valuation (5-year, terminal at year 5)</div>",
+                    unsafe_allow_html=True,
+                )
+                if np.isfinite(dcf_price):
+                    cls = "positive" if (dcf_upside is not None and dcf_upside >= 0) else "negative"
+                    st.markdown(
+                        f"<div class='valuation-metric-value'>{format_currency(dcf_price)}</div>"
+                        f"<div class='valuation-current-price'>Current Price"
+                        f"<span style='float:right'>{format_currency(current_price or np.nan)}</span></div>"
+                        f"<div class='valuation-upside {cls}'>Upside/Downside"
+                        f"<span style='float:right'>{format_percent(dcf_upside)}</span></div>",
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.markdown("<div class='valuation-metric-value'>N/A</div>", unsafe_allow_html=True)
+
+                st.markdown("<hr style='border-top: 1px solid #e1e4e8;'>", unsafe_allow_html=True)
+
+                # P/E
+                st.markdown(
+                    "<div class='valuation-metric-label'>P/E-Based Valuation</div>",
+                    unsafe_allow_html=True,
+                )
+                if np.isfinite(pe_val):
+                    cls = "positive" if (pe_upside is not None and pe_upside >= 0) else "negative"
+                    st.markdown(
+                        f"<div class='valuation-metric-value'>{format_currency(pe_val)}</div>"
+                        f"<div class='valuation-current-price'>Current Price"
+                        f"<span style='float:right'>{format_currency(current_price or np.nan)}</span></div>"
+                        f"<div class='valuation-upside {cls}'>Upside/Downside"
+                        f"<span style='float:right'>{format_percent(pe_upside)}</span></div>",
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.markdown("<div class='valuation-metric-value'>N/A</div>", unsafe_allow_html=True)
+
+                st.markdown("<hr style='border-top: 1px solid #e1e4e8;'>", unsafe_allow_html=True)
+
+                # P/S-ish valuation
+                st.markdown(
+                    "<div class='valuation-metric-label'>P/S-Based Valuation (scaled vs current P/S)</div>",
+                    unsafe_allow_html=True,
+                )
+                if np.isfinite(ps_val):
+                    cls = "positive" if (ps_upside is not None and ps_upside >= 0) else "negative"
+                    st.markdown(
+                        f"<div class='valuation-metric-value'>{format_currency(ps_val)}</div>"
+                        f"<div class='valuation-current-price'>Current Price"
+                        f"<span style='float:right'>{format_currency(current_price or np.nan)}</span></div>"
+                        f"<div class='valuation-upside {cls}'>Upside/Downside"
+                        f"<span style='float:right'>{format_percent(ps_upside)}</span></div>",
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.markdown("<div class='valuation-metric-value'>N/A</div>", unsafe_allow_html=True)
+
+                st.markdown("</div>", unsafe_allow_html=True)
+                st.write("")
+
+                # ---------- Sensitivity Analysis ----------
+                st.markdown(
+                    """
+                    <div class="section-card">
+                        <div class="section-title">DCF Sensitivity Analysis</div>
+                        <div class="section-subtitle">
+                            Price targets across different growth and discount rate assumptions
+                        </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+                if eps is not None and np.isfinite(eps) and eps > 0:
+                    growth_rates = [5, 10, 15, 20, 25]
+                    discount_rates = [8, 9, 10, 11, 12]
+                    sens_df = build_sensitivity_table(
+                        eps=eps,
+                        growth_rates=growth_rates,
+                        discount_rates=discount_rates,
+                        terminal_growth_pct=terminal_growth,
+                        years=5,
+                    )
+                    # Format as currency for display
+                    sens_display = sens_df.applymap(format_currency)
+                    st.dataframe(sens_display, use_container_width=True)
+                    st.caption(
+                        "Rows = growth rates; columns = discount rates; "
+                        "values = DCF-implied price per share."
+                    )
+                else:
+                    st.info(
+                        "Sensitivity table requires a positive EPS_TTM value. "
+                        "Try another ticker with available EPS."
+                    )
+
+                st.markdown("</div>", unsafe_allow_html=True)
+
+    else:
+        st.info("Load a company first, then run valuation.")
 
 
 
@@ -2195,7 +2037,7 @@ def render_theses_page():
     if st.session_state.theses_store:
         st.markdown(
             """
-            <div classs="section-card">
+            <div class="section-card">
                 <div class="section-title">Saved Theses</div>
             """,
             unsafe_allow_html=True
@@ -2205,9 +2047,6 @@ def render_theses_page():
         st.markdown("</div>", unsafe_allow_html=True)
 
 
-# ======================================================================
-# MAIN APP
-# ======================================================================
 # ======================================================================
 # MAIN APP
 # ======================================================================
@@ -2230,7 +2069,9 @@ def main():
     )
 
     # --- TOP NAVIGATION BAR (MOVED) ---
-    # *** ADD THIS DIV ***
+    # This element is now at the very top, so its CSS can go full-width.
+    
+    # --- START FIX: Add wrapper for CSS targeting ---
     st.markdown('<div class="top-nav-container">', unsafe_allow_html=True)
     page = st.radio(
         "Navigation",
@@ -2245,9 +2086,8 @@ def main():
         label_visibility="collapsed",
         key="top_nav_radio",
     )
-    # *** AND ADD THIS CLOSING DIV ***
     st.markdown('</div>', unsafe_allow_html=True)
-
+    # --- END FIX ---
     
     # Inject CSS *after* the radio button to ensure it can be styled
     # This function now contains the default LIGHT theme

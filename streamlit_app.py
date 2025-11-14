@@ -8,6 +8,7 @@ from functools import lru_cache
 from typing import List, Dict, Any
 from datetime import datetime
 import streamlit as st
+from scipy.stats import norm # Added for percentile conversion
 
 # -------------------- CONFIG / LOGGING --------------------
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
@@ -571,6 +572,14 @@ def build_waterfall_dict(row: pd.Series):
             parts[k] = BUCKET_WEIGHTS[k] * v
     return parts
 
+# --- NEW HELPER ---
+def _z_to_percentile(z_score: float) -> float:
+    """Converts a z-score to a percentile (0-100)."""
+    if z_score is None or not np.isfinite(z_score):
+        return np.nan
+    # norm.cdf returns a value from 0.0 to 1.0
+    return norm.cdf(z_score) * 100.0
+
 # -------------------- ORCHESTRATOR (CORE ANALYSIS) --------------------
 def analyze_ticker_pro(ticker: str, peer_cap: int = 6):
     """
@@ -615,47 +624,34 @@ def analyze_ticker_pro(ticker: str, peer_cap: int = 6):
         if m.any():
             focus_row = scored.loc[m].iloc[0]
 
+    # --- MODIFICATION: Create percentile scores for the bar chart ---
+    factor_percentiles = {}
+    if focus_row is not None:
+        for factor in FACTOR_BUCKETS.keys():
+            z_score = focus_row.get(factor)
+            factor_percentiles[factor] = _z_to_percentile(z_score)
+    # --- END MODIFICATION ---
+
     parts = build_waterfall_dict(focus_row) if focus_row is not None else {}
     peers_used = [p for p in peers if p in list(scored.get("Ticker", []))] if not scored.empty else []
 
     text_synopsis_md = get_company_text_summary(ticker, focus_row if focus_row is not None else {})
     metrics_summary_md = get_company_metrics_summary(focus_row if focus_row is not None else {})
 
-    kpi_details_lines = []
-    if focus_row is not None:
-        comp = focus_row.get("CompositeScore")
-        if comp is not None and np.isfinite(comp):
-            color_class = "positive-metric" if comp >= 0 else "negative-metric"
-            kpi_details_lines.append(f"- **Composite Score:** <span class=\"{color_class}\">`{comp:.2f}`</span> (industry-neutral, winsorized z-blend)")
-        else:
-            kpi_details_lines.append("- **Composite Score:** `N/A`")
-        for b in BUCKET_WEIGHTS:
-            bv = focus_row.get(b)
-            if bv is not None and np.isfinite(bv):
-                color_class = "positive-metric" if bv >= 0 else "negative-metric"
-                kpi_details_lines.append(f"  - {b}: <span class=\"{color_class}\">{bv:+.2f}</span> (weight {BUCKET_WEIGHTS[b]:.0%})")
-        rf = focus_row.get("RiskFlags", "")
-        if isinstance(rf, str) and rf.strip():
-            kpi_details_lines.append(f"- **Risk Flags:** {rf.strip()}")
-        kpi_details_lines.append(f"- **Peers:** {', '.join(peers_used) if peers_used else 'None'}")
-
-    kpi_ratings_md = f"### Ratings for **{ticker}**\n" + ("\n".join(kpi_details_lines) if kpi_details_lines else "")
-
-    waterfall_md = ""
-    if parts:
-        wf_lines = []
-        for k, v in parts.items():
-            if np.isfinite(v):
-                color_class = "positive-metric" if v >= 0 else "negative-metric"
-                wf_lines.append(f"- {k}: <span class=\"{color_class}\">{v:+.2f}</span> (weight {BUCKET_WEIGHTS[k]:.0%})")
-            else:
-                wf_lines.append(f"- {k}: `N/A` (weight {BUCKET_WEIGHTS[k]:.0%})")
-        waterfall_md = "\n**Composite Waterfall (contribution):**\n" + "\n".join(wf_lines)
+    # --- REMOVED kpi_ratings_md and waterfall_md generation ---
+    # We will build this manually in the UI layer now
 
     news_items = get_company_news(ticker, n=8)
     news_md = "### Recent Headlines\n" + render_news_md(news_items)
 
-    return scored, text_synopsis_md, metrics_summary_md, kpi_ratings_md, waterfall_md, news_md
+    return (
+        scored,
+        text_synopsis_md,
+        metrics_summary_md,
+        factor_percentiles, # Replaced kpi_ratings_md
+        focus_row,          # Replaced waterfall_md
+        news_md,
+    )
 
 # -------------------- CHARTS --------------------
 def charts(scored: pd.DataFrame, focus: str):
@@ -957,8 +953,8 @@ def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
             scored,
             text_synopsis_md,
             metrics_summary_md,
-            kpi_ratings_md,
-            waterfall_md,
+            factor_percentiles, # Changed
+            focus_row,          # Changed
             news_md,
         ) = analyze_ticker_pro(ticker, peer_cap=max_peers)
     except Exception as e:
@@ -976,12 +972,8 @@ def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
         + metrics_summary_md
     )
     
-    ratings_md = (
-        kpi_ratings_md
-        + "\n\n"
-        + waterfall_md
-    )
-
+    # --- MODIFICATION: `ratings_md` is no longer created here ---
+    # ratings_md = ( ... ) -> REMOVED
 
     # --- 2) Raw metrics row for the focus ticker ---
     raw_metrics = None
@@ -1017,7 +1009,8 @@ def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
     return {
         "ticker": ticker,
         "overview_md": overview_md, # Added
-        "ratings_md": ratings_md,   # Added
+        "factor_percentiles": factor_percentiles, # Changed
+        "focus_row": focus_row,                 # Changed
         "peers_df": scored,
         "valuation": valuation,
         "news_md": news_md,
@@ -1099,6 +1092,59 @@ def inject_global_css():
             border-bottom: 3px solid #3b82f6; /* Blue accent line */
         }
         /* --- End Top Nav --- */
+
+        /* --- NEW: Factor Bar Chart Styles --- */
+        .factor-bar-container {
+            margin-bottom: 12px;
+        }
+        .factor-bar-label {
+            font-size: 14px;
+            color: #c9d1d9;
+            margin-bottom: 6px;
+        }
+        .factor-bar-score {
+            float: right;
+            font-weight: 500;
+            color: #f0f6fc;
+        }
+        .factor-bar-bg {
+            width: 100%;
+            height: 10px;
+            background-color: #30363d; /* Dark bar background */
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .factor-bar-fill {
+            height: 100%;
+            background-color: #f0f6fc; /* White/light-grey fill */
+            border-radius: 5px;
+            transition: width 0.5s ease-in-out;
+        }
+        .methodology-card {
+            padding: 18px 20px;
+            border-radius: 12px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            height: 100%;
+        }
+        .methodology-card h4 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 12px;
+            color: #f0f6fc;
+        }
+        .methodology-card p {
+            font-size: 13px;
+            color: #8b949e;
+            margin-bottom: 4px;
+        }
+        .methodology-card strong {
+            color: #c9d1d9;
+            font-weight: 600;
+        }
+        /* --- End Factor Bar --- */
 
         /* --- CARD STYLING (Same as before) --- */
         .hero-card {
@@ -1469,7 +1515,7 @@ def render_analysis_page():
         with col1:
             st.markdown(
                 """
-                <div class="section-card">
+                <div class.="section-card">
                 """,
                 unsafe_allow_html=True
             )
@@ -1478,16 +1524,86 @@ def render_analysis_page():
             st.markdown("</div>", unsafe_allow_html=True)
         
         with col2:
+            # --- MODIFICATION: Render new Factor Score Breakdown ---
             st.markdown(
                 """
-                <div class="section-card">
+                <div class.="section-card">
+                    <div style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem; color: #f0f6fc;">
+                        Factor Score Breakdown
+                    </div>
+                    <div style="font-size: 14px; color: #8b949e; margin-top: -1rem; margin-bottom: 1.5rem;">
+                        Individual factor analysis across key dimensions (0-100 percentile rank)
+                    </div>
                 """,
                 unsafe_allow_html=True
             )
-            # ratings_md already contains "### Ratings for..."
-            st.markdown(res.get("ratings_md", "Ratings not available."), unsafe_allow_html=True)
+            
+            factor_percentiles = res.get("factor_percentiles", {})
+            if factor_percentiles:
+                for factor, score in factor_percentiles.items():
+                    score_val = score if np.isfinite(score) else 0
+                    score_display = f"{score:.1f}" if np.isfinite(score) else "N/A"
+                    
+                    st.markdown(
+                        f"""
+                        <div class="factor-bar-container">
+                            <div class="factor-bar-label">
+                                {factor}
+                                <span class="factor-bar-score">{score_display}</span>
+                            </div>
+                            <div class="factor-bar-bg">
+                                <div class="factor-bar-fill" style="width: {score_val}%;"></div>
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+            else:
+                st.markdown("_Factor scores not available._")
+
             st.markdown("</div>", unsafe_allow_html=True)
+            # --- END MODIFICATION ---
+
+        # --- NEW: Factor Calculation Methodology Card ---
+        st.write("") # Spacer
+        st.markdown(
+            """
+            <div class="methodology-card">
+                <h4>Factor Calculation Methodology</h4>
+                <p>
+                    Each factor score is an industry-neutral percentile rank (0-100) based on a blend of underlying metrics. 
+                    A score of 50 is average relative to peers.
+                </p>
+                <p><strong>Valuation:</strong>
+                    Blend of P/E Ratio, P/B Ratio, EV/EBITDA, and Price/Sales. 
+                    Lower multiples result in a higher score.
+                </p>
+                <p><strong>Quality:</strong>
+                    Blend of ROE (Return on Equity), Gross Margin, EBITDA Margin, and Interest Coverage. 
+                    Higher profitability and coverage result in a higher score.
+                </p>
+                <p><strong>Growth:</strong>
+                    Blend of TTM Revenue Growth (YoY) and Quarterly Asset Growth. 
+                    Higher growth rates result in a higher score.
+                </p>
+                <p><strong>Momentum:</strong>
+                    Blend of 12-Month Total Return and 5-Day Price vs. VWAP. 
+                    Stronger recent price performance results in a higher score.
+                </p>
+                <p><strong>Leverage:</strong>
+                    Based on Debt-to-Equity ratio. 
+                    Lower leverage (less debt) results in a higher score.
+                </p>
+                <p><strong>Efficiency:</strong>
+                    Blend of Gross Profitability (Gross Profit / Avg. Assets) and Accruals %. 
+                    Higher profitability and lower accruals result in a higher score.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
         # --- END NEW SECTION ---
+
         
         st.write("")
         st.markdown(

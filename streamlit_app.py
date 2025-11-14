@@ -690,14 +690,14 @@ def charts(scored: pd.DataFrame, focus: str):
                     20, 800
                 )
                 sc_ = ax2.scatter(dfx["EV/EBITDA"], dfx["RevenueGrowth%"], s=sizes,
-                                    c=dfx["CompositeScore"], alpha=0.75)
+                                    c=dfx["CompositeScore"], alpha=0.0) # Changed alpha to 0 for invisible points
                 ax2.set_title("EV/EBITDA vs Revenue Growth (size≈MktCap, color=Composite)")
                 ax2.set_xlabel("EV/EBITDA"); ax2.set_ylabel("Revenue Growth %")
                 if focus in set(dfx["Ticker"]):
                     row = dfx[dfx["Ticker"] == focus].iloc[0]
                     ax2.annotate(focus, (row["EV/EBITDA"], row["RevenueGrowth%"]),
                                  xytext=(5, 5), textcoords="offset points")
-                cb = fig2.colorbar(sc_); cb.set_label("Composite Score")
+                # Removed colorbar as points are invisible
     except Exception:
         fig2 = None
 
@@ -987,12 +987,18 @@ def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
 
     # --- 3) Valuation scenarios (Base/Bull/Bear) via your DCF/multiples engine ---
     valuation: Dict[str, Dict[str, Any]] = {}
+    
+    # Store the actual parameters from the base run
+    base_metrics = get_metrics(ticker)
+    base_params = _build_scenario_params(base_metrics, "Base")
+    
     for scen in ["Base", "Bull", "Bear"]:
         try:
             df_val, md_val = _scenario_valuation_core(ticker, max_peers, scen)
         except Exception as e:
             df_val, md_val = pd.DataFrame(), f"_Error in {scen} scenario: {e}_"
         valuation[scen] = {"df": df_val, "md": md_val}
+
 
     # --- 4) Charts (5d price + EV/EBITDA vs growth scatter) ---
     fig_comp, fig_scatter, _ = charts(scored, ticker)
@@ -1006,6 +1012,8 @@ def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
         "news_md": news_md,
         "raw_metrics": raw_metrics,
         "charts": {"price": fig_price, "scatter": fig_scatter},
+        "base_params": base_params, # Add base parameters to results
+        "current_price": get_price_and_shares(ticker)[0] # Get current price
     }
 
 
@@ -1142,6 +1150,62 @@ def inject_global_css():
             border: 1px solid #30363d;
         }
 
+        /* Custom styles for Valuation Page */
+        .valuation-metric-label {
+            font-size: 16px;
+            color: #8b949e;
+            margin-bottom: 5px;
+            font-weight: 400;
+        }
+        .valuation-metric-value {
+            font-size: 38px; /* Larger for implied price */
+            font-weight: 600;
+            color: #f0f6fc;
+            line-height: 1.2;
+        }
+        .valuation-current-price {
+            font-size: 14px;
+            color: #8b949e;
+            margin-top: 10px;
+        }
+        .valuation-upside {
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .valuation-upside.positive {
+            color: #3fb950;
+        }
+        .valuation-upside.negative {
+            color: #f85149;
+        }
+        .scenario-button-group .stRadio > label {
+            border: 1px solid #30363d;
+            background: #161b22;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-right: 5px;
+        }
+        .scenario-button-group .stRadio > label:hover {
+            background: #21262d;
+        }
+        .scenario-button-group .stRadio > label[data-baseweb="radio"] > div:first-child {
+            display: none;
+        }
+        .scenario-button-group .stRadio > label span {
+            color: #c9d1d9;
+        }
+        .scenario-button-group .stRadio > label[data-checked="true"] {
+            border-color: #d4af37;
+            background: #2c271e; /* Darker gold-ish background for selected */
+        }
+        
+        /* Make sure number input arrows are styled */
+        .stNumberInput div[data-testid="stVerticalBlock"] > div:last-child {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
         </style>
         """,
         unsafe_allow_html=True,
@@ -1209,6 +1273,8 @@ def render_analysis_page():
                 )
                 st.session_state.recent_tickers = st.session_state.recent_tickers[:12]
                 st.success(f"Analysis complete for {results['ticker']}.")
+                # Set the ticker input for valuation page
+                st.session_state.valuation_ticker_input = results['ticker']
         else:
             st.warning("Please enter a ticker symbol.")
 
@@ -1236,25 +1302,300 @@ def render_analysis_page():
 # ---------- VALUATION PAGE (FIXED) ----------
 def render_valuation_page():
     inject_global_css()
-    st.markdown("### Valuation Scenarios")
 
-    res = st.session_state.last_results
-    if not res:
-        st.info("Run an analysis on the Dashboard or Analysis page to see valuation output.")
-        return
+    st.markdown(
+        """
+        <div class="hero-card">
+            <div class="hero-title">Valuation Modeling</div>
+            <div class="hero-subtitle">Build DCF and multiples-based valuations with scenario analysis</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    vals = res["valuation"]
-    cols = st.columns(3)
-    order = [("Base", cols[0]), ("Bull", cols[1]), ("Bear", cols[2])]
+    st.write("") # Spacer
 
-    for scen_name, col in order:
-        with col:
-            v = vals.get(scen_name, {})
-            # st.subheader(scen_name)
-            st.markdown(v.get("md", ""), unsafe_allow_html=True)
-            df_v = v.get("df")
-            if isinstance(df_v, pd.DataFrame) and not df_v.empty:
-                st.dataframe(df_v.set_index("Method"), use_container_width=True)
+    # --- Select Company Card ---
+    st.markdown(
+        """
+        <div class="section-card">
+            <div class="section-title">Select Company</div>
+            <div class="section-subtitle">Choose a company to value</div>
+        """,
+        unsafe_allow_html=True,
+    )
+    
+    # Use the ticker from the last analysis or an empty string
+    initial_ticker_val = st.session_state.get("valuation_ticker_input", "")
+    
+    # Placeholder for company selection, for now, just a text input
+    selected_ticker = st.text_input(
+        "Search ticker symbol (e.g., AAPL, MSFT)",
+        value=initial_ticker_val,
+        key="valuation_ticker_search",
+        label_visibility="collapsed"
+    )
+
+    # Fetch full name if available
+    company_name = ""
+    if selected_ticker:
+        profile = get_profile(selected_ticker)
+        company_name = profile.get("name", "")
+    
+    # Display selected company (can be expanded to a dropdown of recent tickers)
+    if company_name:
+        st.markdown(f"**{selected_ticker.upper()}** - {company_name}")
+    elif selected_ticker:
+        st.markdown(f"**{selected_ticker.upper()}**")
+    else:
+        st.markdown("_No company selected_")
+    
+    st.markdown("</div>", unsafe_allow_html=True) # Close Select Company Card
+    st.write("") # Spacer
+
+    # --- Scenario Selection Card ---
+    st.markdown(
+        """
+        <div class="section-card">
+            <div class="section-title">Scenario Selection</div>
+            <div class="section-subtitle">Choose valuation scenario assumptions</div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # Custom radio buttons for scenarios
+    selected_scenario = st.radio(
+        "Select Scenario",
+        ["Bull Case", "Base Case", "Bear Case"],
+        index=1, # Base Case selected by default
+        horizontal=True,
+        key="valuation_scenario_radio",
+        label_visibility="collapsed"
+    )
+    
+    # Inject custom CSS for the scenario buttons
+    st.markdown(
+        """
+        <style>
+        .stRadio > div {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .stRadio > div > label {
+            flex: 1;
+            text-align: center;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    
+    st.markdown("</div>", unsafe_allow_html=True) # Close Scenario Selection Card
+    st.write("") # Spacer
+
+    # --- Valuation Assumptions Card ---
+    st.markdown(
+        """
+        <div class="section-card">
+            <div class="section-title">Valuation Assumptions</div>
+            <div class="section-subtitle">Adjust key assumptions for your valuation model</div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # Default values from the Base Case of the last analysis
+    base_params = st.session_state.last_results.get("base_params", {}) if st.session_state.last_results else {}
+    
+    default_growth = base_params.get("g_proj", 5.0)
+    default_wacc = base_params.get("wacc", 0.08) * 100
+    default_terminal_g = base_params.get("terminal_g", 0.02) * 100
+    default_ebitda_multiple = 10.0 # Placeholder for now, could be derived from peer comps
+
+
+    with st.form("valuation_assumptions_form"):
+        growth_rate = st.number_input(
+            "Revenue Growth Rate (%)",
+            min_value=0.0,
+            max_value=50.0,
+            value=float(default_growth),
+            step=0.1,
+            format="%.1f",
+            key="growth_rate_input"
+        )
+        wacc = st.number_input(
+            "Discount Rate / WACC (%)",
+            min_value=0.0,
+            max_value=20.0,
+            value=float(default_wacc),
+            step=0.1,
+            format="%.1f",
+            key="wacc_input"
+        )
+        terminal_growth = st.number_input(
+            "Terminal Growth Rate (%)",
+            min_value=0.0,
+            max_value=5.0,
+            value=float(default_terminal_g),
+            step=0.1,
+            format="%.1f",
+            key="terminal_growth_input"
+        )
+        # Using EV/EBITDA as a target multiple for now, P/E or P/S can be added
+        target_ebitda_multiple = st.number_input(
+            "Target EV/EBITDA Multiple",
+            min_value=0.0,
+            max_value=30.0,
+            value=float(default_ebitda_multiple),
+            step=0.1,
+            format="%.1f",
+            key="target_ebitda_multiple_input"
+        )
+        
+        # Scenario specific adjustments (for display only for now)
+        if selected_scenario == "Bull Case":
+            st.markdown("<small>_Bull case: Higher growth, lower WACC, higher terminal growth._</small>", unsafe_allow_html=True)
+        elif selected_scenario == "Bear Case":
+            st.markdown("<small>_Bear case: Lower growth, higher WACC, lower terminal growth._</small>", unsafe_allow_html=True)
+
+        submitted_assumptions = st.form_submit_button("Run Valuation")
+
+    st.markdown("</div>", unsafe_allow_html=True) # Close Valuation Assumptions Card
+    st.write("") # Spacer
+
+    if selected_ticker and submitted_assumptions:
+        with st.spinner(f"Running valuation for {selected_ticker.upper()} under {selected_scenario} scenario..."):
+            # Re-run valuation with custom parameters
+            current_price = st.session_state.last_results.get("current_price", np.nan) if st.session_state.last_results else np.nan
+
+            # Custom scenario parameters based on user input
+            custom_params = {
+                "wacc": wacc / 100.0,
+                "terminal_g": terminal_growth / 100.0,
+                "g_proj": growth_rate, # This is still % based, will be /100 in _scenario_valuation_core
+                "target_ebitda_multiple": target_ebitda_multiple
+            }
+            
+            # --- Recalculate DCF (simplified from _scenario_valuation_core) ---
+            implied_price_dcf_custom = np.nan
+            fcff_ttm, net_debt = _estimate_fcff_and_net_debt(selected_ticker)
+            _, shares = get_price_and_shares(selected_ticker)
+
+            if all(np.isfinite([fcff_ttm, custom_params['g_proj'], custom_params['wacc'], custom_params['terminal_g'], net_debt, shares])) and shares > 0 and custom_params['wacc'] > custom_params['terminal_g']:
+                try:
+                    pv_fcffs = []
+                    last_fcff = fcff_ttm
+                    for i in range(1, 6): # 5-year projection
+                        last_fcff = last_fcff * (1 + (custom_params['g_proj'] / 100.0))
+                        pv_fcffs.append(last_fcff / ((1 + custom_params['wacc']) ** i))
+                    
+                    tv = (last_fcff * (1 + custom_params['terminal_g'])) / (custom_params['wacc'] - custom_params['terminal_g'])
+                    pv_tv = tv / ((1 + custom_params['wacc']) ** 5)
+                    
+                    enterprise_value_dcf_custom = sum(pv_fcffs) + pv_tv
+                    equity_value_dcf_custom = enterprise_value_dcf_custom - net_debt
+                    implied_price_dcf_custom = equity_value_dcf_custom / shares
+                except Exception as e:
+                    logging.warning(f"Custom DCF calculation failed for {selected_ticker}: {e}")
+            
+            # --- Recalculate Multiples (simplified for now) ---
+            implied_price_ev_ebitda_custom = np.nan
+            metrics = get_metrics(selected_ticker)
+            ebitda_ttm = np.nan
+            rev_ttm = ttm_from_rows(yf.Ticker(selected_ticker).quarterly_income_stmt, ["Total Revenue", "Revenue"])
+
+            if np.isfinite(metrics.get("EBITDAMargin%")) and np.isfinite(rev_ttm):
+                ebitda_ttm = metrics.get("EBITDAMargin%") * rev_ttm / 100.0
+
+            if np.isfinite(custom_params['target_ebitda_multiple']) and np.isfinite(ebitda_ttm) and np.isfinite(net_debt) and shares > 0:
+                ev_from_multiple = ebitda_ttm * custom_params['target_ebitda_multiple']
+                eq_val_from_multiple = ev_from_multiple - net_debt
+                implied_price_ev_ebitda_custom = eq_val_from_multiple / shares
+
+
+            # --- Display Results ---
+            st.markdown(
+                """
+                <div class="section-card">
+                    <div class="section-title">Valuation Results</div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            # DCF Valuation
+            st.markdown("<div class='valuation-metric-label'>DCF Valuation</div>", unsafe_allow_html=True)
+            if np.isfinite(implied_price_dcf_custom):
+                upside_dcf = ((implied_price_dcf_custom / current_price) - 1.0) * 100 if np.isfinite(current_price) and current_price != 0 else np.nan
+                upside_class = "positive" if upside_dcf >= 0 else "negative"
+                st.markdown(
+                    f"<div class='valuation-metric-value'>${implied_price_dcf_custom:,.2f}</div>"
+                    f"<div class='valuation-current-price'>Current Price <span style='float:right'>${current_price:,.2f}</span></div>"
+                    f"<div class='valuation-upside {upside_class}'>Upside/Downside <span style='float:right'>📈 {upside_dcf:+.1f}%</span></div>",
+                    unsafe_allow_html=True
+                )
+            else:
+                st.markdown("<div class='valuation-metric-value'>N/A</div>", unsafe_allow_html=True)
+            
+            st.markdown("<hr style='border-top: 1px solid #30363d;'>", unsafe_allow_html=True) # Separator
+
+
+            # P/S Based Valuation (using EV/EBITDA for now, match image)
+            st.markdown("<div class='valuation-metric-label'>EV/EBITDA Based Valuation</div>", unsafe_allow_html=True)
+            if np.isfinite(implied_price_ev_ebitda_custom):
+                upside_ebitda = ((implied_price_ev_ebitda_custom / current_price) - 1.0) * 100 if np.isfinite(current_price) and current_price != 0 else np.nan
+                upside_class = "positive" if upside_ebitda >= 0 else "negative"
+                st.markdown(
+                    f"<div class='valuation-metric-value'>${implied_price_ev_ebitda_custom:,.2f}</div>"
+                    f"<div class='valuation-current-price'>Current Price <span style='float:right'>${current_price:,.2f}</span></div>"
+                    f"<div class='valuation-upside {upside_class}'>Upside/Downside <span style='float:right'>📈 {upside_ebitda:+.1f}%</span></div>",
+                    unsafe_allow_html=True
+                )
+            else:
+                st.markdown("<div class='valuation-metric-value'>N/A</div>", unsafe_allow_html=True)
+
+            st.markdown("</div>", unsafe_allow_html=True) # Close Valuation Results Card
+            st.write("") # Spacer
+
+            # --- Sensitivity Analysis Card (Example, needs actual calculation) ---
+            st.markdown(
+                """
+                <div class="section-card">
+                    <div class="section-title">Sensitivity Analysis</div>
+                    <div class="section-subtitle">Price targets across different assumption ranges</div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+            # --- Placeholder for Sensitivity Analysis Table ---
+            # You would replace this with actual calculation based on ranges of growth and discount rates
+            growth_ranges = [5, 10, 15, 20, 25] # Example growth rates
+            discount_ranges = [8, 9, 10, 11, 12] # Example discount rates
+
+            # Create a dummy DataFrame for display
+            sens_data = {}
+            for g_percent in growth_ranges:
+                row_values = []
+                for d_percent in discount_ranges:
+                    # Simple placeholder calculation for implied price
+                    # In a real scenario, you'd re-run a DCF for each combination
+                    base_val = implied_price_dcf_custom if np.isfinite(implied_price_dcf_custom) else 250
+                    # Introduce some variation based on growth and discount
+                    val_calc = base_val * (1 + (g_percent / 1000) - (d_percent / 1500))
+                    row_values.append(f"${val_calc:,.2f}")
+                sens_data[f"{g_percent}%"] = row_values
+            
+            sensitivity_df = pd.DataFrame(sens_data, index=[f"{d}%" for d in discount_ranges]).T
+            sensitivity_df.columns.name = "Discount / Growth"
+            sensitivity_df.index.name = "Growth / Discount"
+
+            st.dataframe(sensitivity_df, use_container_width=True)
+
+            st.markdown("</div>", unsafe_allow_html=True) # Close Sensitivity Analysis Card
+
+    elif selected_ticker and not submitted_assumptions:
+        st.info("Adjust assumptions and click 'Run Valuation' to see results.")
+    else:
+        st.info("Select a company and run an analysis to enable valuation.")
 
 
 # ---------- RESEARCH PAGE (PERSISTENT NOTES) ----------

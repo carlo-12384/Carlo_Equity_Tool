@@ -45,7 +45,7 @@ def _first_row(df: pd.DataFrame, aliases) -> pd.Series:
 
 def yf_quarterly(symbol: str):
     t = yf.Ticker(symbol)
-    return t.quarterly_income_stmt, t.quarterly_balance_sheet, t.quarterly_cashflow
+    return t.quarterl_income_stmt, t.quarterly_balance_sheet, t.quarterly_cashflow
 
 def ttm_from_rows(df: pd.DataFrame, aliases) -> float:
     try:
@@ -1030,8 +1030,8 @@ def inject_global_css():
         
         /* --- GLOBAL TITLE --- */
         h1 {
-            /* --- MODIFICATION: Added !important to override inline black --- */
-            color: #f0f6fc !important; /* Light text for dark pages */
+            /* --- MODIFICATION: Removed !important, will be set by page --- */
+            color: #f0f6fc; /* Light text for dark pages */
         }
         
         /* --- MAIN APP STYLING (DARK DEFAULT) --- */
@@ -1387,8 +1387,12 @@ def render_dashboard():
             color: #0d1117;
         }
         /* Override card titles and text */
-        .hero-title, .kpi-value-new, .section-title, h1 {
+        .hero-title, .kpi-value-new, .section-title {
             color: #0d1117; /* Dark text */
+        }
+        /* --- MODIFICATION: Make h1 black on this page --- */
+        h1 {
+            color: #0d1117 !important; /* Dark text */
         }
         .hero-subtitle, .kpi-label-new, .section-subtitle {
             color: #4a5568; /* Medium-dark grey text */
@@ -1398,8 +1402,9 @@ def render_dashboard():
             background: #ffffff; /* Explicitly white */
             border-bottom: 1px solid #e1e4e8; /* Light border */
         }
+        /* --- MODIFICATION: Make inactive nav text black --- */
         div[data-testid="stRadio"] label {
-            color: #4a5568; /* Inactive tabs dark grey */
+            color: #0d1117; /* Inactive tabs dark text */
         }
         div[data-testid="stRadio"] label:hover {
             color: #0d1117; /* Inactive tabs hover dark */
@@ -2262,7 +2267,7 @@ def render_theses_page():
     if st.session_state.theses_store:
         st.markdown(
             """
-            <div class="section-card">
+            <div classs="section-card">
                 <div class="section-title">Saved Theses</div>
             """,
             unsafe_allow_html=True

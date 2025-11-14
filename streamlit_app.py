@@ -837,14 +837,119 @@ def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
 # ======================================================================
 # BLOCKS-STYLE STREAMLIT UI
 # ======================================================================
+# =========================================================
+# LOCAL STORAGE + BLOCKS-STYLE STREAMLIT UI
+# (replace everything below the old FRONTEND section with this)
+# =========================================================
+import json
+from datetime import datetime
+from typing import Dict, Any
+
+# ---------- LOCAL STORAGE HELPERS ----------
+NOTES_FILE = "research_notes.json"
+THESES_FILE = "theses.json"
+
+
+def _load_json(path: str, default):
+    try:
+        with open(path, "r") as f:
+            return json.load(f)
+    except Exception:
+        return default
+
+
+def _save_json(path: str, obj):
+    try:
+        with open(path, "w") as f:
+            json.dump(obj, f, indent=2)
+    except Exception as e:
+        logging.warning(f"Failed to save {path}: {e}")
+
 
 # ---------- SESSION SETUP ----------
 if "recent_tickers" not in st.session_state:
-    st.session_state.recent_tickers = []   # list of dicts: {"ticker":..., "time":...}
+    st.session_state.recent_tickers = []   # list[{"ticker","time"}]
 if "last_results" not in st.session_state:
-    st.session_state.last_results = None   # cache of latest analysis object
+    st.session_state.last_results = None   # latest analysis bundle
+if "notes_store" not in st.session_state:
+    # dict: {ticker: notes_str}
+    st.session_state.notes_store = _load_json(NOTES_FILE, {})
+if "theses_store" not in st.session_state:
+    # list of dicts
+    st.session_state.theses_store = _load_json(THESES_FILE, [])
 
-# ---------- GLOBAL STYLING ----------
+
+# ======================================================================
+# ANALYSIS WRAPPER (hooks into your existing pipeline)
+# ======================================================================
+def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
+    """
+    Wraps analyze_ticker_pro + valuation + charts into a single object
+    that the UI can reuse across pages.
+    """
+    ticker = ticker.upper().strip()
+
+    # Your core pipeline (already defined above)
+    (
+        scored,
+        text_synopsis_md,
+        metrics_summary_md,
+        kpi_ratings_md,
+        waterfall_md,
+        news_md,
+    ) = analyze_ticker_pro(ticker, peer_cap=max_peers)
+
+    # --- 1) High-level company summary markdown ---
+    summary_md = (
+        "### Company Overview\n\n"
+        + text_synopsis_md
+        + "\n\n"
+        + metrics_summary_md
+        + "\n\n"
+        + kpi_ratings_md
+        + "\n\n"
+        + waterfall_md
+    )
+
+    # --- 2) Raw metrics row for the focus ticker ---
+    raw_metrics = None
+    if isinstance(scored, pd.DataFrame) and not scored.empty:
+        if "Ticker" in scored.columns:
+            focus = scored[scored["Ticker"] == ticker]
+            if not focus.empty:
+                raw_metrics = focus
+            else:
+                raw_metrics = scored.head(1)
+        else:
+            raw_metrics = scored.head(1)
+
+    # --- 3) Valuation scenarios (Base/Bull/Bear) via your DCF/multiples engine ---
+    valuation: Dict[str, Dict[str, Any]] = {}
+    for scen in ["Base", "Bull", "Bear"]:
+        try:
+            df_val, md_val = _scenario_valuation_core(ticker, max_peers, scen)
+        except Exception as e:
+            df_val, md_val = pd.DataFrame(), f"_Error in {scen} scenario: {e}_"
+        valuation[scen] = {"df": df_val, "md": md_val}
+
+    # --- 4) Charts (5d price + EV/EBITDA vs growth scatter) ---
+    fig_comp, fig_scatter, _ = charts(scored, ticker)
+    fig_price = five_day_price_plot(ticker)
+
+    return {
+        "ticker": ticker,
+        "summary_md": summary_md,
+        "peers_df": scored,
+        "valuation": valuation,
+        "news_md": news_md,
+        "raw_metrics": raw_metrics,
+        "charts": {"price": fig_price, "scatter": fig_scatter},
+    }
+
+
+# ======================================================================
+# GLOBAL STYLING (Blocks-style + nicer sidebar)
+# ======================================================================
 def inject_global_css():
     st.markdown(
         """
@@ -921,6 +1026,24 @@ def inject_global_css():
             background: #020617;
             border-right: 1px solid #1f2937;
         }
+
+        /* Make radio in sidebar look like a vertical icon menu */
+        div[data-testid="stSidebar"] div[role="radiogroup"] > label {
+            border-radius: 12px;
+            padding: 8px 10px;
+            margin-bottom: 4px;
+            cursor: pointer;
+        }
+        div[data-testid="stSidebar"] div[role="radiogroup"] > label:hover {
+            background: rgba(148,163,184,0.16);
+        }
+        div[data-testid="stSidebar"] div[role="radiogroup"] > label[data-baseweb="radio"] > div:first-child {
+            display: none;  /* hide the little bubble */
+        }
+        div[data-testid="stSidebar"] div[role="radiogroup"] > label span {
+            font-size: 13px;
+        }
+
         .stButton > button {
             border-radius: 999px;
             padding: 0.45rem 1.3rem;
@@ -936,6 +1059,11 @@ def inject_global_css():
         """,
         unsafe_allow_html=True,
     )
+
+
+# ======================================================================
+# PAGES
+# ======================================================================
 
 # ---------- DASHBOARD ----------
 def render_dashboard():
@@ -968,20 +1096,20 @@ def render_dashboard():
     max_peers = st.slider("Max peers to compare", 2, 15, 6, key="max_peers_dashboard")
 
     if analyze_clicked and ticker:
-        results = run_equity_analysis(ticker.upper(), max_peers=max_peers)
+        results = run_equity_analysis(ticker, max_peers=max_peers)
         st.session_state.last_results = results
         st.session_state.recent_tickers.insert(
             0,
-            {"ticker": ticker.upper(), "time": datetime.now().strftime("%Y-%m-%d %H:%M")},
+            {"ticker": results["ticker"], "time": datetime.now().strftime("%Y-%m-%d %H:%M")},
         )
         st.session_state.recent_tickers = st.session_state.recent_tickers[:12]
-        st.success(f"Analysis updated for {ticker.upper()}")
+        st.success(f"Analysis updated for {results['ticker']}")
 
     st.write("")
     kpi1, kpi2, kpi3 = st.columns(3)
     companies_tracked = len({x["ticker"] for x in st.session_state.recent_tickers}) or 0
-    active_theses = 0
-    research_docs = 0
+    active_theses = len(st.session_state.theses_store)
+    research_docs = len(st.session_state.notes_store)
 
     with kpi1:
         st.markdown(
@@ -998,7 +1126,7 @@ def render_dashboard():
         st.markdown(
             f"""
             <div class="kpi-card">
-                <div class="kpi-label">Active Theses</div>
+                <div class="kpi-label">Saved Theses</div>
                 <div class="kpi-value">{active_theses}</div>
                 <div class="kpi-trend">Draft or published</div>
             </div>
@@ -1009,9 +1137,9 @@ def render_dashboard():
         st.markdown(
             f"""
             <div class="kpi-card">
-                <div class="kpi-label">Research Documents</div>
+                <div class="kpi-label">Research Notes</div>
                 <div class="kpi-value">{research_docs}</div>
-                <div class="kpi-trend">Notes & transcripts</div>
+                <div class="kpi-trend">Stored locally</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -1020,6 +1148,7 @@ def render_dashboard():
     st.write("")
     left, right = st.columns([1.4, 2])
 
+    # Recently analyzed
     with left:
         st.markdown(
             """
@@ -1036,6 +1165,7 @@ def render_dashboard():
             st.markdown("_No companies analyzed yet. Run your first analysis above._")
         st.markdown("</div>", unsafe_allow_html=True)
 
+    # Latest company snapshot
     with right:
         st.markdown(
             """
@@ -1051,6 +1181,7 @@ def render_dashboard():
             st.markdown("_Run an analysis to display a company snapshot here._")
         st.markdown("</div>", unsafe_allow_html=True)
 
+
 # ---------- ANALYSIS PAGE ----------
 def render_analysis_page():
     inject_global_css()
@@ -1065,10 +1196,11 @@ def render_analysis_page():
 
     if st.button("Run Analysis", key="run_analysis_btn"):
         if ticker:
-            results = run_equity_analysis(ticker.upper(), max_peers=max_peers)
+            results = run_equity_analysis(ticker, max_peers=max_peers)
             st.session_state.last_results = results
             st.session_state.recent_tickers.insert(
-                0, {"ticker": ticker.upper(), "time": datetime.now().strftime("%Y-%m-%d %H:%M")}
+                0,
+                {"ticker": results["ticker"], "time": datetime.now().strftime("%Y-%m-%d %H:%M")},
             )
             st.session_state.recent_tickers = st.session_state.recent_tickers[:12]
         else:
@@ -1089,52 +1221,78 @@ def render_analysis_page():
             st.markdown("_Raw metrics view not available yet._")
 
         st.markdown("#### Charts")
-        charts_dict = res["charts"]
-        if charts_dict.get("price") is not None:
-            st.pyplot(charts_dict["price"])
-        if charts_dict.get("scatter") is not None:
-            st.pyplot(charts_dict["scatter"])
+        if res["charts"].get("price") is not None:
+            st.pyplot(res["charts"]["price"])
+        if res["charts"].get("scatter") is not None:
+            st.pyplot(res["charts"]["scatter"])
 
-# ---------- VALUATION PAGE ----------
+
+# ---------- VALUATION PAGE (FIXED) ----------
 def render_valuation_page():
     inject_global_css()
     st.markdown("### Valuation Scenarios")
 
-    if not st.session_state.last_results:
+    res = st.session_state.last_results
+    if not res:
         st.info("Run an analysis on the Dashboard or Analysis page to see valuation output.")
         return
 
-    st.markdown(st.session_state.last_results["valuation_md"])
+    vals = res["valuation"]
+    cols = st.columns(3)
+    order = [("Base", cols[0]), ("Bull", cols[1]), ("Bear", cols[2])]
 
-# ---------- RESEARCH PAGE ----------
+    for scen_name, col in order:
+        with col:
+            v = vals.get(scen_name, {})
+            st.subheader(scen_name)
+            st.markdown(v.get("md", ""), unsafe_allow_html=True)
+            df_v = v.get("df")
+            if isinstance(df_v, pd.DataFrame) and not df_v.empty:
+                st.dataframe(df_v.set_index("Method"), use_container_width=True)
+
+
+# ---------- RESEARCH PAGE (PERSISTENT NOTES) ----------
 def render_research_page():
     inject_global_css()
     st.markdown("### Research Library")
 
-    st.markdown(
-        """
-        _This space is for attaching notes, saving transcript links, or summarizing calls._
-        In the future you can:
-        - Store PDF links / 10-Ks
-        - Paste call transcripts
-        - Keep bullet-point research notes tied to a ticker
-        """
-    )
-
-    current_ticker = (
+    notes_store: Dict[str, str] = st.session_state.notes_store
+    current_from_recent = (
         st.session_state.recent_tickers[0]["ticker"]
-        if st.session_state.recent_tickers
-        else ""
+        if st.session_state.recent_tickers else ""
     )
-    st.text_area(
-        "Scratchpad for current ticker",
-        key="research_notes",
-        placeholder=f"Write notes for {current_ticker or 'your company'}...",
-        height=220,
-    )
-    st.caption("Notes are not persisted yet – this is just a front-end UX placeholder.")
 
-# ---------- THESES PAGE ----------
+    tickers = sorted(
+        set(list(notes_store.keys()) + ([current_from_recent] if current_from_recent else []))
+    )
+    if not tickers:
+        tickers = ["(no ticker yet)"]
+
+    selected = st.selectbox("Select ticker for notes", options=tickers)
+    key = selected if selected != "(no ticker yet)" else current_from_recent or ""
+
+    existing = notes_store.get(key, "") if key else ""
+    new_text = st.text_area("Notes", existing, height=260, key=f"notes_area_{key or 'global'}")
+
+    col_save, col_info = st.columns([1, 3])
+    with col_save:
+        if st.button("Save Notes"):
+            if key:
+                st.session_state.notes_store[key] = new_text
+                _save_json(NOTES_FILE, st.session_state.notes_store)
+                st.success(f"Notes saved for {key}.")
+            else:
+                st.warning("No ticker selected.")
+
+    with col_info:
+        st.caption("Notes are stored locally in `research_notes.json` in this app's directory.")
+
+    if st.session_state.notes_store:
+        st.markdown("#### Tickers with saved notes")
+        st.write(", ".join(sorted(st.session_state.notes_store.keys())))
+
+
+# ---------- THESES PAGE (PERSISTENT THESES) ----------
 def render_theses_page():
     inject_global_css()
     st.markdown("### Investment Theses")
@@ -1152,14 +1310,47 @@ def render_theses_page():
         """
     )
 
-    st.text_input("Ticker", key="thesis_ticker", placeholder="e.g., AAPL")
-    st.selectbox("Rating", ["Buy", "Hold", "Sell"], key="thesis_rating")
-    st.text_area("Key Drivers", key="thesis_drivers", height=120)
-    st.text_area("Risks", key="thesis_risks", height=100)
-    st.text_area("Valuation Anchor", key="thesis_val", height=80)
-    st.button("Save Thesis (UI only for now)")
+    current_from_recent = (
+        st.session_state.recent_tickers[0]["ticker"]
+        if st.session_state.recent_tickers else ""
+    )
 
-# ---------- MAIN ----------
+    col1, col2 = st.columns(2)
+    with col1:
+        ticker = st.text_input("Ticker", value=current_from_recent, key="thesis_ticker")
+        rating = st.selectbox("Rating", ["Buy", "Hold", "Sell"], key="thesis_rating")
+        horizon = st.text_input("Time Horizon", value="12–18 months", key="thesis_horizon")
+    with col2:
+        val_anchor = st.text_area("Valuation Anchor", key="thesis_val", height=80)
+    drivers = st.text_area("Key Drivers", key="thesis_drivers", height=120)
+    risks = st.text_area("Risks", key="thesis_risks", height=100)
+
+    if st.button("Save Thesis"):
+        if ticker:
+            thesis = {
+                "ticker": ticker.upper(),
+                "rating": rating,
+                "horizon": horizon,
+                "drivers": drivers,
+                "risks": risks,
+                "valuation_anchor": val_anchor,
+                "created_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            }
+            st.session_state.theses_store.append(thesis)
+            _save_json(THESES_FILE, st.session_state.theses_store)
+            st.success(f"Thesis saved for {ticker.upper()}.")
+        else:
+            st.warning("Please enter a ticker for the thesis.")
+
+    if st.session_state.theses_store:
+        st.markdown("#### Saved Theses")
+        df_theses = pd.DataFrame(st.session_state.theses_store)
+        st.dataframe(df_theses, use_container_width=True)
+
+
+# ======================================================================
+# MAIN APP
+# ======================================================================
 def main():
     st.set_page_config(
         page_title="Equity Research Platform",
@@ -1167,25 +1358,34 @@ def main():
         layout="wide",
         initial_sidebar_state="expanded",
     )
+    inject_global_css()
 
     with st.sidebar:
-        st.markdown("#### Pages")
+        st.markdown("### Design")
         page = st.radio(
-            "Go to",
-            ["Dashboard", "Analysis", "Valuation", "Research", "Theses"],
+            "Pages",
+            [
+                "📊  Dashboard",
+                "📈  Analysis",
+                "🧮  Valuation",
+                "📚  Research",
+                "📝  Theses",
+            ],
             label_visibility="collapsed",
         )
 
-    if page == "Dashboard":
+    # Strip emoji prefix to route
+    if "Dashboard" in page:
         render_dashboard()
-    elif page == "Analysis":
+    elif "Analysis" in page:
         render_analysis_page()
-    elif page == "Valuation":
+    elif "Valuation" in page:
         render_valuation_page()
-    elif page == "Research":
+    elif "Research" in page:
         render_research_page()
-    elif page == "Theses":
+    elif "Theses" in page:
         render_theses_page()
+
 
 if __name__ == "__main__":
     main()

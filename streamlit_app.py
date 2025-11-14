@@ -577,7 +577,7 @@ def build_waterfall_dict(row: pd.Series):
     return parts
 
 # -------------------- ORCHESTRATOR (CORE ANALYSIS) --------------------
-def analyze_ticker_pro(ticker: str, peer_cap: int = 6):
+def analyze_ticker_pro(ticker: str, max_peers: int = 6):
     """
     Core analysis pipeline:
       - Build peer set
@@ -586,7 +586,7 @@ def analyze_ticker_pro(ticker: str, peer_cap: int = 6):
       - Build text + news outputs
     """
     ticker = ticker.upper().strip()
-    peers = build_peerset(ticker, vendor_max=20, final_cap=peer_cap) or []
+    peers = build_peerset(ticker, vendor_max=20, final_cap=max_peers) or []
 
     rows = []
     tgt = get_metrics(ticker)
@@ -1249,9 +1249,9 @@ def main_streamlit_app():
         st.header(f"Company Summary for {ticker_analyzed}")
         if ticker_analyzed:
             st.markdown(current_analysis_data["text_synopsis"])
-            st.markdown(current_analysis_data["metrics_summary"])
-            st.markdown(current_analysis_data["kpi_ratings"])
-            st.markdown(current_analysis_data["waterfall"])
+            st.markdown(current_analysis_data["metrics_summary"], unsafe_allow_html=True)
+            st.markdown(current_analysis_data["kpi_ratings"], unsafe_allow_html=True)
+            st.markdown(current_analysis_data["waterfall"], unsafe_allow_html=True)
             if st.button(f"Pin {ticker_analyzed} for Comparison", key="pin_summary"):
                 st.session_state["pinned_tickers"], _, _ = add_pin(st.session_state["pinned_tickers"], ticker_analyzed)
                 st.success(f"Pinned {ticker_analyzed}!")
@@ -1260,7 +1260,7 @@ def main_streamlit_app():
 
     elif st.session_state["current_page"] == "Peer Analysis Table":
         st.header(f"Peer Analysis Table for {ticker_analyzed} and its peers")
-        if ticker_analyzed and not current_analysis_data["view_df"].empty:
+        if ticker_analyzed and not current_analysis_data.get("view_df", pd.DataFrame()).empty:
             st.dataframe(current_analysis_data["view_df"].set_index("Ticker"))
         else:
             st.info("Run an analysis using the ticker input above to see peer comparison table.")
@@ -1289,7 +1289,7 @@ def main_streamlit_app():
     elif st.session_state["current_page"] == "Recent News":
         st.header(f"Recent News for {ticker_analyzed}")
         if ticker_analyzed:
-            st.markdown(current_analysis_data["news"])
+            st.markdown(current_analysis_data["news"], unsafe_allow_html=True)
         else:
             st.info("Run an analysis using the ticker input above to see recent news.")
 
@@ -1352,10 +1352,12 @@ def main_streamlit_app():
 
 # Run the Streamlit app if this script is executed directly
 if __name__ == "__main__":
-    # THIS IS FOR RUNNING IN COLAB. To run a Streamlit app in Colab, you typically need to use `!streamlit run <filename>`. However, the prompt has a `main_streamlit_app()` function which suggests it should be executable directly in a notebook cell.
-    # Given the previous context and the error, it's likely the user intends for the Streamlit app to be run via this direct execution block, which is then captured by the colab runtime.
     try:
         main_streamlit_app()
     except Exception as e:
-        st.error(f"An error occurred: {e}")
+        # If something blows up in the app, surface it in Streamlit and logs
+        try:
+            st.error(f"An error occurred: {e}")
+        except Exception:
+            pass
         logging.error(f"Streamlit app failed: {e}")

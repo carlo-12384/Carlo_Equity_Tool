@@ -1023,13 +1023,31 @@ def inject_global_css():
     st.markdown(
         """
         <style>
-        /* ... keep your existing global text / cards / etc. ABOVE this comment ... */
+        /* =========================
+           GLOBAL LAYOUT / THEME
+           ========================= */
+        html, body, .stApp {
+            background: #ffffff;
+            color: #111827;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+        }
+
+        header[data-testid="stHeader"] { background: transparent; }
+        footer { visibility: hidden; }
+
+        section[data-testid="stSidebar"] {
+            display: none !important;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            color: #0d1117 !important;
+        }
 
         /* =========================
-           TOP NAV BAR (DARK STRIP)
+           TOP NAV BAR (ONE LONG BAR)
            ========================= */
         .top-nav-bar {
-            background: #0d1117;          /* dark bar */
+            background: #0d1117;          /* dark strip at very top */
             padding: 0;
             width: 100vw;
             position: relative;
@@ -1039,44 +1057,45 @@ def inject_global_css():
             margin-right: -50vw;
         }
 
-        /* Flex container for nav buttons */
+        /* Flex container that holds the nav columns */
         .top-nav-inner {
             max-width: 1100px;
             margin: 0 auto;
             display: flex;
         }
 
-        /* Remove padding between the nav columns so buttons touch */
+        /* Remove padding between nav columns so buttons touch */
         .top-nav-inner [data-testid="column"] {
             padding-left: 0 !important;
             padding-right: 0 !important;
         }
 
-        /* Make each button fill its column */
+        /* Make each nav button fill its column */
         .top-nav-container .stButton {
             width: 100%;
             margin: 0 !important;
         }
 
-        /* Actual NAV buttons (blue bar with white text + white borders) */
+        /* NAV BUTTONS – blue bar, white text, white borders */
         .top-nav-container .stButton > button {
             width: 100%;
             padding: 14px 0;
-            border: 1px solid rgba(255,255,255,0.85);        /* white borders between buttons */
-            border-radius: 0;                                 /* merge into one bar */
+            border: 1px solid rgba(255,255,255,0.85);        /* white separators */
+            border-radius: 0;                                 /* merged bar look */
             background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            color: #ffffff !important;                        /* white text */
+            color: #ffffff !important;
             font-size: 15px;
             font-weight: 600;
             letter-spacing: 0.08em;
             text-transform: uppercase;
+            box-shadow: none;
         }
 
         .top-nav-container .stButton > button:hover {
             filter: brightness(1.08);
         }
 
-        /* Rounded corners only on the outer left/right ends */
+        /* Rounded corners only at the outer edges of the bar */
         .top-nav-inner [data-testid="column"]:first-child .stButton > button {
             border-top-left-radius: 12px;
             border-bottom-left-radius: 12px;
@@ -1087,7 +1106,7 @@ def inject_global_css():
         }
 
         /* =========================
-           OTHER BUTTONS (MAIN BODY)
+           NORMAL BUTTONS (BODY)
            ========================= */
         .main-content .stButton > button {
             border-radius: 8px;
@@ -1104,12 +1123,12 @@ def inject_global_css():
             color: #ffffff !important;
         }
 
-        /* ... keep the rest of your existing CSS BELOW this comment, 
-           but make sure there is NO plain `.stButton > button { ... }` rule ... */
+        /* (You can keep any other card/table/input styles below this line) */
         </style>
         """,
         unsafe_allow_html=True,
     )
+
 
 # ---------- DASHBOARD ----------
 def render_dashboard():

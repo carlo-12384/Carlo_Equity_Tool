@@ -951,15 +951,23 @@ def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
     """
     ticker = ticker.upper().strip()
 
-    # Your core pipeline (already defined above)
-    (
-        scored,
-        text_synopsis_md,
-        metrics_summary_md,
-        kpi_ratings_md,
-        waterfall_md,
-        news_md,
-    )
+    # --- MODIFICATION: Wrap call in try/except ---
+    try:
+        (
+            scored,
+            text_synopsis_md,
+            metrics_summary_md,
+            kpi_ratings_md,
+            waterfall_md,
+            news_md,
+        ) = analyze_ticker_pro(ticker, peer_cap=max_peers)
+    except Exception as e:
+        logging.error(f"analyze_ticker_pro failed for {ticker}: {e}", exc_info=True)
+        # Re-raise a more informative error to be caught by the UI
+        raise Exception(f"Failed to analyze {ticker}. Ticker may be invalid or data unavailable. (Internal error: {e})")
+    # --- END MODIFICATION ---
+
+
     # --- 1) High-level company summary markdown (split into two) ---
     overview_md = (
         "### Company Overview\n\n"
@@ -973,6 +981,7 @@ def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
         + "\n\n"
         + waterfall_md
     )
+
 
     # --- 2) Raw metrics row for the focus ticker ---
     raw_metrics = None
@@ -1007,7 +1016,6 @@ def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
 
     return {
         "ticker": ticker,
-        # "summary_md": summary_md, # Removed
         "overview_md": overview_md, # Added
         "ratings_md": ratings_md,   # Added
         "peers_df": scored,
@@ -1163,6 +1171,7 @@ def inject_global_css():
             background: #161b22;
             border: 1px solid #30363d;
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            height: 100%; /* Make card fill column height */
         }
         .section-title {
             font-size: 16px;
@@ -1306,16 +1315,21 @@ def render_dashboard():
 
     if analyze_clicked and ticker:
         with st.spinner(f"Analyzing {ticker.upper()}..."):
-            results = run_equity_analysis(ticker, max_peers=max_peers)
-            st.session_state.last_results = results
-            st.session_state.recent_tickers.insert(
-                0,
-                {"ticker": results["ticker"], "time": datetime.now().strftime("%Y-%m-%d %H:%M")},
-            )
-            st.session_state.recent_tickers = st.session_state.recent_tickers[:12]
-            st.success(f"Analysis updated for {results['ticker']}")
-            # Set the ticker input for valuation page
-            st.session_state.valuation_ticker_input = results['ticker']
+            try:
+                results = run_equity_analysis(ticker, max_peers=max_peers)
+                st.session_state.last_results = results
+                st.session_state.recent_tickers.insert(
+                    0,
+                    {"ticker": results["ticker"], "time": datetime.now().strftime("%Y-%m-%d %H:%M")},
+                )
+                st.session_state.recent_tickers = st.session_state.recent_tickers[:12]
+                st.success(f"Analysis updated for {results['ticker']}")
+                # Set the ticker input for valuation page
+                st.session_state.valuation_ticker_input = results['ticker']
+            except Exception as e:
+                st.session_state.last_results = None # Clear last results
+                logging.error(f"Error during analysis for {ticker}: {e}", exc_info=True)
+                st.error(f"Analysis failed for {ticker.upper()}. The ticker might be invalid, delisted, or have no data. Error: {e}")
 
 
     st.write("")
@@ -1386,16 +1400,23 @@ def render_analysis_page():
     if st.button("Run Analysis", key="run_analysis_btn"):
         if ticker:
             with st.spinner(f"Analyzing {ticker.upper()}..."):
-                results = run_equity_analysis(ticker, max_peers=max_peers)
-                st.session_state.last_results = results
-                st.session_state.recent_tickers.insert(
-                    0,
-                    {"ticker": results["ticker"], "time": datetime.now().strftime("%Y-%m-%d %H:%M")},
-                )
-                st.session_state.recent_tickers = st.session_state.recent_tickers[:12]
-                st.success(f"Analysis complete for {results['ticker']}.")
-                # Set the ticker input for valuation page
-                st.session_state.valuation_ticker_input = results['ticker']
+                # --- MODIFICATION: Wrap in try/except ---
+                try:
+                    results = run_equity_analysis(ticker, max_peers=max_peers)
+                    st.session_state.last_results = results
+                    st.session_state.recent_tickers.insert(
+                        0,
+                        {"ticker": results["ticker"], "time": datetime.now().strftime("%Y-%m-%d %H:%M")},
+                    )
+                    st.session_state.recent_tickers = st.session_state.recent_tickers[:12]
+                    st.success(f"Analysis complete for {results['ticker']}.")
+                    # Set the ticker input for valuation page
+                    st.session_state.valuation_ticker_input = results['ticker']
+                except Exception as e:
+                    st.session_state.last_results = None # Clear last results
+                    logging.error(f"Error during analysis for {ticker}: {e}", exc_info=True)
+                    st.error(f"Analysis failed for {ticker.upper()}. The ticker might be invalid, delisted, or have no data. Error: {e}")
+                # --- END MODIFICATION ---
         else:
             st.warning("Please enter a ticker symbol.")
 

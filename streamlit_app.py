@@ -1223,12 +1223,12 @@ def inject_global_css():
             font-weight: 500;
             border: 1px solid #1c64f2; /* Blue border */
             background: linear-gradient(135deg, #3b82f6, #1d4ed8); /* Blue gradient */
-            color: #ffffff; /* White text */
+            color: #0d1117; /* White text */
         }
         .stButton > button:hover {
             border-color: #60a5fa;
             filter: brightness(1.1);
-            color: #ffffff;
+            color: #0d1117;
         }
         
         /* Input boxes (Light Theme) */

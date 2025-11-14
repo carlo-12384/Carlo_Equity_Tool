@@ -1056,6 +1056,23 @@ def inject_global_css():
         }
         .stCaption { color: #213547 !important; }
 
+        /* =====================================
+           GENERIC BUTTONS (EVERYWHERE BUT NAV)
+           ===================================== */
+        .main-content .stButton > button {
+            border-radius: 8px;
+            padding: 0.45rem 1.3rem;
+            font-weight: 500;
+            border: 1px solid #1c64f2;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: #ffffff;
+        }
+        .main-content .stButton > button:hover {
+            border-color: #60a5fa;
+            filter: brightness(1.1);
+            color: #ffffff;
+        }
+
         /* =========================
            TOP NAV BAR (BLACK STRIP)
            ========================= */
@@ -1070,22 +1087,23 @@ def inject_global_css():
             margin-right: -50vw;
         }
 
-        /* =========================
-           FIRST ROW OF COLUMNS = NAV
-           ========================= */
-        /* The row created by the nav st.columns call is the first horizontal block */
+        /* ======================================
+           FIRST ROW OF COLUMNS = NAV BUTTON ROW
+           ====================================== */
+        /* The first st.columns row after the bar */
         div[data-testid="stHorizontalBlock"]:first-of-type {
             max-width: 1100px;
             margin: 0 auto;
+            gap: 0 !important;  /* remove gaps between columns */
         }
 
-        /* Remove padding between columns so buttons touch */
+        /* Remove side padding so buttons touch */
         div[data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"] {
             padding-left: 0 !important;
             padding-right: 0 !important;
         }
 
-        /* Make each nav button fill its column, no gaps */
+        /* Make each nav button fill its column */
         div[data-testid="stHorizontalBlock"]:first-of-type .stButton {
             width: 100%;
             margin: 0 !important;
@@ -1108,12 +1126,12 @@ def inject_global_css():
             cursor: pointer;
         }
 
-        /* Hover effect */
+        /* Hover effect for nav */
         div[data-testid="stHorizontalBlock"]:first-of-type .stButton > button:hover {
             filter: brightness(1.15);
         }
 
-        /* Rounded corners only on the very left/right buttons */
+        /* Rounded corners only on outer nav buttons */
         div[data-testid="stHorizontalBlock"]:first-of-type [data-testid="column"]:first-child .stButton > button {
             border-top-left-radius: 12px;
             border-bottom-left-radius: 12px;
@@ -1123,12 +1141,13 @@ def inject_global_css():
             border-bottom-right-radius: 12px;
         }
 
-        /* ====== (leave all your other styles below as-is) ====== */
-        /* ... your factor-bar, cards, valuation, inputs, etc ... */
+        /* ===== your existing factor / card / valuation styles stay below ===== */
+        /* (you can keep everything you already had here: factor bars, cards, etc.) */
         </style>
         """,
         unsafe_allow_html=True,
     )
+
 
 # ---------- DASHBOARD ----------
 def render_dashboard():
@@ -2049,21 +2068,21 @@ def main():
 
     # Center main content
     st.markdown(
-        "<div style='max-width:1100px;margin:0 auto;'>",
-        unsafe_allow_html=True,
+    "<div class='main-content' style='max-width:1100px;margin:0 auto;'>",
+    unsafe_allow_html=True,
     )
 
     # Global title
     st.markdown(
-        """
-        <h1 style='text-align: center; margin-bottom: 1rem; padding-top: 1rem; 
-                   font-weight: 400; font-family: "DM Serif Display", serif;
-                   font-size: 2.75rem; 
-                   color: #0d1117;'> 
-            Equity Research Platform
-        </h1>
-        """,
-        unsafe_allow_html=True,
+            """
+            <h1 style='text-align: center; margin-bottom: 1rem; padding-top: 1rem; 
+                       font-weight: 400; font-family: "DM Serif Display", serif;
+                       font-size: 2.75rem; 
+                       color: #0d1117;'> 
+                Equity Research Platform
+            </h1>
+            """,
+            unsafe_allow_html=True,
     )
 
     # Route based on selected page

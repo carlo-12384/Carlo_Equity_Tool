@@ -234,7 +234,7 @@ def get_company_text_summary(symbol: str, row: dict) -> str:
     prof = get_profile(symbol) or {}
     name = prof.get("name") or symbol.upper()
     ind = prof.get("finnhubIndustry") or "—"
-    mc  = row.get("MarketCap") if isinstance(row, (dict, pd.Series)) else None
+    mc  = row.get("MarketCap") if isinstance(row, (dict, pd.Series, dict)) else None
     exch= prof.get("exchange") or prof.get("ticker") or ""
     mc_txt = "N/A"
     if isinstance(mc, (int, float)) and np.isfinite(mc) and mc > 0:
@@ -260,7 +260,7 @@ def get_company_metrics_summary(row: dict) -> str:
     ps_raw = row.get("P/S (raw)") if isinstance(row, (dict, pd.Series)) else np.nan
 
     def format_metric(value, prefix="", suffix="", is_percent=False, invert_color=False):
-        if not np.isfinite(value): 
+        if value is None or not np.isfinite(value):
             return ""
         color_class = "positive-metric" if value >= 0 else "negative-metric"
         if invert_color:
@@ -268,15 +268,15 @@ def get_company_metrics_summary(row: dict) -> str:
         format_str = f"{{:.1f}}{{}}" if not is_percent else f"{{:+.1f}}{{}}"
         return f"<span class=\"{color_class}\">" + format_str.format(value, suffix) + "</span>"
 
-    if np.isfinite(pe_raw): bits.append(f"- P/E: {format_metric(pe_raw, suffix='x', invert_color=True)}")
-    if np.isfinite(pb_raw): bits.append(f"- P/B: {format_metric(pb_raw, suffix='x', invert_color=True)}")
-    if np.isfinite(ps_raw): bits.append(f"- P/S: {format_metric(ps_raw, suffix='x', invert_color=True)}")
-    if np.isfinite(ev_ebitda): bits.append(f"- EV/EBITDA: {format_metric(ev_ebitda, suffix='x', invert_color=True)}")
-    if np.isfinite(gm): bits.append(f"- Gross Margin: {format_metric(gm, suffix='%', is_percent=True)}")
-    if np.isfinite(em): bits.append(f"- EBITDA Margin: {format_metric(em, suffix='%', is_percent=True)}")
-    if np.isfinite(rg): bits.append(f"- Revenue Growth (YoY, TTM): {format_metric(rg, suffix='%', is_percent=True)}")
-    if np.isfinite(roe): bits.append(f"- ROE: {format_metric(roe, suffix='%', is_percent=True)}")
-    if np.isfinite(dte): bits.append(f"- Debt/Equity: {format_metric(dte, suffix='x', invert_color=True)}")
+    if pe_raw is not None and np.isfinite(pe_raw): bits.append(f"- P/E: {format_metric(pe_raw, suffix='x', invert_color=True)}")
+    if pb_raw is not None and np.isfinite(pb_raw): bits.append(f"- P/B: {format_metric(pb_raw, suffix='x', invert_color=True)}")
+    if ps_raw is not None and np.isfinite(ps_raw): bits.append(f"- P/S: {format_metric(ps_raw, suffix='x', invert_color=True)}")
+    if ev_ebitda is not None and np.isfinite(ev_ebitda): bits.append(f"- EV/EBITDA: {format_metric(ev_ebitda, suffix='x', invert_color=True)}")
+    if gm is not None and np.isfinite(gm): bits.append(f"- Gross Margin: {format_metric(gm, suffix='%', is_percent=True)}")
+    if em is not None and np.isfinite(em): bits.append(f"- EBITDA Margin: {format_metric(em, suffix='%', is_percent=True)}")
+    if rg is not None and np.isfinite(rg): bits.append(f"- Revenue Growth (YoY, TTM): {format_metric(rg, suffix='%', is_percent=True)}")
+    if roe is not None and np.isfinite(roe): bits.append(f"- ROE: {format_metric(roe, suffix='%', is_percent=True)}")
+    if dte is not None and np.isfinite(dte): bits.append(f"- Debt/Equity: {format_metric(dte, suffix='x', invert_color=True)}")
 
     return "\n".join(bits) if bits else "_Limited numerical metrics available._"
 
@@ -1588,7 +1588,7 @@ def render_analysis_page():
                                 {factor}
                                 <span class="factor-bar-score">{score_display}</span>
                             </div>
-                            <div class.="factor-bar-bg">
+                            <div class="factor-bar-bg">
                                 <div class="{fill_class}" style="width: {width_val}%;"></div>
                             </div>
                         </div>
@@ -1668,20 +1668,615 @@ def render_analysis_page():
         st.markdown("</div>", unsafe_allow_html=True)
 
 
-        st.write("")
-        st.markdown(
-            """
-            <div class="section-card">
-                <div class="section-title">Charts</div>
-            """,
-            unsafe_allow_html=True
-        )
-        if res["charts"].get("price") is not None:
-            st.pyplot(res["charts"]["price"])
-        if res["charts"].get("scatter") is not None:
-            st.pyplot(res["charts"]["scatter"])
-        st.markdown("</div>", unsafe_allow_html=True)
+        # --- MODIFICATION: Charts section removed ---
+        # st.write("")
+        # st.markdown( ... "Charts" ... ) -> This block was removed
+        # --- END MODIFICATION ---
 
 
 # ---------- VALUATION PAGE (NEW STREAMLIT VERSION) ----------
 def render_valuation_page():
+    import numpy as np
+    import pandas as pd
+
+    inject_global_css()
+
+    # Hero card
+    st.markdown(
+        """
+        <div class="hero-card">
+            <div class="hero-title">Valuation Modeling</div>
+            <div class="hero-subtitle">
+                Build DCF and multiples-based valuations with scenario analysis.
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.write("")
+
+    # ---------- Small helpers (local to this page) ----------
+    def format_currency(x: float) -> str:
+        if x is None or (isinstance(x, float) and (np.isnan(x))):
+            return "N/A"
+        return f"${x:,.2f}"
+
+    def format_percent(x: float) -> str:
+        if x is None or (isinstance(x, float) and (np.isnan(x))):
+            return "N/A"
+        return f"{x:.1f}%"
+
+    def compute_dcf_price(
+        eps: float,
+        growth_rate_pct: float,
+        discount_rate_pct: float,
+        terminal_growth_pct: float,
+        years: int = 5,
+    ) -> float:
+        """
+        Very simple DCF per-share:
+        - Use EPS_TTM as proxy for FCFE per share.
+        - Project for N years at growth_rate_pct.
+        - Terminal value at year N with terminal_growth_pct.
+        - Discount at discount_rate_pct.
+        """
+        if eps is None or not np.isfinite(eps) or eps <= 0:
+            return np.nan
+
+        g = growth_rate_pct / 100.0
+        r = discount_rate_pct / 100.0
+        gt = terminal_growth_pct / 100.0
+
+        if r <= gt:
+            return np.nan
+
+        pv_flows = []
+        cf_t = eps
+        for t in range(1, years + 1):
+            cf_t = cf_t * (1 + g)
+            pv_flows.append(cf_t / ((1 + r) ** t))
+
+        cf_n = cf_t
+        cf_n_plus_1 = cf_n * (1 + gt)
+        terminal_value_n = cf_n_plus_1 / (r - gt)
+        pv_terminal = terminal_value_n / ((1 + r) ** years)
+
+        return sum(pv_flows) + pv_terminal
+
+    def build_sensitivity_table(
+        eps: float,
+        growth_rates: list,
+        discount_rates: list,
+        terminal_growth_pct: float,
+        years: int = 5,
+    ) -> pd.DataFrame:
+        data = {}
+        for dr in discount_rates:
+            row_vals = []
+            for gr in growth_rates:
+                price = compute_dcf_price(
+                    eps=eps,
+                    growth_rate_pct=gr,
+                    discount_rate_pct=dr,
+                    terminal_growth_pct=terminal_growth_pct,
+                    years=years,
+                )
+                row_vals.append(price)
+            data[f"{dr}%"] = row_vals
+        df = pd.DataFrame(data, index=[f"{g}%" for g in growth_rates])
+        return df
+
+    def compute_upside(target: float, current: float) -> float:
+        if target is None or not np.isfinite(target) or not np.isfinite(current) or current <= 0:
+            return np.nan
+        return (target - current) / current * 100.0
+
+    # ---------- Select Company Card ----------
+    st.markdown(
+        """
+        <div class="section-card">
+            <div class="section-title">Select Company</div>
+            <div class="section-subtitle">Choose a company to value</div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # Default ticker: last analyzed ticker if available
+    default_ticker = ""
+    if "valuation_ticker" in st.session_state:
+        default_ticker = st.session_state.valuation_ticker
+    elif st.session_state.get("last_results"):
+        default_ticker = st.session_state.last_results.get("ticker", "")
+
+    col_ticker, col_btn = st.columns([3, 1])
+    with col_ticker:
+        selected_ticker = st.text_input(
+            "Ticker symbol",
+            value=default_ticker,
+            key="valuation_ticker_input",
+            placeholder="Enter ticker symbol (e.g., AAPL, MSFT)",
+        ).upper()
+    with col_btn:
+        load_clicked = st.button("Load Company", use_container_width=True)
+
+    # Load company metrics when button clicked
+    if load_clicked and selected_ticker:
+        tkr = selected_ticker.upper().strip()
+        with st.spinner(f"Loading data for {tkr}..."):
+            try:
+                metrics = get_metrics(tkr)
+                price, _ = get_price_and_shares(tkr)
+                st.session_state.valuation_ticker = tkr
+                st.session_state.valuation_metrics = metrics
+                st.session_state.valuation_price = price
+                st.success(f"Loaded metrics for {tkr}")
+            except Exception as e:
+                logging.error(f"Failed to load metrics for {selected_ticker}: {e}")
+                st.error(f"Could not load data for {selected_ticker.upper()}.")
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.write("")
+
+    # Pull what we have in session
+    metrics = st.session_state.get("valuation_metrics")
+    current_ticker = st.session_state.get("valuation_ticker")
+    current_price = st.session_state.get("valuation_price")
+
+    if metrics and current_ticker:
+        # ---------- Company Snapshot ----------
+        prof = get_profile(current_ticker) or {}
+        company_name = prof.get("name") or current_ticker
+        eps = metrics.get("EPS_TTM")
+
+        st.markdown(
+            """
+            <div class="section-card">
+                <div class="section-title">Company Snapshot</div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.metric("Ticker", current_ticker)
+        with c2:
+            st.metric("Company", company_name)
+        with c3:
+            st.metric("Current Price", format_currency(current_price or np.nan))
+
+        if metrics.get("MarketCap"):
+            mc = metrics["MarketCap"]
+            if np.isfinite(mc):
+                st.caption(f"Approx. market cap: ${mc:,.0f}M")
+
+        if eps is None or not np.isfinite(eps):
+            st.warning(
+                "EPS_TTM is not available. DCF and P/E valuations may be limited or N/A."
+            )
+
+        st.markdown("</div>", unsafe_allow_html=True)
+        st.write("")
+
+        # ---------- Scenario Selection ----------
+        st.markdown(
+            """
+            <div class="section-card">
+                <div class="section-title">Scenario Selection</div>
+                <div class="section-subtitle">Choose valuation scenario assumptions</div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        scenario_presets = {
+            "Bull Case": {"revenue_growth": 25.0, "discount_rate": 8.0, "terminal_growth": 4.0, "pe_multiple": 35.0},
+            "Base Case": {"revenue_growth": 15.0, "discount_rate": 10.0, "terminal_growth": 3.0, "pe_multiple": 25.0},
+            "Bear Case": {"revenue_growth": 5.0,  "discount_rate": 12.0, "terminal_growth": 2.0, "pe_multiple": 15.0},
+        }
+
+        selected_scenario = st.radio(
+            "Scenario",
+            ["Bull Case", "Base Case", "Bear Case"],
+            index=1,
+            horizontal=True,
+            key="valuation_scenario_radio",
+        )
+
+        st.markdown("</div>", unsafe_allow_html=True)
+        st.write("")
+
+        # ---------- Valuation Assumptions ----------
+        st.markdown(
+            """
+            <div class="section-card">
+                <div class="section-title">Valuation Assumptions</div>
+                <div class="section-subtitle">Adjust key assumptions for your valuation model</div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        preset = scenario_presets[selected_scenario]
+
+        col_a, col_b, col_c, col_d = st.columns(4)
+        with col_a:
+            revenue_growth = st.number_input(
+                "Revenue / EPS Growth (%)",
+                value=float(preset["revenue_growth"]),
+                step=1.0,
+                format="%.1f",
+                key="val_rev_growth",
+            )
+        with col_b:
+            discount_rate = st.number_input(
+                "Discount Rate / WACC (%)",
+                value=float(preset["discount_rate"]),
+                step=0.5,
+                format="%.1f",
+                key="val_discount_rate",
+            )
+        with col_c:
+            terminal_growth = st.number_input(
+                "Terminal Growth Rate (%)",
+                value=float(preset["terminal_growth"]),
+                step=0.5,
+                format="%.1f",
+                key="val_terminal_growth",
+            )
+        with col_d:
+            pe_multiple = st.number_input(
+                "Target P/E Multiple",
+                value=float(preset["pe_multiple"]),
+                step=1.0,
+                format="%.1f",
+                key="val_pe_multiple",
+            )
+
+        st.markdown("</div>", unsafe_allow_html=True)
+        st.write("")
+
+        # ---------- Run valuation ----------
+        if st.button("Run Valuation", use_container_width=True, key="run_valuation_btn"):
+            with st.spinner(f"Running valuation for {current_ticker} ({selected_scenario})..."):
+                # DCF valuation
+                dcf_price = compute_dcf_price(
+                    eps=eps if eps is not None else np.nan,
+                    growth_rate_pct=revenue_growth,
+                    discount_rate_pct=discount_rate,
+                    terminal_growth_pct=terminal_growth,
+                    years=5,
+                )
+
+                # P/E valuation
+                if eps is not None and np.isfinite(eps) and eps > 0:
+                    pe_val = eps * pe_multiple
+                else:
+                    pe_val = np.nan
+
+                # P/S valuation: if we have P/S (raw), back into price
+                ps_val = np.nan
+                ps_raw = metrics.get("P/S (raw)")
+                if (
+                    ps_raw is not None
+                    and np.isfinite(ps_raw)
+                    and ps_raw > 0
+                    and metrics.get("MarketCap")
+                    and np.isfinite(metrics["MarketCap"])
+                ):
+                    # Value per share = P/S * Sales_per_share
+                    # MarketCap = P/S * Sales_TTM => implied price ≈ current_price * (target P/S / current P/S)
+                    # Here we proxy target P/S from P/E multiple (loose, but keeps it simple)
+                    if current_price and np.isfinite(current_price):
+                        target_ps = ps_raw * (pe_multiple / preset["pe_multiple"])  # scale vs base case
+                        ps_val = current_price * (target_ps / ps_raw)
+
+                dcf_upside = compute_upside(dcf_price, current_price)
+                pe_upside = compute_upside(pe_val, current_price)
+                ps_upside = compute_upside(ps_val, current_price)
+
+                # ---------- Valuation Results ----------
+                st.markdown(
+                    """
+                    <div class="section-card">
+                        <div class="section-title">Valuation Results</div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+                # DCF
+                st.markdown(
+                    "<div class='valuation-metric-label'>DCF Valuation (5-year, terminal at year 5)</div>",
+                    unsafe_allow_html=True,
+                )
+                if np.isfinite(dcf_price):
+                    cls = "positive" if (dcf_upside is not None and dcf_upside >= 0) else "negative"
+                    st.markdown(
+                        f"<div class='valuation-metric-value'>{format_currency(dcf_price)}</div>"
+                        f"<div class='valuation-current-price'>Current Price"
+                        f"<span style='float:right'>{format_currency(current_price or np.nan)}</span></div>"
+                        f"<div class='valuation-upside {cls}'>Upside/Downside"
+                        f"<span style='float:right'>{format_percent(dcf_upside)}</span></div>",
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.markdown("<div class='valuation-metric-value'>N/A</div>", unsafe_allow_html=True)
+
+                st.markdown("<hr style='border-top: 1px solid #30363d;'>", unsafe_allow_html=True)
+
+                # P/E
+                st.markdown(
+                    "<div class='valuation-metric-label'>P/E-Based Valuation</div>",
+                    unsafe_allow_html=True,
+                )
+                if np.isfinite(pe_val):
+                    cls = "positive" if (pe_upside is not None and pe_upside >= 0) else "negative"
+                    st.markdown(
+                        f"<div class='valuation-metric-value'>{format_currency(pe_val)}</div>"
+                        f"<div class='valuation-current-price'>Current Price"
+                        f"<span style='float:right'>{format_currency(current_price or np.nan)}</span></div>"
+                        f"<div class='valuation-upside {cls}'>Upside/Downside"
+                        f"<span style='float:right'>{format_percent(pe_upside)}</span></div>",
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.markdown("<div class='valuation-metric-value'>N/A</div>", unsafe_allow_html=True)
+
+                st.markdown("<hr style='border-top: 1px solid #30363d;'>", unsafe_allow_html=True)
+
+                # P/S-ish valuation
+                st.markdown(
+                    "<div class='valuation-metric-label'>P/S-Based Valuation (scaled vs current P/S)</div>",
+                    unsafe_allow_html=True,
+                )
+                if np.isfinite(ps_val):
+                    cls = "positive" if (ps_upside is not None and ps_upside >= 0) else "negative"
+                    st.markdown(
+                        f"<div class='valuation-metric-value'>{format_currency(ps_val)}</div>"
+                        f"<div class='valuation-current-price'>Current Price"
+                        f"<span style='float:right'>{format_currency(current_price or np.nan)}</span></div>"
+                        f"<div class='valuation-upside {cls}'>Upside/Downside"
+                        f"<span style='float:right'>{format_percent(ps_upside)}</span></div>",
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    st.markdown("<div class='valuation-metric-value'>N/A</div>", unsafe_allow_html=True)
+
+                st.markdown("</div>", unsafe_allow_html=True)
+                st.write("")
+
+                # ---------- Sensitivity Analysis ----------
+                st.markdown(
+                    """
+                    <div class="section-card">
+                        <div class="section-title">DCF Sensitivity Analysis</div>
+                        <div class="section-subtitle">
+                            Price targets across different growth and discount rate assumptions
+                        </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+                if eps is not None and np.isfinite(eps) and eps > 0:
+                    growth_rates = [5, 10, 15, 20, 25]
+                    discount_rates = [8, 9, 10, 11, 12]
+                    sens_df = build_sensitivity_table(
+                        eps=eps,
+                        growth_rates=growth_rates,
+                        discount_rates=discount_rates,
+                        terminal_growth_pct=terminal_growth,
+                        years=5,
+                    )
+                    # Format as currency for display
+                    sens_display = sens_df.applymap(format_currency)
+                    st.dataframe(sens_display, use_container_width=True)
+                    st.caption(
+                        "Rows = growth rates; columns = discount rates; "
+                        "values = DCF-implied price per share."
+                    )
+                else:
+                    st.info(
+                        "Sensitivity table requires a positive EPS_TTM value. "
+                        "Try another ticker with available EPS."
+                    )
+
+                st.markdown("</div>", unsafe_allow_html=True)
+
+    else:
+        st.info("Load a company first, then run valuation.")
+
+
+
+# ---------- RESEARCH PAGE (PERSISTENT NOTES) ----------
+def render_research_page():
+    inject_global_css()
+    st.markdown(
+        """
+        <div class="hero-card">
+            <div class="hero-title">Research Library</div>
+            <div class="hero-subtitle">Create and manage private research notes for your tracked companies.</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    st.write("")
+
+    notes_store: Dict[str, str] = st.session_state.notes_store
+    current_from_recent = (
+        st.session_state.recent_tickers[0]["ticker"]
+        if st.session_state.recent_tickers else ""
+    )
+
+    tickers = sorted(
+        set(list(notes_store.keys()) + ([current_from_recent] if current_from_recent else []))
+    )
+    if not tickers:
+        tickers = ["(no ticker yet)"]
+
+    selected = st.selectbox("Select ticker for notes", options=tickers)
+    key = selected if selected != "(no ticker yet)" else current_from_recent or ""
+
+    existing = notes_store.get(key, "") if key else ""
+    
+    st.markdown(
+        """
+        <div class="section-card">
+        """,
+        unsafe_allow_html=True
+    )
+    
+    new_text = st.text_area("Notes", existing, height=260, key=f"notes_area_{key or 'global'}")
+
+    col_save, col_info = st.columns([1, 3])
+    with col_save:
+        if st.button("Save Notes"):
+            if key:
+                st.session_state.notes_store[key] = new_text
+                _save_json(NOTES_FILE, st.session_state.notes_store)
+                st.success(f"Notes saved for {key}.")
+            else:
+                st.warning("No ticker selected.")
+
+    with col_info:
+        st.caption("Notes are stored locally in `research_notes.json` in this app's directory.")
+
+    if st.session_state.notes_store:
+        st.markdown("#### Tickers with saved notes")
+        st.write(", ".join(sorted(st.session_state.notes_store.keys())))
+        
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
+# ---------- THESES PAGE (PERSISTENT THESES) ----------
+def render_theses_page():
+    inject_global_css()
+    st.markdown(
+        """
+        <div class="hero-card">
+            <div class="hero-title">Investment Theses</div>
+            <div class="hero-subtitle">Draft and save structured investment theses.</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    st.write("")
+
+
+    st.markdown(
+        """
+        <div class="section-card">
+            <div class="section-title">Draft a New Thesis</div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    current_from_recent = (
+        st.session_state.recent_tickers[0]["ticker"]
+        if st.session_state.recent_tickers else ""
+    )
+
+    col1, col2 = st.columns(2)
+    with col1:
+        ticker = st.text_input("Ticker", value=current_from_recent, key="thesis_ticker").upper()
+        rating = st.selectbox("Rating", ["Buy", "Hold", "Sell"], key="thesis_rating")
+        horizon = st.text_input("Time Horizon", value="12–18 months", key="thesis_horizon")
+    with col2:
+        val_anchor = st.text_area("Valuation Anchor", key="thesis_val", height=80, placeholder="e.g., $150 PT (12x EV/EBITDA)")
+    drivers = st.text_area("Key Drivers", key="thesis_drivers", height=120, placeholder="- Driver 1...\n- Driver 2...")
+    risks = st.text_area("Risks", key="thesis_risks", height=100, placeholder="- Risk 1...\n- Risk 2...")
+
+    if st.button("Save Thesis"):
+        if ticker:
+            thesis = {
+                "ticker": ticker.upper(),
+                "rating": rating,
+                "horizon": horizon,
+                "drivers": drivers,
+                "risks": risks,
+                "valuation_anchor": val_anchor,
+                "created_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+            }
+            st.session_state.theses_store.append(thesis)
+            _save_json(THESES_FILE, st.session_state.theses_store)
+            st.success(f"Thesis saved for {ticker.upper()}.")
+        else:
+            st.warning("Please enter a ticker for the thesis.")
+            
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.write("")
+
+    if st.session_state.theses_store:
+        st.markdown(
+            """
+            <div class="section-card">
+                <div class="section-title">Saved Theses</div>
+            """,
+            unsafe_allow_html=True
+        )
+        df_theses = pd.DataFrame(st.session_state.theses_store)
+        st.dataframe(df_theses, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+
+# ======================================================================
+# MAIN APP
+# ======================================================================
+def main():
+    st.set_page_config(
+        page_title="Equity Research Platform",
+        page_icon="📊",
+        layout="wide",
+        initial_sidebar_state="collapsed",  # Collapse it, CSS will hide it
+    )
+    
+    # --- TOP NAVIGATION BAR ---
+    page = st.radio(
+        "Navigation",
+        [
+            "📊  Dashboard",
+            "📈  Analysis",
+            "🧮  Valuation",
+            "📚  Research",
+            "📝  Theses",
+        ],
+        horizontal=True,
+        label_visibility="collapsed",
+        key="top_nav_radio",
+    )
+    
+    # Inject CSS *after* the radio button to ensure it can be styled
+    inject_global_css()
+
+    # --- Center content + workspace badge ---
+    st.markdown(
+        "<div style='max-width:1100px;margin:0 auto;'>",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        """
+        <div style="display:flex;justify-content:flex-end;
+                    align-items:center;margin:-6px 0 8px 0;padding:0 2px;">
+            <div style="font-size:11px;color:#8b949e;">
+                Fricano Capital · Research Workspace
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # Strip emoji prefix to route
+    if "Dashboard" in page:
+        render_dashboard()
+    elif "Analysis" in page:
+        render_analysis_page()
+    elif "Valuation" in page:
+        render_valuation_page()
+    elif "Research" in page:
+        render_research_page()
+    elif "Theses" in page:
+        render_theses_page()
+
+    # Close centering div
+    st.markdown("</div>", unsafe_allow_html=True)
+
+
+
+if __name__ == "__main__":
+    main()

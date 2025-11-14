@@ -959,16 +959,16 @@ def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
         kpi_ratings_md,
         waterfall_md,
         news_md,
-    ) = analyze_ticker_pro(ticker, peer_cap=max_peers)
-
-    # --- 1) High-level company summary markdown ---
-    summary_md = (
+    # --- 1) High-level company summary markdown (split into two) ---
+    overview_md = (
         "### Company Overview\n\n"
         + text_synopsis_md
         + "\n\n"
         + metrics_summary_md
-        + "\n\n"
-        + kpi_ratings_md
+    )
+    
+    ratings_md = (
+        kpi_ratings_md
         + "\n\n"
         + waterfall_md
     )
@@ -1006,7 +1006,9 @@ def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
 
     return {
         "ticker": ticker,
-        "summary_md": summary_md,
+        # "summary_md": summary_md, # Removed
+        "overview_md": overview_md, # Added
+        "ratings_md": ratings_md,   # Added
         "peers_df": scored,
         "valuation": valuation,
         "news_md": news_md,
@@ -1399,15 +1401,31 @@ def render_analysis_page():
     if st.session_state.last_results:
         res = st.session_state.last_results
         
-        st.markdown(
-            """
-            <div class="section-card">
-                <div class="section-title">Company Summary</div>
-            """,
-            unsafe_allow_html=True
-        )
-        st.markdown(res["summary_md"], unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+        # --- NEW: Two-column layout for Overview and Ratings ---
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown(
+                """
+                <div class="section-card">
+                """,
+                unsafe_allow_html=True
+            )
+            # overview_md already contains "### Company Overview"
+            st.markdown(res.get("overview_md", "Overview not available."), unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+        
+        with col2:
+            st.markdown(
+                """
+                <div class="section-card">
+                """,
+                unsafe_allow_html=True
+            )
+            # ratings_md already contains "### Ratings for..."
+            st.markdown(res.get("ratings_md", "Ratings not available."), unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+        # --- END NEW SECTION ---
         
         st.write("")
         st.markdown(

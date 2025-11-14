@@ -1271,6 +1271,16 @@ def inject_global_css():
             flex-direction: column;
             justify-content: center;
         }
+        /* Command-bar style ticker input */
+        .stTextInput input {
+            border-radius: 999px !important;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            padding-left: 14px;
+            font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            text-transform: uppercase;
+        }
+
 
         </style>
         """,
@@ -1305,8 +1315,9 @@ def render_dashboard():
             "Search ticker symbol (e.g., AAPL, MSFT).",
             key="ticker_input",
             label_visibility="collapsed",
-            placeholder="Enter ticker symbol to analyze (e.g., AAPL)",
-        )
+            placeholder="ENTER TICKER SYMBOL TO ANALYZE (E.G., AAPL)",
+        ).upper()
+
     with col_btn:
         st.write("")
         analyze_clicked = st.button("Analyze", use_container_width=True)
@@ -1335,28 +1346,69 @@ def render_dashboard():
 
     st.write("")
     
-    # --- MODIFIED: Removed columns, stacking KPIs ---
     companies_tracked = len({x["ticker"] for x in st.session_state.recent_tickers}) or 0
     active_theses = len(st.session_state.theses_store)
     research_docs = len(st.session_state.notes_store)
 
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.markdown(
+            f"""
+            <div class="kpi-card-new">
+                <div class="kpi-label-new">Companies Tracked</div>
+                <div class="kpi-value-new">{companies_tracked}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with col2:
+        st.markdown(
+            f"""
+            <div class="kpi-card-new">
+                <div class="kpi-label-new">Active Theses</div>
+                <div class="kpi-value-new">{active_theses}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+    with col3:
+        st.markdown(
+            f"""
+            <div class="kpi-card-new">
+                <div class="kpi-label-new">Research Documents</div>
+                <div class="kpi-value-new">{research_docs}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        
+    st.write("")
     st.markdown(
-        f"""
-        <div class="kpi-card-new">
-            <div class="kpi-label-new">Companies Tracked</div>
-            <div class="kpi-value-new">{companies_tracked}</div>
-        </div>
-        <div class="kpi-card-new">
-            <div class="kpi-label-new">Active Theses</div>
-            <div class="kpi-value-new">{active_theses}</div>
-        </div>
-        <div class="kpi-card-new">
-            <div class="kpi-label-new">Research Documents</div>
-            <div class="kpi-value-new">{research_docs}</div>
-        </div>
+        """
+        <div class="section-card">
+            <div class="section-title">Quick Actions</div>
+            <div class="section-subtitle">Common workflows</div>
         """,
         unsafe_allow_html=True,
     )
+
+    qa_col1, qa_col2, qa_col3 = st.columns(3)
+
+    with qa_col1:
+        if st.button("Start New Analysis", use_container_width=True):
+            st.session_state.top_nav_radio = "📈  Analysis"
+    with qa_col2:
+        if st.button("Draft Thesis", use_container_width=True):
+            st.session_state.top_nav_radio = "📝  Theses"
+    with qa_col3:
+        if st.button("Open Research Notes", use_container_width=True):
+            st.session_state.top_nav_radio = "📚  Research"
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
 
     # --- MODIFICATION: "Recently Analyzed" section removed ---
     # st.write("")
@@ -2026,10 +2078,10 @@ def main():
         page_title="Equity Research Platform",
         page_icon="📊",
         layout="wide",
-        initial_sidebar_state="collapsed", # Collapse it, CSS will hide it
+        initial_sidebar_state="collapsed",  # Collapse it, CSS will hide it
     )
     
-    # --- NEW: TOP NAVIGATION BAR ---
+    # --- TOP NAVIGATION BAR ---
     page = st.radio(
         "Navigation",
         [
@@ -2041,12 +2093,29 @@ def main():
         ],
         horizontal=True,
         label_visibility="collapsed",
-        key="top_nav_radio" # Use a new key
+        key="top_nav_radio",
     )
     
     # Inject CSS *after* the radio button to ensure it can be styled
     inject_global_css()
 
+    # --- Center content + workspace badge ---
+    st.markdown(
+        "<div style='max-width:1100px;margin:0 auto;'>",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        """
+        <div style="display:flex;justify-content:flex-end;
+                    align-items:center;margin:-6px 0 8px 0;padding:0 2px;">
+            <div style="font-size:11px;color:#8b949e;">
+                Fricano Capital · Research Workspace
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     # Strip emoji prefix to route
     if "Dashboard" in page:
@@ -2059,6 +2128,10 @@ def main():
         render_research_page()
     elif "Theses" in page:
         render_theses_page()
+
+    # Close centering div
+    st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 if __name__ == "__main__":

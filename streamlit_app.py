@@ -1515,7 +1515,7 @@ def render_analysis_page():
         with col2:
             # --- MODIFICATION: Render new Factor Score Breakdown (Z-Score) ---
             st.markdown(
-                """
+                f"""
                 <div class="section-card">
                     <div style="font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem; color: #0d1117;">
                         Factor Score Breakdown
@@ -2164,7 +2164,7 @@ def render_theses_page():
     if st.session_state.theses_store:
         st.markdown(
             """
-            <div class.section-card">
+            <div classs="section-card">
                 <div class="section-title">Saved Theses</div>
             """,
             unsafe_allow_html=True

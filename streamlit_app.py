@@ -1046,10 +1046,15 @@ def inject_global_css():
         /* --- MODIFICATION: Full-width black bar --- */
         div[data-testid="stRadio"] {
             background: #0d1117; /* Black background */
-            border-bottom: 1px solid #30363d; /* Dark border */
-            padding: 0; /* Remove padding */
-            margin: 0; /* Remove old margins */
-            width: 100%; /* Full width */
+            padding: 0; 
+            
+            /* --- NEW: Full-width "bust-out" --- */
+            position: relative;
+            width: 100vw; /* 100% of viewport width */
+            left: 50%;
+            right: 50%;
+            margin-left: -50vw;
+            margin-right: -50vw;
         }
         
         /* --- MODIFICATION: Centered, right-aligned buttons --- */
@@ -1406,7 +1411,7 @@ def render_dashboard():
             f"""
             <div class="kpi-card-new">
                 <div class="kpi-label-new">Active Theses</div>
-                <div class="kpi-value-new">{active_theses}</div>
+                <div class.="kpi-value-new">{active_theses}</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -2202,6 +2207,7 @@ def main():
     )
 
     # --- TOP NAVIGATION BAR (MOVED) ---
+    # This element is now at the very top, so its CSS can go full-width.
     page = st.radio(
         "Navigation",
         [
@@ -2217,18 +2223,7 @@ def main():
     )
     
     # --- GLOBAL TITLE (MOVED) ---
-    st.markdown(
-        f"""
-        <h1 style='text-align: center; margin-bottom: 0; padding-top: 1rem; 
-                   font-weight: 400; font-family: "DM Serif Display", serif;
-                   font-size: 2.75rem; /* --- MODIFICATION: Made title bigger --- */
-                   color: #0d1117;'> 
-            Equity Research Platform
-        </h1>
-        """, 
-        unsafe_allow_html=True
-    )
-
+    # This is now *inside* the centered div
     
     # Inject CSS *after* the radio button to ensure it can be styled
     # This function now contains the default LIGHT theme
@@ -2239,6 +2234,20 @@ def main():
         "<div style='max-width:1100px;margin:0 auto;'>",
         unsafe_allow_html=True,
     )
+    
+    # --- GLOBAL TITLE (MOVED HERE) ---
+    st.markdown(
+        f"""
+        <h1 style='text-align: center; margin-bottom: 1rem; padding-top: 1rem; 
+                   font-weight: 400; font-family: "DM Serif Display", serif;
+                   font-size: 2.75rem; 
+                   color: #0d1117;'> 
+            Equity Research Platform
+        </h1>
+        """, 
+        unsafe_allow_html=True
+    )
+
 
     # --- REMOVED: Workspace Badge ---
     # st.markdown( ... "Fricano Capital" ... )

@@ -8,6 +8,7 @@ from functools import lru_cache
 from typing import List, Dict, Any
 from datetime import datetime
 import streamlit as st
+
 # from scipy.stats import norm # REMOVED: This caused the ModuleNotFoundError
 
 # -------------------- CONFIG / LOGGING --------------------
@@ -636,12 +637,15 @@ def analyze_ticker_pro(ticker: str, peer_cap: int = 6):
     news_items = get_company_news(ticker, n=8)
     news_md = "### Recent Headlines\n" + render_news_md(news_items)
 
+    # --- NEW: Convert focus_row to dict for stable storage ---
+    focus_row_dict = focus_row.to_dict() if isinstance(focus_row, pd.Series) else None
+
     return (
         scored,
         text_synopsis_md,
         metrics_summary_md,
         # factor_percentiles, # REMOVED
-        focus_row,          # Return the whole row (contains z-scores)
+        focus_row_dict,          # MODIFIED: Return dict
         news_md,
     )
 
@@ -945,7 +949,7 @@ def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
             scored,
             text_synopsis_md,
             metrics_summary_md,
-            focus_row,          # Changed
+            focus_row,          # Changed (now a dict or None)
             news_md,
         ) = analyze_ticker_pro(ticker, peer_cap=max_peers)
     except Exception as e:
@@ -1001,7 +1005,7 @@ def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
         "ticker": ticker,
         "overview_md": overview_md, # Added
         # "factor_percentiles": factor_percentiles, # REMOVED
-        "focus_row": focus_row,                 # Kept
+        "focus_row": focus_row,                 # Kept (now a dict or None)
         "peers_df": scored,
         "valuation": valuation,
         "news_md": news_md,
@@ -1563,18 +1567,18 @@ def render_analysis_page():
                 unsafe_allow_html=True
             )
             
-            focus_row = res.get("focus_row")
+            focus_row = res.get("focus_row") # This is now a dict
             if focus_row is not None:
                 for factor in FACTOR_BUCKETS.keys():
-                    z_score = focus_row.get(factor)
-                    score_display = f"{z_score:+.2f}" if np.isfinite(z_score) else "N/A"
+                    z_score = focus_row.get(factor) # .get() works on dicts
+                    score_display = f"{z_score:+.2f}" if (z_score is not None and np.isfinite(z_score)) else "N/A"
                     
                     # Map z-score (-3 to +3) to a 0-100% range for the bar
                     # A z-score of 0 is 50%. A z-score of 3 is 100%. A z-score of -3 is 0%.
-                    bar_width_pct = max(0, min(100, (z_score + 3) / 6 * 100)) if np.isfinite(z_score) else 0
+                    bar_width_pct = max(0, min(100, (z_score + 3) / 6 * 100)) if (z_score is not None and np.isfinite(z_score)) else 0
                     
-                    fill_class = "factor-bar-fill-positive" if z_score and z_score > 0 else "factor-bar-fill-negative"
-                    width_val = (abs(z_score) / 3) * 50 # Scale to 50% max (3 std devs)
+                    fill_class = "factor-bar-fill-positive" if (z_score is not None and z_score > 0) else "factor-bar-fill-negative"
+                    width_val = (abs(z_score) / 3) * 50 if (z_score is not None and np.isfinite(z_score)) else 0 # Scale to 50% max (3 std devs)
                     width_val = max(0, min(50, width_val))
 
                     st.markdown(

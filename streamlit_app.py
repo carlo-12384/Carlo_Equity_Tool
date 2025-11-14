@@ -1028,9 +1028,17 @@ def inject_global_css():
             display: none !important;
         }
         
-        /* --- MAIN APP STYLING --- */
+        /* --- GLOBAL TITLE --- */
+        h1 {
+            color: #f0f6fc; /* Light text for dark pages */
+            text-align: center;
+            margin-bottom: 0;
+            padding-top: 1rem;
+            font-weight: 600;
+        }
+        
+        /* --- MAIN APP STYLING (DARK DEFAULT) --- */
         .stApp {
-            /* --- MODIFICATION: Blueish-Gray Background --- */
             background: #1f2a38; 
             color: #c9d1d9; /* Lighter grey text */
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
@@ -1040,10 +1048,10 @@ def inject_global_css():
 
         /* --- NEW TOP NAVIGATION TABS --- */
         div[data-testid="stRadio"] {
-            /* --- MODIFICATION: Reverted white background --- */
+            background: #1f2a38; /* Match app background */
             border-bottom: 1px solid #30363d; /* Separator line */
             padding-bottom: 0px;
-            margin: -2rem -2rem 1.5rem -2rem; /* Full-bleed hack */
+            margin: 1rem -2rem 1.5rem -2rem; /* Full-bleed hack */
             padding-left: 2rem;
         }
         
@@ -1172,7 +1180,7 @@ def inject_global_css():
         }
         /* --- End Factor Bar --- */
 
-        /* --- CARD STYLING (Same as before) --- */
+        /* --- CARD STYLING (DARK MODE) --- */
         .hero-card {
             border-radius: 12px; /* Sharper corners */
             padding: 28px 28px 24px 28px;
@@ -1217,7 +1225,7 @@ def inject_global_css():
             margin-top: 2px;
         }
         
-        /* New KPI Card style for Dashboard */
+        /* New KPI Card style for Dashboard (Dark) */
         .kpi-card-new {
             padding: 18px 20px;
             border-radius: 12px;
@@ -1366,7 +1374,56 @@ def inject_global_css():
 
 # ---------- DASHBOARD ----------
 def render_dashboard():
-    inject_global_css()
+    # --- NEW: Inject Dashboard-specific white theme ---
+    st.markdown(
+        """
+        <style>
+        /* --- Dashboard Light Mode Override --- */
+        .stApp {
+            background: #ffffff;
+            color: #0d1117;
+        }
+        /* Override card styles for light mode */
+        .hero-card, .kpi-card-new, .section-card {
+            background: #f9f9f9; /* Off-white card */
+            border: 1px solid #e1e4e8; /* Light grey border */
+            color: #0d1117;
+        }
+        /* Override card titles and text */
+        .hero-title, .kpi-value-new, .section-title, h1 {
+            color: #0d1117; /* Dark text */
+        }
+        .hero-subtitle, .kpi-label-new, .section-subtitle {
+            color: #4a5568; /* Medium-dark grey text */
+        }
+        /* Override nav for light bg */
+        div[data-testid="stRadio"] {
+            background: #ffffff; /* Explicitly white */
+            border-bottom: 1px solid #e1e4e8; /* Light border */
+        }
+        div[data-testid="stRadio"] label {
+            color: #4a5568; /* Inactive tabs dark grey */
+        }
+        div[data-testid="stRadio"] label:hover {
+            color: #0d1117; /* Inactive tabs hover dark */
+            background: #f0f0f0;
+        }
+        div[data-testid="stRadio"] label[data-checked="true"] {
+            color: #3b82f6; /* Active tab blue */
+            border-bottom: 3px solid #3b82f6;
+            background: transparent;
+        }
+        /* Override ticker input for light mode */
+        .stTextInput input {
+            background: #ffffff;
+            border: 1px solid #d1d5db;
+            color: #0d1117;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+    # --- END THEME OVERRIDE ---
 
     st.markdown(
         """
@@ -1492,7 +1549,7 @@ def render_dashboard():
 
 # ---------- ANALYSIS PAGE ----------
 def render_analysis_page():
-    inject_global_css()
+    # inject_global_css() # Removed, now global in main()
 
     st.markdown(
         """
@@ -1676,10 +1733,10 @@ def render_analysis_page():
 
 # ---------- VALUATION PAGE (NEW STREAMLIT VERSION) ----------
 def render_valuation_page():
+    # inject_global_css() # Removed, now global in main()
     import numpy as np
     import pandas as pd
 
-    inject_global_css()
 
     # Hero card
     st.markdown(
@@ -2085,7 +2142,7 @@ def render_valuation_page():
 
 # ---------- RESEARCH PAGE (PERSISTENT NOTES) ----------
 def render_research_page():
-    inject_global_css()
+    # inject_global_css() # Removed, now global in main()
     st.markdown(
         """
         <div class="hero-card">
@@ -2145,7 +2202,7 @@ def render_research_page():
 
 # ---------- THESES PAGE (PERSISTENT THESES) ----------
 def render_theses_page():
-    inject_global_css()
+    # inject_global_css() # Removed, now global in main()
     st.markdown(
         """
         <div class="hero-card">
@@ -2225,6 +2282,12 @@ def main():
         initial_sidebar_state="collapsed",  # Collapse it, CSS will hide it
     )
     
+    # --- NEW: Global Title ---
+    st.markdown(
+        "<h1 style='text-align: center; margin-bottom: 0; padding-top: 1rem; font-weight: 600;'>Equity Research Platform</h1>", 
+        unsafe_allow_html=True
+    )
+
     # --- TOP NAVIGATION BAR ---
     page = st.radio(
         "Navigation",
@@ -2241,6 +2304,7 @@ def main():
     )
     
     # Inject CSS *after* the radio button to ensure it can be styled
+    # This function now contains the default DARK theme
     inject_global_css()
 
     # --- Center content + workspace badge ---
@@ -2249,17 +2313,8 @@ def main():
         unsafe_allow_html=True,
     )
 
-    st.markdown(
-        """
-        <div style="display:flex;justify-content:flex-end;
-                    align-items:center;margin:-6px 0 8px 0;padding:0 2px;">
-            <div style="font-size:11px;color:#8b949e;">
-                Fricano Capital · Research Workspace
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    # --- REMOVED: Workspace Badge ---
+    # st.markdown( ... "Fricano Capital" ... )
 
     # Strip emoji prefix to route
     if "Dashboard" in page:

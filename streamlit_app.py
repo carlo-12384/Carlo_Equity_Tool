@@ -959,6 +959,7 @@ def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
         kpi_ratings_md,
         waterfall_md,
         news_md,
+    )
     # --- 1) High-level company summary markdown (split into two) ---
     overview_md = (
         "### Company Overview\n\n"

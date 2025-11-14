@@ -1024,6 +1024,12 @@ def inject_global_css():
     st.markdown(
         """
         <style>
+        /* --- HIDE SIDEBAR --- */
+        section[data-testid="stSidebar"] {
+            display: none !important;
+        }
+        
+        /* --- MAIN APP STYLING --- */
         .stApp {
             /* Professional Dark Theme */
             background: #0d1117;
@@ -1032,6 +1038,56 @@ def inject_global_css():
         }
         header[data-testid="stHeader"] {background: transparent;}
         footer {visibility: hidden;}
+
+        /* --- NEW TOP NAVIGATION TABS --- */
+        div[data-testid="stRadio"] {
+            border-bottom: 1px solid #30363d; /* Separator line */
+            padding-bottom: 0px;
+            margin: -2rem -2rem 1.5rem -2rem; /* Full-bleed hack */
+            padding-left: 2rem;
+        }
+        
+        div[data-testid="stRadio"] > div {
+             /* This is the flex container for the buttons */
+             gap: 8px;
+        }
+
+        div[data-testid="stRadio"] label {
+            display: inline-block;
+            padding: 12px 16px;
+            margin: 0;
+            border-radius: 0;
+            background: transparent;
+            color: #8b949e; /* Inactive tab color (grey) */
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        /* Hide the radio circle */
+        div[data-testid="stRadio"] label > div:first-child {
+            display: none;
+        }
+        
+        div[data-testid="stRadio"] label span {
+             font-size: 14px;
+             font-weight: 500;
+        }
+
+        /* Hover style for inactive tabs */
+        div[data-testid="stRadio"] label:hover {
+            background: rgba(139, 148, 158, 0.1);
+            color: #c9d1d9; /* Lighter grey on hover */
+        }
+
+        /* Selected tab style */
+        div[data-testid="stRadio"] label[data-checked="true"] {
+            background: transparent;
+            color: #f0f6fc; /* Active tab color (white) */
+            border-bottom: 3px solid #3b82f6; /* Blue accent line */
+        }
+        /* --- End Top Nav --- */
+
 
         .hero-card {
             border-radius: 12px; /* Sharper corners */
@@ -1120,40 +1176,6 @@ def inject_global_css():
         /* Metric colors (Green/Red is standard for finance) */
         .positive-metric { color: #3fb950; } /* GitHub green */
         .negative-metric { color: #f85149; } /* GitHub red */
-
-        section[data-testid="stSidebar"] {
-            background: #0d1117;
-            border-right: 1px solid #30363d;
-        }
-
-        /* Sidebar menu */
-        div[data-testid="stSidebar"] div[role="radiogroup"] > label {
-            border-radius: 8px; /* Sharper */
-            padding: 8px 10px;
-            margin-bottom: 4px;
-            cursor: pointer;
-            border: 1px solid transparent; /* Add transparent border for layout consistency */
-        }
-        div[data-testid="stSidebar"] div[role="radiogroup"] > label:hover {
-            background: rgba(139, 148, 158, 0.1); /* Faint grey hover */
-        }
-        div[data-testid="stSidebar"] div[role="radiogroup"] > label[data-baseweb="radio"] > div:first-child {
-            display: none;  
-        }
-        div[data-testid="stSidebar"] div[role="radiogroup"] > label span {
-            font-size: 13px;
-            color: #c9d1d9; /* Default text color (light) */
-        }
-        
-        /* This is the NEW selected style */
-        div[data-testid="stSidebar"] div[role="radiogroup"] > label[data-checked="true"] {
-            background: #d1f3de; /* Light green background */
-            border-color: #d1f3de;
-        }
-        div[data-testid="stSidebar"] div[role="radiogroup"] > label[data-checked="true"] span {
-            color: #0d1117; /* Dark text for selected */
-            font-weight: 500;
-        }
 
         /* Button Styling - Blue Accent */
         .stButton > button {
@@ -1340,7 +1362,17 @@ def render_dashboard():
 def render_analysis_page():
     inject_global_css()
 
-    st.markdown("### Company Analysis")
+    st.markdown(
+        """
+        <div class="hero-card">
+            <div class="hero-title">Company Analysis</div>
+            <div class="hero-subtitle">Review fundamental metrics, peer comparisons, and recent news.</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    st.write("")
+
     ticker = st.text_input(
         "Enter stock ticker (e.g., AAPL):",
         key="analysis_ticker",
@@ -1366,23 +1398,56 @@ def render_analysis_page():
 
     if st.session_state.last_results:
         res = st.session_state.last_results
-        st.markdown("#### Company Summary")
+        
+        st.markdown(
+            """
+            <div class="section-card">
+                <div class="section-title">Company Summary</div>
+            """,
+            unsafe_allow_html=True
+        )
         st.markdown(res["summary_md"], unsafe_allow_html=True)
-
-        st.markdown("#### Peer Analysis Table")
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        st.write("")
+        st.markdown(
+            """
+            <div class="section-card">
+                <div class="section-title">Peer Analysis Table</div>
+            """,
+            unsafe_allow_html=True
+        )
         st.dataframe(res["peers_df"], use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-        st.markdown("#### Key Metrics (Raw)")
+        st.write("")
+        st.markdown(
+            """
+            <div class="section-card">
+                <div class="section-title">Key Metrics (Raw)</div>
+            """,
+            unsafe_allow_html=True
+        )
         if isinstance(res["raw_metrics"], pd.DataFrame):
             st.dataframe(res["raw_metrics"], use_container_width=True)
         else:
             st.markdown("_Raw metrics view not available yet._")
+        st.markdown("</div>", unsafe_allow_html=True)
 
-        st.markdown("#### Charts")
+
+        st.write("")
+        st.markdown(
+            """
+            <div class="section-card">
+                <div class="section-title">Charts</div>
+            """,
+            unsafe_allow_html=True
+        )
         if res["charts"].get("price") is not None:
             st.pyplot(res["charts"]["price"])
         if res["charts"].get("scatter") is not None:
             st.pyplot(res["charts"]["scatter"])
+        st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ---------- VALUATION PAGE (FIXED) ----------
@@ -1575,7 +1640,7 @@ def render_valuation_page():
                         last_fcff = last_fcff * (1 + (custom_params['g_proj'] / 100.0))
                         pv_fcffs.append(last_fcff / ((1 + custom_params['wacc']) ** i))
                     
-                    tv = (last_fcff * (1 + custom_params['terminal_g'])) / (custom_params['wacc'] - term_g)
+                    tv = (last_fcff * (1 + custom_params['terminal_g'])) / (custom_params['wacc'] - custom_params['terminal_g'])
                     pv_tv = tv / ((1 + custom_params['wacc']) ** 5)
                     
                     enterprise_value_dcf_custom = sum(pv_fcffs) + pv_tv
@@ -1687,7 +1752,16 @@ def render_valuation_page():
 # ---------- RESEARCH PAGE (PERSISTENT NOTES) ----------
 def render_research_page():
     inject_global_css()
-    st.markdown("### Research Library")
+    st.markdown(
+        """
+        <div class="hero-card">
+            <div class="hero-title">Research Library</div>
+            <div class="hero-subtitle">Create and manage private research notes for your tracked companies.</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    st.write("")
 
     notes_store: Dict[str, str] = st.session_state.notes_store
     current_from_recent = (
@@ -1705,6 +1779,14 @@ def render_research_page():
     key = selected if selected != "(no ticker yet)" else current_from_recent or ""
 
     existing = notes_store.get(key, "") if key else ""
+    
+    st.markdown(
+        """
+        <div class="section-card">
+        """,
+        unsafe_allow_html=True
+    )
+    
     new_text = st.text_area("Notes", existing, height=260, key=f"notes_area_{key or 'global'}")
 
     col_save, col_info = st.columns([1, 3])
@@ -1723,24 +1805,31 @@ def render_research_page():
     if st.session_state.notes_store:
         st.markdown("#### Tickers with saved notes")
         st.write(", ".join(sorted(st.session_state.notes_store.keys())))
+        
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ---------- THESES PAGE (PERSISTENT THESES) ----------
 def render_theses_page():
     inject_global_css()
-    st.markdown("### Investment Theses")
+    st.markdown(
+        """
+        <div class="hero-card">
+            <div class="hero-title">Investment Theses</div>
+            <div class="hero-subtitle">Draft and save structured investment theses.</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    st.write("")
+
 
     st.markdown(
         """
-        Use this page to draft concise, structured theses.
-
-        **Suggested structure:**
-        - **Rating:** Buy / Hold / Sell
-        - **Time Horizon:** e.g., 12–18 months
-        - **Key Drivers:** 3–5 bullet points
-        - **Risks:** 3–4 bullets
-        - **Valuation Anchor:** target price, multiple, or DCF output
-        """
+        <div class="section-card">
+            <div class="section-title">Draft a New Thesis</div>
+        """,
+        unsafe_allow_html=True
     )
 
     current_from_recent = (
@@ -1754,9 +1843,9 @@ def render_theses_page():
         rating = st.selectbox("Rating", ["Buy", "Hold", "Sell"], key="thesis_rating")
         horizon = st.text_input("Time Horizon", value="12–18 months", key="thesis_horizon")
     with col2:
-        val_anchor = st.text_area("Valuation Anchor", key="thesis_val", height=80)
-    drivers = st.text_area("Key Drivers", key="thesis_drivers", height=120)
-    risks = st.text_area("Risks", key="thesis_risks", height=100)
+        val_anchor = st.text_area("Valuation Anchor", key="thesis_val", height=80, placeholder="e.g., $150 PT (12x EV/EBITDA)")
+    drivers = st.text_area("Key Drivers", key="thesis_drivers", height=120, placeholder="- Driver 1...\n- Driver 2...")
+    risks = st.text_area("Risks", key="thesis_risks", height=100, placeholder="- Risk 1...\n- Risk 2...")
 
     if st.button("Save Thesis"):
         if ticker:
@@ -1774,11 +1863,21 @@ def render_theses_page():
             st.success(f"Thesis saved for {ticker.upper()}.")
         else:
             st.warning("Please enter a ticker for the thesis.")
+            
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.write("")
 
     if st.session_state.theses_store:
-        st.markdown("#### Saved Theses")
+        st.markdown(
+            """
+            <div class="section-card">
+                <div class="section-title">Saved Theses</div>
+            """,
+            unsafe_allow_html=True
+        )
         df_theses = pd.DataFrame(st.session_state.theses_store)
         st.dataframe(df_theses, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ======================================================================
@@ -1789,23 +1888,27 @@ def main():
         page_title="Equity Research Platform",
         page_icon="📊",
         layout="wide",
-        initial_sidebar_state="expanded",
+        initial_sidebar_state="collapsed", # Collapse it, CSS will hide it
     )
+    
+    # --- NEW: TOP NAVIGATION BAR ---
+    page = st.radio(
+        "Navigation",
+        [
+            "📊  Dashboard",
+            "📈  Analysis",
+            "🧮  Valuation",
+            "📚  Research",
+            "📝  Theses",
+        ],
+        horizontal=True,
+        label_visibility="collapsed",
+        key="top_nav_radio" # Use a new key
+    )
+    
+    # Inject CSS *after* the radio button to ensure it can be styled
     inject_global_css()
 
-    with st.sidebar:
-        st.markdown("### Equity Tool")
-        page = st.radio(
-            "Navigation", # Changed "Pages" to "Navigation"
-            [
-                "📊  Dashboard",
-                "📈  Analysis",
-                "🧮  Valuation",
-                "📚  Research",
-                "📝  Theses",
-            ],
-            label_visibility="collapsed",
-        )
 
     # Strip emoji prefix to route
     if "Dashboard" in page:

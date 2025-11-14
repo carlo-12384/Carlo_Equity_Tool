@@ -2294,9 +2294,77 @@ def main():
         """,
         unsafe_allow_html=True,
     )
+    /* ------------------------------
+   TOP NAV BAR (FULL-WIDTH BAR)
+        ------------------------------ */
+        .top-nav-bar {
+            background: #0d1117;        /* dark background bar */
+            padding: 0;
+            width: 100vw;
+            position: relative;
+            left: 50%;
+            right: 50%;
+            margin-left: -50vw;
+            margin-right: -50vw;
+        }
+
+        /* Container holding all buttons */
+        .top-nav-inner {
+            display: flex;
+            width: 100%;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* Remove column padding (so buttons touch) */
+        .top-nav-inner [data-testid="column"] {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+
+        /* ------------------------------
+           BUTTON STYLE (BLUE RECTANGLES)
+        ------------------------------ */
+        .top-nav-container .stButton {
+            width: 100%;
+            margin: 0 !important;
+        }
+
+        /* Actual button styling */
+        .top-nav-container .stButton > button {
+            width: 100%;
+            padding: 14px 0;
+            border: 1px solid rgba(255,255,255,0.8);     /* WHITE BORDER BETWEEN BUTTONS */
+            border-radius: 0;                              /* merged look */
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8); /* gradient blue */
+            color: #ffffff !important;                     /* WHITE TEXT */
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        /* Hover effect */
+        .top-nav-container .stButton > button:hover {
+            filter: brightness(1.15);
+        }
+
+        /* ------------------------------
+           ROUNDED CORNERS FOR OUTER EDGES
+        ------------------------------ */
+        .top-nav-inner [data-testid="column"]:first-child .stButton > button {
+            border-top-left-radius: 12px;
+            border-bottom-left-radius: 12px;
+        }
+
+        .top-nav-inner [data-testid="column"]:last-child .stButton > button {
+            border-top-right-radius: 12px;
+            border-bottom-right-radius: 12px;
+        }
+
 
     # Route based on selected page
-    page = st.session_state.top_nav_page
+page = st.session_state.top_nav_page
 
     if page == "Dashboard":
         render_dashboard()

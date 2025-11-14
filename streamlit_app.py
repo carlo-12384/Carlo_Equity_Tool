@@ -1043,26 +1043,32 @@ def inject_global_css():
         footer {visibility: hidden;}
 
         /* --- TOP NAVIGATION TABS (LIGHT THEME) --- */
+        /* --- MODIFICATION: Full-width black bar --- */
         div[data-testid="stRadio"] {
-            background: #0d1117; /* White background */
-            border-bottom: 1px solid #e1e4e8; /* Light grey border */
-            padding-bottom: 0px;
-            margin: 1rem -2rem 1.5rem -2rem; /* Full-bleed hack */
-            padding-left: 2rem;
+            background: #0d1117; /* Black background */
+            border-bottom: 1px solid #30363d; /* Dark border */
+            padding: 0; /* Remove padding */
+            margin: 0; /* Remove old margins */
+            width: 100%; /* Full width */
         }
         
+        /* --- MODIFICATION: Centered, right-aligned buttons --- */
         div[data-testid="stRadio"] > div {
              /* This is the flex container for the buttons */
              gap: 8px;
+             max-width: 1100px; /* Center the buttons with the content */
+             margin: 0 auto; /* Center the button group */
+             justify-content: flex-end; /* Align buttons to the right */
         }
 
+        /* --- MODIFICATION: Light text for buttons --- */
         div[data-testid="stRadio"] label {
             display: inline-block;
             padding: 12px 16px;
             margin: 0;
             border-radius: 0;
             background: transparent;
-            color: #4a5568; /* Inactive tab color (medium grey) */
+            color: #8b949e; /* Inactive tab color (light grey) */
             border-bottom: 3px solid transparent;
             transition: all 0.2s ease;
             cursor: pointer;
@@ -1080,14 +1086,14 @@ def inject_global_css():
 
         /* Hover style for inactive tabs */
         div[data-testid="stRadio"] label:hover {
-            background: #f0f0f0; /* Faint grey hover */
-            color: #0d1117; /* Darker grey on hover */
+            background: rgba(139, 148, 158, 0.1); /* Faint light hover */
+            color: #f0f6fc; /* White text on hover */
         }
 
         /* Selected tab style */
         div[data-testid="stRadio"] label[data-checked="true"] {
             background: transparent;
-            color: #3b82f6; /* Active tab color (blue) */
+            color: #f0f6fc; /* Active tab color (white) */
             border-bottom: 3px solid #3b82f6; /* Blue accent line */
         }
         /* --- End Top Nav --- */
@@ -1223,12 +1229,12 @@ def inject_global_css():
             font-weight: 500;
             border: 1px solid #1c64f2; /* Blue border */
             background: linear-gradient(135deg, #3b82f6, #1d4ed8); /* Blue gradient */
-            color: #0d1117; /* White text */
+            color: #ffffff; /* White text */
         }
         .stButton > button:hover {
             border-color: #60a5fa;
             filter: brightness(1.1);
-            color: #0d1117;
+            color: #ffffff;
         }
         
         /* Input boxes (Light Theme) */
@@ -2195,20 +2201,7 @@ def main():
         unsafe_allow_html=True
     )
 
-    # --- NEW: Global Title (with font and default color) ---
-    st.markdown(
-        f"""
-        <h1 style='text-align: center; margin-bottom: 0; padding-top: 1rem; 
-                   font-weight: 400; font-family: "DM Serif Display", serif;
-                   font-size: 2.75rem; /* --- MODIFICATION: Made title bigger --- */
-                   color: #0d1117;'> 
-            Equity Research Platform
-        </h1>
-        """, 
-        unsafe_allow_html=True
-    )
-
-    # --- TOP NAVIGATION BAR ---
+    # --- TOP NAVIGATION BAR (MOVED) ---
     page = st.radio(
         "Navigation",
         [
@@ -2222,6 +2215,20 @@ def main():
         label_visibility="collapsed",
         key="top_nav_radio",
     )
+    
+    # --- GLOBAL TITLE (MOVED) ---
+    st.markdown(
+        f"""
+        <h1 style='text-align: center; margin-bottom: 0; padding-top: 1rem; 
+                   font-weight: 400; font-family: "DM Serif Display", serif;
+                   font-size: 2.75rem; /* --- MODIFICATION: Made title bigger --- */
+                   color: #0d1117;'> 
+            Equity Research Platform
+        </h1>
+        """, 
+        unsafe_allow_html=True
+    )
+
     
     # Inject CSS *after* the radio button to ensure it can be styled
     # This function now contains the default LIGHT theme

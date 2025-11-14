@@ -1030,11 +1030,8 @@ def inject_global_css():
         
         /* --- GLOBAL TITLE --- */
         h1 {
-            color: #f0f6fc; /* Light text for dark pages */
-            text-align: center;
-            margin-bottom: 0;
-            padding-top: 1rem;
-            font-weight: 600;
+            /* --- MODIFICATION: Added !important to override inline black --- */
+            color: #f0f6fc !important; /* Light text for dark pages */
         }
         
         /* --- MAIN APP STYLING (DARK DEFAULT) --- */
@@ -1418,6 +1415,10 @@ def render_dashboard():
             background: #ffffff;
             border: 1px solid #d1d5db;
             color: #0d1117;
+        }
+        /* Override placeholder text for light mode */
+        .stTextInput input::placeholder {
+            color: #6b7280;
         }
         </style>
         """,
@@ -2282,9 +2283,25 @@ def main():
         initial_sidebar_state="collapsed",  # Collapse it, CSS will hide it
     )
     
-    # --- NEW: Global Title ---
+    # --- NEW: Global Font Import ---
     st.markdown(
-        "<h1 style='text-align: center; margin-bottom: 0; padding-top: 1rem; font-weight: 600;'>Equity Research Platform</h1>", 
+        """
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:wght@400&display=swap" rel="stylesheet">
+        """,
+        unsafe_allow_html=True
+    )
+
+    # --- NEW: Global Title (with font and default color) ---
+    st.markdown(
+        """
+        <h1 style='text-align: center; margin-bottom: 0; padding-top: 1rem; 
+                   font-weight: 400; font-family: "DM Serif Display", serif;
+                   color: #0d1117;'> 
+            Equity Research Platform
+        </h1>
+        """, 
         unsafe_allow_html=True
     )
 

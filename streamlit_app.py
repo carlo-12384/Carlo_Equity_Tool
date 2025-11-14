@@ -1076,6 +1076,27 @@ def inject_global_css():
             color: #8b949e; /* Made trend neutral grey, was green */
             margin-top: 2px;
         }
+        
+        /* New KPI Card style for Dashboard */
+        .kpi-card-new {
+            padding: 18px 20px;
+            border-radius: 12px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            margin-bottom: 16px; /* Stack them */
+        }
+        .kpi-label-new {
+            font-size: 14px;
+            color: #8b949e;
+            margin-bottom: 4px;
+        }
+        .kpi-value-new {
+            font-size: 28px;
+            font-weight: 600;
+            color: #f0f6fc;
+        }
+
 
         .section-card {
             padding: 18px 20px;
@@ -1111,31 +1132,42 @@ def inject_global_css():
             padding: 8px 10px;
             margin-bottom: 4px;
             cursor: pointer;
+            border: 1px solid transparent; /* Add transparent border for layout consistency */
         }
         div[data-testid="stSidebar"] div[role="radiogroup"] > label:hover {
             background: rgba(139, 148, 158, 0.1); /* Faint grey hover */
         }
         div[data-testid="stSidebar"] div[role="radiogroup"] > label[data-baseweb="radio"] > div:first-child {
-            display: none;  /* hide the little bubble */
+            display: none;  
         }
         div[data-testid="stSidebar"] div[role="radiogroup"] > label span {
             font-size: 13px;
-            color: #c9d1d9;
+            color: #c9d1d9; /* Default text color (light) */
+        }
+        
+        /* This is the NEW selected style */
+        div[data-testid="stSidebar"] div[role="radiogroup"] > label[data-checked="true"] {
+            background: #d1f3de; /* Light green background */
+            border-color: #d1f3de;
+        }
+        div[data-testid="stSidebar"] div[role="radiogroup"] > label[data-checked="true"] span {
+            color: #0d1117; /* Dark text for selected */
+            font-weight: 500;
         }
 
-        /* Button Styling - Gold/Yellow Accent */
+        /* Button Styling - Blue Accent */
         .stButton > button {
             border-radius: 8px; /* Sharper */
             padding: 0.45rem 1.3rem;
             font-weight: 500;
-            border: 1px solid #d4af37; /* Gold border */
-            background: linear-gradient(135deg, #d4af37, #b8860b); /* Gold gradient */
-            color: #0d1117; /* Dark text on gold */
+            border: 1px solid #1c64f2; /* Blue border */
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8); /* Blue gradient */
+            color: #ffffff; /* White text */
         }
         .stButton > button:hover {
-            border-color: #f0b90b;
+            border-color: #60a5fa;
             filter: brightness(1.1);
-            color: #000;
+            color: #ffffff;
         }
         
         /* Input boxes */
@@ -1232,7 +1264,61 @@ def render_dashboard():
 
     st.write("")
     
-    # --- MODIFIED: Removed the layout columns and the right-hand snapshot card ---
+    col_search, col_btn = st.columns([4, 1])
+
+    with col_search:
+        ticker = st.text_input(
+            "Search ticker symbol (e.g., AAPL, MSFT).",
+            key="ticker_input",
+            label_visibility="collapsed",
+            placeholder="Enter ticker symbol to analyze (e.g., AAPL)",
+        )
+    with col_btn:
+        st.write("")
+        analyze_clicked = st.button("Analyze", use_container_width=True)
+
+    max_peers = st.slider("Max peers to compare", 2, 15, 6, key="max_peers_dashboard")
+
+    if analyze_clicked and ticker:
+        with st.spinner(f"Analyzing {ticker.upper()}..."):
+            results = run_equity_analysis(ticker, max_peers=max_peers)
+            st.session_state.last_results = results
+            st.session_state.recent_tickers.insert(
+                0,
+                {"ticker": results["ticker"], "time": datetime.now().strftime("%Y-%m-%d %H:%M")},
+            )
+            st.session_state.recent_tickers = st.session_state.recent_tickers[:12]
+            st.success(f"Analysis updated for {results['ticker']}")
+            # Set the ticker input for valuation page
+            st.session_state.valuation_ticker_input = results['ticker']
+
+
+    st.write("")
+    
+    # --- MODIFIED: Removed columns, stacking KPIs ---
+    companies_tracked = len({x["ticker"] for x in st.session_state.recent_tickers}) or 0
+    active_theses = len(st.session_state.theses_store)
+    research_docs = len(st.session_state.notes_store)
+
+    st.markdown(
+        f"""
+        <div class="kpi-card-new">
+            <div class="kpi-label-new">Companies Tracked</div>
+            <div class="kpi-value-new">{companies_tracked}</div>
+        </div>
+        <div class="kpi-card-new">
+            <div class="kpi-label-new">Active Theses</div>
+            <div class="kpi-value-new">{active_theses}</div>
+        </div>
+        <div class="kpi-card-new">
+            <div class="kpi-label-new">Research Documents</div>
+            <div class="kpi-value-new">{research_docs}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    st.write("")
     st.markdown(
         """
         <div class="section-card">
@@ -1489,7 +1575,7 @@ def render_valuation_page():
                         last_fcff = last_fcff * (1 + (custom_params['g_proj'] / 100.0))
                         pv_fcffs.append(last_fcff / ((1 + custom_params['wacc']) ** i))
                     
-                    tv = (last_fcff * (1 + custom_params['terminal_g'])) / (custom_params['wacc'] - custom_params['terminal_g'])
+                    tv = (last_fcff * (1 + custom_params['terminal_g'])) / (custom_params['wacc'] - term_g)
                     pv_tv = tv / ((1 + custom_params['wacc']) ** 5)
                     
                     enterprise_value_dcf_custom = sum(pv_fcffs) + pv_tv

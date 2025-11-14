@@ -1,4 +1,4 @@
-    # -*- coding: utf-8 -*-
+        # -*- coding: utf-8 -*-
 """Carlo Equity Tool — Streamlit App (Blocks-style UI)"""
 
 import os, time, math, logging, textwrap, datetime as dt
@@ -1110,6 +1110,38 @@ def inject_global_css():
             background: rgba(255,255,255,0.12);
             border-color: #ffffff;
         }
+        /* === Make top nav buttons form one continuous bar === */
+        .top-nav-inner {
+            display: flex;                 /* lay out columns in a row */
+        }
+
+        /* Remove side padding between the nav columns */
+        .top-nav-inner [data-testid="column"] {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+
+        /* Remove default margins around buttons and make them fill each column */
+        .top-nav-container .stButton {
+            width: 100%;
+            margin: 0 !important;
+        }
+
+        .top-nav-container .stButton > button {
+            width: 100%;
+            border-radius: 0;              /* no rounded corners between buttons */
+        }
+
+        /* (Optional) Rounded corners only at the very ends of the bar */
+        .top-nav-inner [data-testid="column"]:first-child .stButton > button {
+            border-top-left-radius: 10px;
+            border-bottom-left-radius: 10px;
+        }
+        .top-nav-inner [data-testid="column"]:last-child .stButton > button {
+            border-top-right-radius: 10px;
+            border-bottom-right-radius: 10px;
+        }
+
 
 
                 /* --- End Top Nav --- */

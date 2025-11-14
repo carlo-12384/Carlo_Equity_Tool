@@ -1023,37 +1023,55 @@ def inject_global_css():
     st.markdown(
         """
         <style>
+        /* =========================
+           GLOBAL TEXT COLOR OVERRIDE
+           ========================= */
+        /* Make all default text a dark navy/charcoal so it's readable on white */
+        html, body, .stApp, .markdown-text-container, .stMarkdown,
+        p, li, span, small, td, th, label, div[data-testid="stMarkdownContainer"] {
+            color: #111827 !important;  /* dark navy/charcoal */
+        }
+
+        /* Keep special metric colors intact */
+        .positive-metric { color: #228B22 !important; } 
+        .negative-metric { color: #D90429 !important; } 
+
         /* --- HIDE SIDEBAR --- */
         section[data-testid="stSidebar"] {
             display: none !important;
         }
         
         /* --- GLOBAL TITLE --- */
-        h1 {
-            color: #0d1117 !important; /* Default to black/navy */
+        h1, h2, h3, h4, h5, h6 {
+            color: #0d1117 !important; /* Dark navy for headings */
         }
         
         /* --- MAIN APP STYLING (LIGHT THEME DEFAULT) --- */
         .stApp {
             background: #ffffff;  
-            color: #213547; /* Dark Navy text */
+            color: #213547; /* Fallback dark text */
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
         }
         header[data-testid="stHeader"] {background: transparent;}
         footer {visibility: hidden;}
 
-        /* --- NEW: Make all widget labels dark --- */
-        .st-emotion-cache-16txtl3, label, .stTextInput > label, .stSlider > label, .stSelectbox > label, .stNumberInput > label {
+        /* --- Make all widget labels dark --- */
+        .st-emotion-cache-16txtl3,
+        label,
+        .stTextInput > label,
+        .stSlider > label,
+        .stSelectbox > label,
+        .stNumberInput > label {
             color: #213547 !important; /* Dark Navy text */
             font-weight: 500;
         }
+
         /* Make captions dark */
         .stCaption {
              color: #213547 !important;
         }
 
-        /* --- TOP NAVIGATION TABS (LIGHT THEME) --- */
-        /* --- MODIFICATION: Target *only* the top nav --- */
+        /* --- TOP NAVIGATION TABS (kept light on dark bar) --- */
         div.top-nav-container div[data-testid="stRadio"] { 
             background: #0d1117; /* Black background */
             padding: 0;  
@@ -1066,16 +1084,16 @@ def inject_global_css():
         }
         div.top-nav-container div[data-testid="stRadio"] > div {
              gap: 8px;
-             max-width: 1100px; /* Center the buttons with the content */
-             margin: 0 auto; /* Center the button group */
-             justify-content: flex-end; /* Align buttons to the right */
+             max-width: 1100px;
+             margin: 0 auto;
+             justify-content: flex-end;
         }
         div.top-nav-container div[data-testid="stRadio"] label {
             padding: 12px 16px;
             margin: 0;
             border-radius: 0;
             background: transparent;
-            color: #8b949e; /* Inactive tab color (light grey) */
+            color: #8b949e; /* Inactive tab color */
             border-bottom: 3px solid transparent;
         }
         div.top-nav-container div[data-testid="stRadio"] label > div:first-child {
@@ -1086,96 +1104,219 @@ def inject_global_css():
              font-weight: 500;
         }
         div.top-nav-container div[data-testid="stRadio"] label:hover {
-            background: rgba(139, 148, 158, 0.1); /* Faint light hover */
+            background: rgba(139, 148, 158, 0.1);
             color: #f0f6fc; /* White text on hover */
         }
         div.top-nav-container div[data-testid="stRadio"] label[data-checked="true"] {
             background: transparent;
             color: #f0f6fc; /* Active tab color (white) */
-            border-bottom: 3px solid #3b82f6; /* Blue accent line */
+            border-bottom: 3px solid #3b82f6;
         }
         /* --- End Top Nav --- */
 
-        /* --- FACTOR BAR CHART STYLES (LIGHT THEME) --- */
+        /* --- FACTOR BAR CHART STYLES --- */
         .factor-bar-container { margin-bottom: 12px; }
         .factor-bar-label { font-size: 14px; color: #213547; margin-bottom: 6px; }
         .factor-bar-score { float: right; font-weight: 500; color: #0d1117; }
-        .factor-bar-bg { width: 100%; height: 10px; background-color: #e1e4e8; border-radius: 5px; overflow: hidden; position: relative; }
-        .factor-bar-bg::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background-color: #ffffff; z-index: 1; }
-        .factor-bar-fill-positive { height: 100%; background-color: #3fb950; border-radius: 0 5px 5px 0; transition: width 0.5s ease-in-out; position: absolute; left: 50%; }
-        .factor-bar-fill-negative { height: 100%; background-color: #f85149; border-radius: 5px 0 0 5px; transition: width 0.5s ease-in-out; position: absolute; right: 50%; }
+        .factor-bar-bg {
+            width: 100%;
+            height: 10px;
+            background-color: #e1e4e8;
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+        .factor-bar-bg::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0; bottom: 0;
+            width: 2px;
+            background-color: #ffffff;
+            z-index: 1;
+        }
+        .factor-bar-fill-positive {
+            height: 100%;
+            background-color: #3fb950;
+            border-radius: 0 5px 5px 0;
+            transition: width 0.5s ease-in-out;
+            position: absolute;
+            left: 50%;
+        }
+        .factor-bar-fill-negative {
+            height: 100%;
+            background-color: #f85149;
+            border-radius: 5px 0 0 5px;
+            transition: width 0.5s ease-in-out;
+            position: absolute;
+            right: 50%;
+        }
 
-        .methodology-card { padding: 18px 20px; border-radius: 12px; background: #f9f9f9; border: 1px solid #e1e4e8; box-shadow: 0 4px 12px rgba(0,0,0,0.05); height: 100%; }
-        .methodology-card h4 { font-size: 16px; font-weight: 600; margin-top: 0; margin-bottom: 12px; color: #0d1117; }
-        .methodology-card p { font-size: 13px; color: #213547; margin-bottom: 4px; }
-        .methodology-card strong { color: #213547; font-weight: 600; }
-        /* --- End Factor Bar --- */
+        .methodology-card {
+            padding: 18px 20px;
+            border-radius: 12px;
+            background: #f9f9f9;
+            border: 1px solid #e1e4e8;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            height: 100%;
+        }
+        .methodology-card h4 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 12px;
+            color: #0d1117;
+        }
+        .methodology-card p {
+            font-size: 13px;
+            color: #213547;
+            margin-bottom: 4px;
+        }
+        .methodology-card strong {
+            color: #213547;
+            font-weight: 600;
+        }
 
-        /* --- CARD STYLING (LIGHT MODE) --- */
-        .hero-card, .section-card, .kpi-card-new { padding: 28px 28px 24px 28px; background: #f9f9f9; border: 1px solid #e1e4e8; box-shadow: 0 8px 24px rgba(0,0,0,0.05); color: #213547; border-radius: 12px; }
+        /* --- CARD STYLING --- */
+        .hero-card, .section-card, .kpi-card-new {
+            padding: 28px 28px 24px 28px;
+            background: #f9f9f9;
+            border: 1px solid #e1e4e8;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.05);
+            color: #213547;
+            border-radius: 12px;
+        }
         .kpi-card-new { padding: 18px 20px; margin-bottom: 16px; }
         .section-card { padding: 18px 20px; height: 100%; }
-        .hero-title, .section-title, .kpi-value-new { font-size: 30px; font-weight: 600; margin-bottom: 4px; color: #0d1117; letter-spacing: 0.01em; }
+        .hero-title, .section-title, .kpi-value-new {
+            font-size: 30px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #0d1117;
+            letter-spacing: 0.01em;
+        }
         .section-title { font-size: 16px; }
         .kpi-value-new { font-size: 28px; }
-        .hero-subtitle, .section-subtitle, .kpi-label-new { font-size: 14px; color: #213547; margin-bottom: 20px; }
+        .hero-subtitle, .section-subtitle, .kpi-label-new {
+            font-size: 14px;
+            color: #213547;
+            margin-bottom: 20px;
+        }
         .section-subtitle { margin-bottom: 12px; }
         .kpi-label-new { margin-bottom: 4px; }
 
-        .positive-metric { color: #228B22; } 
-        .negative-metric { color: #D90429; } 
-
         /* --- Button Styling - Blue Accent --- */
-        .stButton > button { border-radius: 8px; padding: 0.45rem 1.3rem; font-weight: 500; border: 1px solid #1c64f2; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #ffffff; }
-        .stButton > button:hover { border-color: #60a5fa; filter: brightness(1.1); color: #ffffff; }
+        .stButton > button {
+            border-radius: 8px;
+            padding: 0.45rem 1.3rem;
+            font-weight: 500;
+            border: 1px solid #1c64f2;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: #ffffff;
+        }
+        .stButton > button:hover {
+            border-color: #60a5fa;
+            filter: brightness(1.1);
+            color: #ffffff;
+        }
         
-        /* --- Input boxes (Light Theme) --- */
-        .stTextInput input, .stTextArea textarea, .stSelectbox div[data-baseweb="select"] { border-radius: 8px !important; background: #ffffff !important; border: 1px solid #d1d5db !important; color: #0d1117 !important; }
-        .stTextInput input::placeholder { color: #4a5568 !important; }
-        .stTextInput input[type="text"] { border-radius: 999px !important; padding-left: 14px; font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; text-transform: uppercase; }
+        /* --- Input boxes --- */
+        .stTextInput input,
+        .stTextArea textarea,
+        .stSelectbox div[data-baseweb="select"] {
+            border-radius: 8px !important;
+            background: #ffffff !important;
+            border: 1px solid #d1d5db !important;
+            color: #0d1117 !important;
+        }
+        .stTextInput input::placeholder {
+            color: #4a5568 !important;
+        }
+        .stTextInput input[type="text"] {
+            border-radius: 999px !important;
+            padding-left: 14px;
+            font-family: "SF Mono", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            text-transform: uppercase;
+        }
         
-        .stDataFrame { border-radius: 8px; overflow: hidden; border: 1px solid #e1e4e8; }
+        .stDataFrame {
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #e1e4e8;
+        }
 
-        /* --- Custom styles for Valuation Page (Light Theme) --- */
-        .valuation-metric-label { font-size: 16px; color: #213547; margin-bottom: 5px; font-weight: 400; }
-        .valuation-metric-value { font-size: 38px; font-weight: 600; color: #0d1117; line-height: 1.2; }
-        .valuation-current-price { font-size: 14px; color: #213547; margin-top: 10px; }
-        .valuation-upside { font-size: 14px; font-weight: 500; }
+        /* --- Custom styles for Valuation Page --- */
+        .valuation-metric-label {
+            font-size: 16px;
+            color: #213547;
+            margin-bottom: 5px;
+            font-weight: 400;
+        }
+        .valuation-metric-value {
+            font-size: 38px;
+            font-weight: 600;
+            color: #0d1117;
+            line-height: 1.2;
+        }
+        .valuation-current-price {
+            font-size: 14px;
+            color: #213547;
+            margin-top: 10px;
+        }
+        .valuation-upside {
+            font-size: 14px;
+            font-weight: 500;
+        }
         .valuation-upside.positive { color: #228B22; }
         .valuation-upside.negative { color: #D90429; }
         
-        /* --- FIX: Scenario Button Group (removes black bar) --- */
+        /* Scenario Button Group */
         div.scenario-radio-group div[data-testid="stRadio"] label {
-            border: 1px solid #d1d5db; background: #ffffff; border-radius: 8px;
-            padding: 8px 12px; margin-right: 5px; color: #213547;
+            border: 1px solid #d1d5db;
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 8px 12px;
+            margin-right: 5px;
+            color: #213547;
         }
-        div.scenario-radio-group div[data-testid="stRadio"] label:hover { background: #f9f9f9; }
-        div.scenario-radio-group div[data-testid="stRadio"] label > div:first-child { display: none; }
-        div.scenario-radio-group div[data-testid="stRadio"] label span { color: #213547 !important; font-size: 14px; }
+        div.scenario-radio-group div[data-testid="stRadio"] label:hover {
+            background: #f9f9f9;
+        }
+        div.scenario-radio-group div[data-testid="stRadio"] label > div:first-child {
+            display: none;
+        }
+        div.scenario-radio-group div[data-testid="stRadio"] label span {
+            color: #213547 !important;
+            font-size: 14px;
+        }
         div.scenario-radio-group div[data-testid="stRadio"] label[data-checked="true"] {
-            border-color: #d4af37; background: #fefce8; color: #0d1117;
+            border-color: #d4af37;
+            background: #fefce8;
+            color: #0d1117;
         }
         div.scenario-radio-group div[data-testid="stRadio"] label[data-checked="true"] span {
             color: #0d1117 !important;
         }
         
-        /* --- FIX: Load Company button alignment --- */
+        /* --- Load Company button alignment --- */
         .valuation-load-section {
             display: flex;
-            align-items: flex-end; /* Aligns button to bottom of input */
+            align-items: flex-end;
             gap: 10px; 
         }
         .valuation-load-section div[data-testid="stTextInput"] {
-            flex-grow: 1; /* Input takes up available space */
+            flex-grow: 1;
         }
         .valuation-load-section .stButton {
-             width: 150px; /* Give button a fixed width */
-             flex-shrink: 0; /* Don't let button shrink */
-             margin-bottom: 2px; /* Fine-tune alignment */
+             width: 150px;
+             flex-shrink: 0;
+             margin-bottom: 2px;
         }
 
         .stNumberInput div[data-testid="stVerticalBlock"] > div:last-child {
-            display: flex; flex-direction: column; justify-content: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
         </style>
         """,

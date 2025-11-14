@@ -746,19 +746,313 @@ def five_day_price_plot(ticker: str):
 #  [I’ve left your valuation helper implementations unchanged;
 #    you can copy them from your previous file directly.]
 
+# -------------------- VALUATION / SCENARIO HELPERS --------------------
 def _estimate_fcff_and_net_debt(symbol: str):
-    # ... your existing implementation ...
-    # (copy it unchanged from your previous code)
-    # (omitted here only to save space in this message)
-    pass  # <-- REPLACE with your original body
+    """
+    Rough FCFF + net debt estimate from yfinance quarterlies.
+    FCFF ≈ Operating Cash Flow - Capex (TTM).
+    Net debt = Total debt - cash.
+    """
+    try:
+        q_is, q_bs, q_cf = yf_quarterly(symbol)
 
-def _build_scenario_params(metrics, scenario):
-    # ... your existing implementation ...
-    pass  # REPLACE
+        # Operating cash flow (TTM)
+        cfo_ttm = ttm_from_rows(
+            q_cf,
+            [
+                "Total Cash From Operating Activities",
+                "Net Cash Provided By Operating Activities",
+                "Cash Provided By Operating Activities",
+                "Operating Cash Flow",
+                "Cash Flow From Operations",
+            ],
+        )
+
+        # Capex (usually negative; we use its magnitude)
+        capex_ttm = ttm_from_rows(
+            q_cf,
+            [
+                "Capital Expenditures",
+                "Capital Expenditure",
+                "Purchase Of Property Plant And Equipment",
+                "Purchase Of Fixed Assets",
+            ],
+        )
+        if np.isfinite(capex_ttm):
+            capex_ttm = abs(capex_ttm)
+
+        if all(np.isfinite([cfo_ttm, capex_ttm])):
+            fcff_ttm = cfo_ttm - capex_ttm
+        else:
+            fcff_ttm = np.nan
+
+        # Debt
+        total_debt = last_q_from_rows(q_bs, ["Total Debt", "TotalDebt"])
+        if not np.isfinite(total_debt):
+            lt = last_q_from_rows(
+                q_bs,
+                ["Long Term Debt", "LongTermDebt", "Long Term Debt Noncurrent"],
+            )
+            st_ = last_q_from_rows(
+                q_bs,
+                [
+                    "Short Long Term Debt",
+                    "Short Long Term Debt Total",
+                    "Short/Current Long Term Debt",
+                ],
+            )
+            total_debt = 0.0
+            if np.isfinite(lt):
+                total_debt += lt
+            if np.isfinite(st_):
+                total_debt += st_
+            if total_debt == 0:
+                total_debt = np.nan
+
+        # Cash
+        cash = last_q_from_rows(
+            q_bs,
+            [
+                "Cash And Cash Equivalents",
+                "Cash And Cash Equivalents And Short Term Investments",
+                "Cash",
+            ],
+        )
+
+        net_debt = np.nan
+        if np.isfinite(total_debt) and np.isfinite(cash):
+            net_debt = total_debt - cash
+
+        return fcff_ttm, net_debt
+    except Exception as e:
+        logging.warning(f"_estimate_fcff_and_net_debt failed for {symbol}: {e}")
+        return np.nan, np.nan
+
+
+def _build_scenario_params(metrics: pd.Series, scenario: str) -> Dict[str, Any]:
+    """
+    Map a row of metrics + scenario name into DCF assumptions.
+    Uses RevenueGrowth% as starting point, with simple adjustments.
+    """
+    scen = (scenario or "Base").lower()
+
+    base_g = metrics.get("RevenueGrowth%", np.nan)
+    if not np.isfinite(base_g):
+        base_g = 5.0  # % fallback
+    # Clamp to reasonable band
+    base_g = max(min(base_g, 30.0), -10.0) / 100.0  # convert to decimal
+
+    if scen == "bull":
+        growth = base_g * 1.3
+        wacc = 0.08
+        term_g = 0.025
+    elif scen == "bear":
+        growth = base_g * 0.5
+        wacc = 0.11
+        term_g = 0.015
+    else:  # base
+        growth = base_g
+        wacc = 0.09
+        term_g = 0.02
+
+    # Keep things sane
+    growth = max(min(growth, 0.30), -0.05)
+    term_g = max(min(term_g, 0.03), 0.005)
+
+    return {
+        "years": 5,
+        "growth": growth,
+        "wacc": wacc,
+        "terminal_growth": term_g,
+    }
+
 
 def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
-    # ... your existing implementation ...
-    pass  # REPLACE
+    """
+    Build one scenario table + markdown summary.
+
+    Methods:
+      - DCF on FCFF
+      - P/E multiple vs peer median
+      - P/S multiple vs peer median
+      - EV/EBITDA multiple vs peer median
+    """
+    ticker = ticker.upper().strip()
+
+    # Reuse the core pipeline to get metrics + peers
+    scored, _, _, _, _, _ = analyze_ticker_pro(ticker, peer_cap=max_peers)
+    if not isinstance(scored, pd.DataFrame) or scored.empty:
+        return pd.DataFrame(), f"_No data available for {ticker} in {scenario} scenario._"
+
+    # Focus row
+    if "Ticker" in scored.columns:
+        focus_df = scored[scored["Ticker"] == ticker]
+        if focus_df.empty:
+            focus_df = scored.iloc[[0]]
+    else:
+        focus_df = scored.iloc[[0]]
+    row = focus_df.iloc[0]
+
+    # Live price + shares
+    live_price, shares = get_price_and_shares(ticker)
+    price = live_price if np.isfinite(live_price) else row.get("Latest Price", np.nan)
+
+    # FCFF + net debt
+    fcff_ttm, net_debt = _estimate_fcff_and_net_debt(ticker)
+
+    params = _build_scenario_params(row, scenario)
+    years = params["years"]
+    g = params["growth"]
+    wacc = params["wacc"]
+    g_term = params["terminal_growth"]
+
+    rows = []
+
+    # ---------- DCF METHOD ----------
+    price_dcf = np.nan
+    if np.isfinite(fcff_ttm) and np.isfinite(wacc) and wacc > 0:
+        # If FCFF is negative or tiny, fall back to 5% of market cap as rough starting point
+        if fcff_ttm <= 0:
+            mktcap = row.get("MarketCap", np.nan)
+            if np.isfinite(mktcap):
+                fcff_ttm = 0.05 * mktcap
+
+        fcff = fcff_ttm
+        pv_sum = 0.0
+        for t_year in range(1, years + 1):
+            fcff = fcff * (1.0 + g)
+            disc = (1.0 + wacc) ** t_year
+            pv_sum += fcff / disc
+
+        term_pv = 0.0
+        if wacc > g_term + 1e-4:
+            terminal_fcf = fcff * (1.0 + g_term)
+            terminal_val = terminal_fcf / (wacc - g_term)
+            term_pv = terminal_val / ((1.0 + wacc) ** years)
+
+        ev_dcf = pv_sum + term_pv
+        if np.isfinite(net_debt):
+            eq_dcf = ev_dcf - net_debt
+        else:
+            eq_dcf = ev_dcf
+
+        if np.isfinite(eq_dcf) and shares and shares > 0:
+            price_dcf = eq_dcf / shares
+
+    # ---------- MULTIPLE METHODS ----------
+    peers_only = scored[scored["Ticker"] != ticker] if "Ticker" in scored.columns else scored
+
+    def _median(col):
+        if col not in peers_only.columns:
+            return np.nan
+        s = pd.to_numeric(peers_only[col], errors="coerce").replace(
+            [np.inf, -np.inf], np.nan
+        )
+        return float(s.median()) if s.notna().sum() else np.nan
+
+    med_pe = _median("P/E Ratio")
+    med_ps = _median("Price/Sales")
+    med_ev_ebitda = _median("EV/EBITDA")
+
+    eps = row.get("EPS_TTM", np.nan)
+    own_ps = row.get("Price/Sales", np.nan)
+    own_ev_ebitda = row.get("EV/EBITDA", np.nan)
+
+    scen_lower = (scenario or "Base").lower()
+    if scen_lower == "bull":
+        mult_adj = 1.15
+    elif scen_lower == "bear":
+        mult_adj = 0.85
+    else:
+        mult_adj = 1.00
+
+    price_pe = np.nan
+    if np.isfinite(eps) and np.isfinite(med_pe):
+        target_pe = med_pe * mult_adj
+        price_pe = eps * target_pe
+
+    price_ps = np.nan
+    if np.isfinite(price) and np.isfinite(own_ps) and np.isfinite(med_ps) and own_ps > 0:
+        target_ps = med_ps * mult_adj
+        price_ps = price * (target_ps / own_ps)
+
+    price_ev = np.nan
+    if (
+        np.isfinite(price)
+        and np.isfinite(own_ev_ebitda)
+        and np.isfinite(med_ev_ebitda)
+        and own_ev_ebitda > 0
+    ):
+        target_ev_ebitda = med_ev_ebitda * mult_adj
+        price_ev = price * (target_ev_ebitda / own_ev_ebitda)
+
+    # ---------- BUILD TABLE ----------
+    def add_row(method_name, implied_px, desc):
+        if np.isfinite(implied_px) and np.isfinite(price):
+            up = (implied_px / price - 1.0) * 100.0
+        else:
+            up = np.nan
+        rows.append(
+            {
+                "Method": method_name,
+                "Scenario": scenario,
+                "Implied Price": implied_px,
+                "Upside%": up,
+                "Key Assumptions": desc,
+            }
+        )
+
+    if np.isfinite(price_dcf):
+        add_row(
+            "DCF (FCFF)",
+            price_dcf,
+            f"{years}y FCFF growth {g*100:.1f}%, WACC {wacc*100:.1f}%, gₜ {g_term*100:.1f}%",
+        )
+
+    if np.isfinite(price_pe):
+        add_row(
+            "P/E Multiple",
+            price_pe,
+            f"Peer median P/E {med_pe:.1f}×, scenario adj {mult_adj:.2f}",
+        )
+
+    if np.isfinite(price_ps):
+        add_row(
+            "P/S Multiple",
+            price_ps,
+            f"Peer median P/S {med_ps:.1f}×, scenario adj {mult_adj:.2f}",
+        )
+
+    if np.isfinite(price_ev):
+        add_row(
+            "EV/EBITDA Multiple",
+            price_ev,
+            f"Peer median EV/EBITDA {med_ev_ebitda:.1f}×, scenario adj {mult_adj:.2f}",
+        )
+
+    if not rows:
+        return (
+            pd.DataFrame(),
+            f"_Insufficient data to build {scenario} valuation for {ticker}._",
+        )
+
+    df_out = pd.DataFrame(rows)
+
+    # ---------- MARKDOWN SUMMARY ----------
+    lines = [f"**Scenario:** {scenario}"]
+    if np.isfinite(price):
+        lines.append(f"- Current price: `${price:.2f}`")
+
+    best = df_out.sort_values("Upside%", ascending=False).iloc[0]
+    if np.isfinite(best["Implied Price"]) and np.isfinite(best["Upside%"]):
+        lines.append(
+            f"- Highest upside: `${best['Implied Price']:.2f}` "
+            f"({best['Upside%']:+.1f}% vs current) via **{best['Method']}**."
+        )
+
+    md = "\n".join(lines)
+    return df_out, md
+
 
 # ======================================================================
 # NEW: RUN_EQUITY_ANALYSIS WRAPPER FOR BLOCKS UI

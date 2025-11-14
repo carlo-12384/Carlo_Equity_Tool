@@ -1023,62 +1023,14 @@ def inject_global_css():
     st.markdown(
         """
         <style>
-        /* =========================
-           GLOBAL TEXT / LAYOUT
-           ========================= */
-        html, body, .stApp, .markdown-text-container, .stMarkdown,
-        p, li, span, small, td, th, label, div[data-testid="stMarkdownContainer"] {
-            color: #111827 !important;
-        }
-
-        .positive-metric { color: #228B22 !important; } 
-        .negative-metric { color: #D90429 !important; } 
-
-        section[data-testid="stSidebar"] { display: none !important; }
-        h1, h2, h3, h4, h5, h6 { color: #0d1117 !important; }
-
-        .stApp {
-            background: #ffffff;  
-            color: #213547;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-        }
-        header[data-testid="stHeader"] { background: transparent; }
-        footer { visibility: hidden; }
-
-        .st-emotion-cache-16txtl3,
-        label,
-        .stTextInput > label,
-        .stSlider > label,
-        .stSelectbox > label,
-        .stNumberInput > label {
-            color: #213547 !important;
-            font-weight: 500;
-        }
-        .stCaption { color: #213547 !important; }
-
-        /* =====================================
-           GENERIC BUTTONS (EVERYWHERE BUT NAV)
-           ===================================== */
-        .main-content .stButton > button {
-            border-radius: 8px;
-            padding: 0.45rem 1.3rem;
-            font-weight: 500;
-            border: 1px solid #1c64f2;
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            color: #ffffff;
-        }
-        .main-content .stButton > button:hover {
-            border-color: #60a5fa;
-            filter: brightness(1.1);
-            color: #ffffff;
-        }
+        /* ... keep your existing global text / cards / etc. ABOVE this comment ... */
 
         /* =========================
-           TOP NAV BAR (BLACK STRIP)
+           TOP NAV BAR (DARK STRIP)
            ========================= */
         .top-nav-bar {
-            background: #0d1117;
-            padding: 12px 0;
+            background: #0d1117;          /* dark bar */
+            padding: 0;
             width: 100vw;
             position: relative;
             left: 50%;
@@ -1087,63 +1039,77 @@ def inject_global_css():
             margin-right: -50vw;
         }
 
+        /* Flex container for nav buttons */
         .top-nav-inner {
             max-width: 1100px;
             margin: 0 auto;
+            display: flex;
         }
 
-        /* Remove column padding so buttons touch */
-        .top-nav-container [data-testid="column"] {
+        /* Remove padding between the nav columns so buttons touch */
+        .top-nav-inner [data-testid="column"] {
             padding-left: 0 !important;
             padding-right: 0 !important;
         }
 
-        /* Make each nav button fill its column */
+        /* Make each button fill its column */
         .top-nav-container .stButton {
             width: 100%;
             margin: 0 !important;
         }
 
-        /* NAV BUTTONS: blue bar, white text, white separators */
-        .top-nav-container .stButton > button,
-        .top-nav-container .stButton > button * {
+        /* Actual NAV buttons (blue bar with white text + white borders) */
+        .top-nav-container .stButton > button {
             width: 100%;
             padding: 14px 0;
-            border: 1px solid rgba(255,255,255,0.9);     /* white line between */
-            border-radius: 0;                             /* merged look */
+            border: 1px solid rgba(255,255,255,0.85);        /* white borders between buttons */
+            border-radius: 0;                                 /* merge into one bar */
             background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            color: #ffffff !important;
+            color: #ffffff !important;                        /* white text */
             font-size: 15px;
             font-weight: 600;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
-            box-shadow: none;
-            cursor: pointer;
         }
 
         .top-nav-container .stButton > button:hover {
-            filter: brightness(1.15);
+            filter: brightness(1.08);
         }
 
-        /* Rounded corners only on outer nav buttons */
-        .top-nav-container [data-testid="column"]:first-child .stButton > button {
+        /* Rounded corners only on the outer left/right ends */
+        .top-nav-inner [data-testid="column"]:first-child .stButton > button {
             border-top-left-radius: 12px;
             border-bottom-left-radius: 12px;
         }
-        .top-nav-container [data-testid="column"]:last-child .stButton > button {
+        .top-nav-inner [data-testid="column"]:last-child .stButton > button {
             border-top-right-radius: 12px;
             border-bottom-right-radius: 12px;
         }
 
-        /* ====== keep your existing factor / card / valuation styles below ====== */
-        /* (You can paste all the factor-bar, card, valuation styles you already had) */
+        /* =========================
+           OTHER BUTTONS (MAIN BODY)
+           ========================= */
+        .main-content .stButton > button {
+            border-radius: 8px;
+            padding: 0.45rem 1.3rem;
+            font-weight: 500;
+            border: 1px solid #1c64f2;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: #ffffff !important;
+        }
 
+        .main-content .stButton > button:hover {
+            border-color: #60a5fa;
+            filter: brightness(1.1);
+            color: #ffffff !important;
+        }
+
+        /* ... keep the rest of your existing CSS BELOW this comment, 
+           but make sure there is NO plain `.stButton > button { ... }` rule ... */
         </style>
         """,
         unsafe_allow_html=True,
     )
-
-
 
 # ---------- DASHBOARD ----------
 def render_dashboard():

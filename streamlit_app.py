@@ -1017,110 +1017,131 @@ def inject_global_css():
         """
         <style>
         .stApp {
-            background: radial-gradient(circle at top left, #151c2f 0, #050812 60%);
-            color: #e5e7eb;
+            /* Professional Dark Theme */
+            background: #0d1117;
+            color: #c9d1d9; /* Lighter grey text */
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
         }
         header[data-testid="stHeader"] {background: transparent;}
         footer {visibility: hidden;}
 
         .hero-card {
-            border-radius: 20px;
-            padding: 32px 32px 28px 32px;
-            background: linear-gradient(135deg, #111827 0, #020617 70%);
-            border: 1px solid #1f2937;
-            box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+            border-radius: 12px; /* Sharper corners */
+            padding: 28px 28px 24px 28px;
+            background: #161b22; /* Darker card */
+            border: 1px solid #30363d; /* Subtler border */
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
         }
         .hero-title {
-            font-size: 34px;
-            font-weight: 700;
-            letter-spacing: 0.03em;
+            font-size: 30px; /* Slightly smaller title */
+            font-weight: 600;
+            letter-spacing: 0.01em;
             margin-bottom: 4px;
+            color: #f0f6fc; /* Near white for title */
         }
         .hero-subtitle {
             font-size: 14px;
-            color: #9ca3af;
+            color: #8b949e; /* Medium grey text */
             margin-bottom: 20px;
         }
 
         .kpi-card {
             padding: 18px 18px 16px 18px;
-            border-radius: 16px;
-            background: radial-gradient(circle at top left, #111827 0, #020617 70%);
-            border: 1px solid #1f2937;
-            box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+            border-radius: 12px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
             min-height: 90px;
         }
         .kpi-label {
             font-size: 13px;
-            color: #9ca3af;
+            color: #8b949e;
             margin-bottom: 4px;
         }
         .kpi-value {
             font-size: 26px;
             font-weight: 600;
+            color: #f0f6fc;
         }
         .kpi-trend {
             font-size: 11px;
-            color: #4ade80;
+            color: #8b949e; /* Made trend neutral grey, was green */
             margin-top: 2px;
         }
 
         .section-card {
             padding: 18px 20px;
-            border-radius: 16px;
-            background: #020617;
-            border: 1px solid #1f2937;
-            box-shadow: 0 18px 40px rgba(0,0,0,0.45);
+            border-radius: 12px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
         .section-title {
             font-size: 16px;
             font-weight: 600;
             margin-bottom: 8px;
+            color: #f0f6fc;
         }
         .section-subtitle {
             font-size: 12px;
-            color: #6b7280;
+            color: #8b949e;
             margin-bottom: 12px;
         }
         
-        /* Metric colors from your summary function */
-        .positive-metric { color: #4ade80; }
-        .negative-metric { color: #f87171; }
+        /* Metric colors (Green/Red is standard for finance) */
+        .positive-metric { color: #3fb950; } /* GitHub green */
+        .negative-metric { color: #f85149; } /* GitHub red */
 
         section[data-testid="stSidebar"] {
-            background: #020617;
-            border-right: 1px solid #1f2937;
+            background: #0d1117;
+            border-right: 1px solid #30363d;
         }
 
-        /* Make radio in sidebar look like a vertical icon menu */
+        /* Sidebar menu */
         div[data-testid="stSidebar"] div[role="radiogroup"] > label {
-            border-radius: 12px;
+            border-radius: 8px; /* Sharper */
             padding: 8px 10px;
             margin-bottom: 4px;
             cursor: pointer;
         }
         div[data-testid="stSidebar"] div[role="radiogroup"] > label:hover {
-            background: rgba(148,163,184,0.16);
+            background: rgba(139, 148, 158, 0.1); /* Faint grey hover */
         }
         div[data-testid="stSidebar"] div[role="radiogroup"] > label[data-baseweb="radio"] > div:first-child {
             display: none;  /* hide the little bubble */
         }
         div[data-testid="stSidebar"] div[role="radiogroup"] > label span {
             font-size: 13px;
+            color: #c9d1d9;
         }
 
+        /* Button Styling - Gold/Yellow Accent */
         .stButton > button {
-            border-radius: 999px;
+            border-radius: 8px; /* Sharper */
             padding: 0.45rem 1.3rem;
             font-weight: 500;
-            border: 1px solid transparent;
-            background: linear-gradient(135deg, #2563eb, #4f46e5);
+            border: 1px solid #d4af37; /* Gold border */
+            background: linear-gradient(135deg, #d4af37, #b8860b); /* Gold gradient */
+            color: #0d1117; /* Dark text on gold */
         }
         .stButton > button:hover {
-            border-color: #60a5fa;
-            filter: brightness(1.08);
+            border-color: #f0b90b;
+            filter: brightness(1.1);
+            color: #000;
         }
+        
+        /* Input boxes */
+        .stTextInput, .stTextArea, .stSelectbox {
+             border-radius: 8px;
+        }
+        
+        /* Dataframe styling */
+        .stDataFrame {
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #30363d;
+        }
+
         </style>
         """,
         unsafe_allow_html=True,
@@ -1146,107 +1167,23 @@ def render_dashboard():
     )
 
     st.write("")
-    col_search, col_btn = st.columns([4, 1])
-
-    with col_search:
-        ticker = st.text_input(
-            "Search ticker symbol (e.g., AAPL, MSFT).",
-            key="ticker_input",
-            label_visibility="collapsed",
-            placeholder="Enter ticker symbol to analyze (e.g., AAPL)",
-        )
-    with col_btn:
-        st.write("")
-        analyze_clicked = st.button("Analyze", use_container_width=True)
-
-    max_peers = st.slider("Max peers to compare", 2, 15, 6, key="max_peers_dashboard")
-
-    if analyze_clicked and ticker:
-        with st.spinner(f"Analyzing {ticker.upper()}..."):
-            results = run_equity_analysis(ticker, max_peers=max_peers)
-            st.session_state.last_results = results
-            st.session_state.recent_tickers.insert(
-                0,
-                {"ticker": results["ticker"], "time": datetime.now().strftime("%Y-%m-%d %H:%M")},
-            )
-            st.session_state.recent_tickers = st.session_state.recent_tickers[:12]
-            st.success(f"Analysis updated for {results['ticker']}")
-
-    st.write("")
-    kpi1, kpi2, kpi3 = st.columns(3)
-    companies_tracked = len({x["ticker"] for x in st.session_state.recent_tickers}) or 0
-    active_theses = len(st.session_state.theses_store)
-    research_docs = len(st.session_state.notes_store)
-
-    with kpi1:
-        st.markdown(
-            f"""
-            <div class="kpi-card">
-                <div class="kpi-label">Companies Tracked</div>
-                <div class="kpi-value">{companies_tracked}</div>
-                <div class="kpi-trend">Live from this workspace</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with kpi2:
-        st.markdown(
-            f"""
-            <div class="kpi-card">
-                <div class="kpi-label">Saved Theses</div>
-                <div class="kpi-value">{active_theses}</div>
-                <div class="kpi-trend">Draft or published</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    with kpi3:
-        st.markdown(
-            f"""
-            <div class="kpi-card">
-                <div class="kpi-label">Research Notes</div>
-                <div class="kpi-value">{research_docs}</div>
-                <div class="kpi-trend">Stored locally</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    st.write("")
-    left, right = st.columns([1.4, 2])
-
-    # Recently analyzed
-    with left:
-        st.markdown(
-            """
-            <div class="section-card">
-                <div class="section-title">Recently Analyzed</div>
-                <div class="section-subtitle">Quick jump to your latest tickers.</div>
-            """,
-            unsafe_allow_html=True,
-        )
-        if st.session_state.recent_tickers:
-            for item in st.session_state.recent_tickers:
-                st.markdown(f"- **{item['ticker']}** · _{item['time']}_")
-        else:
-            st.markdown("_No companies analyzed yet. Run your first analysis above._")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    # Latest company snapshot
-    with right:
-        st.markdown(
-            """
-            <div class="section-card">
-                <div class="section-title">Latest Company Snapshot</div>
-                <div class="section-subtitle">Pulled from your most recent analysis run.</div>
-            """,
-            unsafe_allow_html=True,
-        )
-        if st.session_state.last_results:
-            st.markdown(st.session_state.last_results["summary_md"], unsafe_allow_html=True)
-        else:
-            st.markdown("_Run an analysis to display a company snapshot here._")
-        st.markdown("</div>", unsafe_allow_html=True)
+    
+    # --- MODIFIED: Removed the layout columns and the right-hand snapshot card ---
+    st.markdown(
+        """
+        <div class="section-card">
+            <div class="section-title">Recently Analyzed</div>
+            <div class="section-subtitle">Quick jump to your latest tickers.</div>
+        """,
+        unsafe_allow_html=True,
+    )
+    if st.session_state.recent_tickers:
+        for item in st.session_state.recent_tickers:
+            st.markdown(f"- **{item['ticker']}** · _{item['time']}_")
+    else:
+        st.markdown("_No companies analyzed yet. Run your first analysis above._")
+    st.markdown("</div>", unsafe_allow_html=True)
+    # --- END OF MODIFICATION ---
 
 
 # ---------- ANALYSIS PAGE ----------
@@ -1432,7 +1369,7 @@ def main():
     with st.sidebar:
         st.markdown("### Equity Tool")
         page = st.radio(
-            "Pages",
+            "Navigation", # Changed "Pages" to "Navigation"
             [
                 "📊  Dashboard",
                 "📈  Analysis",

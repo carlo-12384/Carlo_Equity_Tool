@@ -2294,7 +2294,8 @@ def main():
         """,
         unsafe_allow_html=True,
     )
-    /* ------------------------------
+    st.markdown(
+     /* ------------------------------
            TOP NAV BAR (FULL-WIDTH BAR)
         ------------------------------ */
         .top-nav-bar {
@@ -2315,6 +2316,10 @@ def main():
             max-width: 1100px;
             margin: 0 auto;
         }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
 
         /* Remove column padding (so buttons touch) */
         .top-nav-inner [data-testid="column"] {

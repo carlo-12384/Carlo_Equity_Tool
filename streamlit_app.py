@@ -1335,6 +1335,7 @@ def inject_global_css():
 # ======================================================================
 
 # ---------- DASHBOARD ----------
+# ---------- DASHBOARD ----------
 def render_dashboard():
     # --- MODIFICATION: Removed the light-theme override CSS block ---
     # It is no longer needed as this is now the default.
@@ -1411,7 +1412,7 @@ def render_dashboard():
             f"""
             <div class="kpi-card-new">
                 <div class="kpi-label-new">Active Theses</div>
-                <div class.="kpi-value-new">{active_theses}</div>
+                <div class="kpi-value-new">{active_theses}</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -1443,18 +1444,22 @@ def render_dashboard():
     with qa_col1:
         if st.button("Start New Analysis", use_container_width=True):
             st.session_state.top_nav_radio = "📈  Analysis"
-            st.experimental_rerun() # Rerun to switch page
+            st.rerun() # Rerun to switch page
     with qa_col2:
         if st.button("Draft Thesis", use_container_width=True):
             st.session_state.top_nav_radio = "📝  Theses"
-            st.experimental_rerun() # Rerun to switch page
+            st.rerun() # Rerun to switch page
     with qa_col3:
         if st.button("Open Research Notes", use_container_width=True):
             st.session_state.top_nav_radio = "📚  Research"
-            st.experimental_rerun() # Rerun to switch page
+            st.rerun() # Rerun to switch page
 
     st.markdown("</div>", unsafe_allow_html=True)
 
+
+    # --- MODIFICATION: "Recently Analyzed" section removed ---
+    # st.write("")
+    # st.markdown( ... ) -> This block was removed
 
     # --- MODIFICATION: "Recently Analyzed" section removed ---
     # st.write("")
@@ -2211,11 +2216,11 @@ def main():
     page = st.radio(
         "Navigation",
         [
-            "📊  Dashboard",
-            "📈  Analysis",
-            "🧮  Valuation",
-            "📚  Research",
-            "📝  Theses",
+            "  |Dashboard|",
+            "  |Analysis|",
+            "  |Valuation|",
+            "  |Research|",
+            "  |Theses|",
         ],
         horizontal=True,
         label_visibility="collapsed",

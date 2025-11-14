@@ -169,7 +169,7 @@ def get_peers(ticker: str, max_peers=10):
 def filter_peers_industry_size(ticker: str, peers: list, size_band=(0.25, 4.0)):
     prof = get_profile(ticker) or {}
     ind = (prof.get("finnhubIndustry") or "").lower()
-    mc = prof.get("marketCapitalization") or None
+    mc  = prof.get("marketCapitalization") or None
     if not peers:
         return []
     kept = []
@@ -404,7 +404,8 @@ def get_metrics(symbol: str) -> dict:
                 total_debt = np.nan
 
         cash = last_q_from_rows(q_bs, [
-            "Cash And Cash Equivalents","Cash","Cash And Cash Equivalents And Short Term Investments"
+            "Cash And Cash Equivalents","Cash",
+            "Cash And Cash Equivalents And Short Term Investments"
         ])
 
         total_equity = last_q_from_rows(q_bs, ["Stockholders Equity","Total Stockholder Equity","Total Equity"])
@@ -661,56 +662,6 @@ def analyze_ticker_pro(ticker: str, peer_cap: int = 6):
     news_md = "### Recent Headlines\n" + render_news_md(news_items)
 
     return scored, text_synopsis_md, metrics_summary_md, kpi_ratings_md, waterfall_md, news_md
-
-def run_app(ticker: str, max_peers: int = 6):
-    """
-    Convenience wrapper that:
-      - runs analyze_ticker_pro
-      - builds a formatted peer comparison table
-      - builds matplotlib figures
-    """
-    scored, text_synopsis_md, metrics_summary_md, kpi_ratings_md_val, waterfall_md_val, news_md = analyze_ticker_pro(
-        ticker, peer_cap=max_peers
-    )
-
-    cols = [
-        "Ticker","Industry","MarketCap","Latest Price","VWAP","Ret12m",
-        "P/E (raw)","P/B (raw)","EV/EBITDA (raw)","P/S (raw)",
-        "ROE%","GrossMargin%","EBITDAMargin%","RevenueGrowth%","DebtToEquity",
-        "GrossProfitability","AssetGrowth%","Accruals%","InterestCoverage",
-        "Valuation","Quality","Growth","Leverage","Momentum","Efficiency",
-        "CompositeScore","RiskFlags"
-    ]
-
-    view = (
-        scored[[c for c in cols if c in scored.columns]]
-        .sort_values("CompositeScore", ascending=False, na_position="last")
-        if (not scored.empty) and ("CompositeScore" in scored.columns)
-        else pd.DataFrame(columns=cols)
-    )
-
-    # Format numerical columns for display
-    dollar_cols = ["MarketCap", "Latest Price", "VWAP"]
-    percent_cols = ["ROE%", "GrossMargin%", "EBITDAMargin%", "RevenueGrowth%", "AssetGrowth%", "Accruals%", "Ret12m", "Mom_VWAP_Diff%"]
-    two_decimal_cols = ["P/E (raw)", "P/B (raw)", "EV/EBITDA (raw)", "P/S (raw)",
-                        "Valuation", "Quality", "Growth", "Leverage", "Momentum", "Efficiency",
-                        "CompositeScore", "InterestCoverage", "GrossProfitability", "DebtToEquity"]
-
-    for col in view.columns:
-        if pd.api.types.is_numeric_dtype(view[col]):
-            if col in dollar_cols:
-                view[col] = view[col].apply(lambda x: f"${x:,.2f}" if pd.notna(x) else np.nan)
-            elif col in percent_cols:
-                view[col] = view[col].apply(lambda x: f"{x:+.2f}%" if pd.notna(x) else np.nan)
-            elif col in two_decimal_cols:
-                view[col] = view[col].round(2)
-
-    fig1, fig2, fig3 = charts(
-        scored if not scored.empty else pd.DataFrame(columns=["Ticker","CompositeScore"]),
-        ticker.upper()
-    )
-
-    return view, text_synopsis_md, metrics_summary_md, kpi_ratings_md_val, waterfall_md_val, fig1, fig2, fig3, news_md
 
 # -------------------- CHARTS --------------------
 def charts(scored: pd.DataFrame, focus: str):
@@ -1135,459 +1086,276 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
                 "Method": f"DCF (5y FCFF)",
                 "Scenario": scen["name"],
                 "Implied Price": float(dcf_price),
-                "Upside vs Current %": float(((dcf_price / price_now) - 1.0) * 100.0),
-                "Key Inputs": (
-                    f"FCFF₀≈{fcff0/1e6:,.1f}M, "
-                    f"g={g*100:.1f}%, gₜ={g_term*100:.1f}%, r={r*100:.1f}%"
-                ),
+                "Upside vs Current %": ((dcf_price / price_now) - 1.0) * 100 if np.isfinite(dcf_price) and price_now > 0 else np.nan
             })
-            notes.append(
-                f"- **DCF:** Starting from FCFF≈${fcff0:,.0f}, growing {g*100:.1f}% for 5y."
-            )
-    else:
-        notes.append("- DCF skipped: Unable to estimate FCFF from available data.")
 
+    # ---------- PE multiple valuation ----------
+    pe_price = np.nan
+    pe_raw = m.get("P/E (raw)", np.nan)
+    eps_ttm = m.get("EPS_TTM", np.nan)
+    if np.isfinite(pe_raw) and np.isfinite(eps_ttm) and eps_ttm > 0 and price_now > 0:
+        pe_target_multiple = pe_raw * scen["multiple_adj"]
+        pe_price = pe_target_multiple * eps_ttm
+        rows.append({
+            "Method": f"P/E Multiple (target {pe_target_multiple:.1f}x)",
+            "Scenario": scen["name"],
+            "Implied Price": float(pe_price),
+            "Upside vs Current %": ((pe_price / price_now) - 1.0) * 100
+        })
+    elif np.isfinite(eps_ttm) and eps_ttm <= 0:
+        notes.append(f"- **P/E skipped:** {ticker} has negative or zero TTM EPS. P/E valuation is not applicable.")
 
-    # ---------- Comps: P/E & P/S ----------
-    # Build peer set and collect multiples
-    try:
-        peers = build_peerset(ticker, vendor_max=20, final_cap=max_peers) or []
-    except Exception:
-        peers = []
+    # ---------- PS multiple valuation ----------
+    ps_price = np.nan
+    ps_raw = m.get("P/S (raw)", np.nan)
+    rev_ttm = ttm_from_rows(yf.Ticker(ticker).quarterly_income_stmt, [
+        "Total Revenue","TotalRevenue","Revenue" ]
+    )
+    if np.isfinite(ps_raw) and np.isfinite(rev_ttm) and rev_ttm > 0 and shares > 0 and price_now > 0:
+        ps_target_multiple = ps_raw * scen["multiple_adj"]
+        ps_price = (ps_target_multiple * rev_ttm) / shares
+        rows.append({
+            "Method": f"P/S Multiple (target {ps_target_multiple:.1f}x)",
+            "Scenario": scen["name"],
+            "Implied Price": float(ps_price),
+            "Upside vs Current %": ((ps_price / price_now) - 1.0) * 100
+        })
+    elif np.isfinite(rev_ttm) and rev_ttm <= 0:
+        notes.append(f"- **P/S skipped:** {ticker} has negative or zero TTM Revenue. P/S valuation is not applicable.")
 
-    pe_vals, ps_vals = [], []
-    for p in peers:
-        try:
-            mm = get_metrics(p)
-            pe_peer = mm.get("P/E (raw)")
-            ps_peer = mm.get("P/S (raw)")
-            if np.isfinite(pe_peer) and pe_peer > 0 and pe_peer < 80:
-                pe_vals.append(pe_peer)
-            if np.isfinite(ps_peer) and ps_peer > 0 and ps_peer < 40:
-                ps_vals.append(ps_peer)
-        except Exception:
-            continue
+    df_out = pd.DataFrame(rows)
+    explanation_md = f"### Valuation for {ticker} ({scen['name']} Scenario)\n\n" \
+                     f"Current Price: **${price_now:.2f}**\n" \
+                     + "\n".join(notes)
 
-    eps = m.get("EPS_TTM", np.nan)
-    # Revenue TTM via quarterly sum of 4 latest
-    rev_series = load_revenue_series(ticker)
-    rev_ttm = float(rev_series.iloc[:4].sum()) if (rev_series is not None and not rev_series.empty) else np.nan
+    return df_out, explanation_md
 
-    # P/E comps
-    if pe_vals and np.isfinite(eps) and eps > 0:
-        peer_pe_med = float(np.nanmedian(pe_vals))
-        target_pe = peer_pe_med * scen["multiple_adj"]
-        pe_price = eps * target_pe
-        if np.isfinite(pe_price):
-            rows.append({
-                "Method": "P/E comps",
-                "Scenario": scen["name"],
-                "Implied Price": float(pe_price),
-                "Upside vs Current %": float(((pe_price / price_now) - 1.0) * 100.0),
-                "Key Inputs": f"EPS={eps:.2f}, Peer P/E≈{peer_pe_med:.1f}x, adj→{target_pe:.1f}x",
-            })
-            notes.append(
-                f"- **P/E comps:** Uses median peer P/E ≈ {peer_pe_med:.1f}x, "
-                f"adjusted by scenario to {target_pe:.1f}x on EPS {eps:.2f}."
-            )
-    else:
-        notes.append("- P/E comps skipped (no clean peer P/Es or EPS≤0).")
+# -------------------- FRONTEND (STREAMLIT APP) --------------------
 
-    # P/S comps
-    if ps_vals and np.isfinite(rev_ttm) and rev_ttm > 0 and np.isfinite(shares) and shares > 0:
-        peer_ps_med = float(np.nanmedian(ps_vals))
-        target_ps = peer_ps_med * scen["multiple_adj"]
-        ps_price = (rev_ttm * target_ps) / shares
-        if np.isfinite(ps_price):
-            rows.append({
-                "Method": "P/S comps",
-                "Scenario": scen["name"],
-                "Implied Price": float(ps_price),
-                "Upside vs Current %": float(((ps_price / price_now) - 1.0) * 100.0),
-                "Key Inputs": f"Rev TTM≈{rev_ttm/1e6:,.1f}M, Peer P/S≈{peer_ps_med:.1f}x, adj→{target_ps:.1f}x",
-            })
-            notes.append(
-                f"- **P/S comps:** Uses median peer P/S ≈ {peer_ps_med:.1f}x, "
-                f"adjusted by scenario to {target_ps:.1f}x on revenue ≈ {rev_ttm/1e6:,.1f}M."
-            )
-    else:
-        notes.append("- P/S comps skipped (no clean peer P/S or revenue data).")
+# Helper to convert dict to DataFrame for display
+def dict_to_df(data: dict) -> pd.DataFrame:
+    if not data: return pd.DataFrame()
+    return pd.DataFrame([data])
 
-    if not rows:
-        return pd.DataFrame(), (
-            f"_Could not generate scenario valuations for `{ticker}` — insufficient data._"
+def main_streamlit_app():
+    st.set_page_config(layout="wide")
+    st.title("Carlo Equity Tool")
+
+    st.markdown("""
+    This tool provides a rapid equity analysis combining fundamental metrics, peer comparison, and basic valuation scenarios.
+    Data is sourced from Yahoo Finance and Finnhub (free tier). Performance may vary with data availability.
+    """)
+
+    # Initialize session state for notes and pins if they don't exist
+    if "notes_text" not in st.session_state:
+        st.session_state["notes_text"] = ""
+    if "library" not in st.session_state:
+        st.session_state["library"] = {}
+    if "library_titles" not in st.session_state:
+        st.session_state["library_titles"] = []
+    if "pinned_tickers" not in st.session_state:
+        st.session_state["pinned_tickers"] = []
+    if "current_page" not in st.session_state:
+        st.session_state["current_page"] = "Company Summary"
+    if "analysis_data" not in st.session_state:
+        st.session_state["analysis_data"] = {}
+
+    # Sidebar for navigation
+    with st.sidebar:
+        st.header("Navigation")
+        page_selection = st.radio(
+            "Go to",
+            (
+                "Company Summary",
+                "Peer Analysis Table",
+                "Valuation Scenarios",
+                "Recent News",
+                "Charts",
+                "Research Library"
+            ),
+            key="page_radio"
         )
+        st.session_state["current_page"] = page_selection
 
-    df = pd.DataFrame(rows)
-    # Make it nice-ish
-    if "Implied Price" in df.columns:
-        df["Implied Price"] = df["Implied Price"].round(2)
-    if "Upside vs Current %" in df.columns:
-        df["Upside vs Current %"] = df["Upside vs Current %"].round(1)
+    # Input for ticker and peers (always visible)
+    ticker_input = st.text_input("Enter Stock Ticker (e.g., AAPL)", "GOOG", key="ticker_input_main")
+    max_peers_input = st.slider("Max Peers to Compare", min_value=1, max_value=10, value=6, key="max_peers_input_main")
+    run_analysis_button = st.button("Run Analysis", key="run_analysis_button_main")
 
-    explanation_md = (
-        f"### {ticker} — {scen['name']} market scenario\n"
-        f"- **Current price:** `${price_now:,.2f}`  \n"
-        f"- **Scenario settings:** revenue growth ≈ {scen['growth']*100:.1f}%, "
-        f"terminal growth ≈ {scen['terminal_growth']*100:.1f}%, "
-        f"discount rate ≈ {scen['discount']*100:.1f}%  \n"
-        f"- **Multiple adjustment:** peers × {scen['multiple_adj']:.2f} to reflect {scen['name'].lower()} sentiment  \n\n"
-        + "\n".join(notes)
-        + "\n\n_Note: free data, rough FCFF approximation, and simple peer filters — treat as a **scenario range**, not a precise target._"
-    )
+    if run_analysis_button and ticker_input:
+        with st.spinner(f"Analyzing {ticker_input.upper()} and its peers..."):
+            scored_df, text_synopsis, metrics_summary, kpi_ratings, waterfall, news = analyze_ticker_pro(
+                ticker_input, max_peers=max_peers_input
+            )
+            # Compute view_df and figures once and store
+            cols = [
+                "Ticker","Industry","MarketCap","Latest Price","VWAP","Ret12m",
+                "P/E (raw)","P/B (raw)","EV/EBITDA (raw)","P/S (raw)",
+                "ROE%","GrossMargin%","EBITDAMargin%","RevenueGrowth%","DebtToEquity",
+                "GrossProfitability","AssetGrowth%","Accruals%","InterestCoverage",
+                "Valuation","Quality","Growth","Leverage","Momentum","Efficiency",
+                "CompositeScore","RiskFlags"
+            ]
+            view_df = (
+                scored_df[[c for c in cols if c in scored_df.columns]]
+                .sort_values("CompositeScore", ascending=False, na_position="last")
+                if (not scored_df.empty) and ("CompositeScore" in scored_df.columns)
+                else pd.DataFrame(columns=cols)
+            )
 
-    return df, explanation_md
+            # Format numerical columns for display (for view_df)
+            dollar_cols = ["MarketCap", "Latest Price", "VWAP"]
+            percent_cols = ["ROE%", "GrossMargin%", "EBITDAMargin%", "RevenueGrowth%", "AssetGrowth%", "Accruals%", "Ret12m", "Mom_VWAP_Diff%"]
+            two_decimal_cols = ["P/E (raw)", "P/B (raw)", "EV/EBITDA (raw)", "P/S (raw)",
+                                "Valuation", "Quality", "Growth", "Leverage", "Momentum", "Efficiency",
+                                "CompositeScore", "InterestCoverage", "GrossProfitability", "DebtToEquity"]
 
-# =====================================================================
-# ====================== STREAMLIT UX LAYER ===========================
-# =====================================================================
+            for col in view_df.columns:
+                if pd.api.types.is_numeric_dtype(view_df[col]):
+                    if col in dollar_cols:
+                        view_df[col] = view_df[col].apply(lambda x: f"${x:,.2f}" if pd.notna(x) else np.nan)
+                    elif col in percent_cols:
+                        view_df[col] = view_df[col].apply(lambda x: f"{x:+.2f}%" if pd.notna(x) else np.nan)
+                    elif col in two_decimal_cols:
+                        view_df[col] = view_df[col].apply(lambda x: f"{x:.2f}" if pd.notna(x) else np.nan)
 
-st.set_page_config(
-    page_title="Carlo Equity Tool — Equity Research Workbench",
-    page_icon="📈",
-    layout="wide"
-)
+            fig1, fig2, fig3 = charts(scored_df if not scored_df.empty else pd.DataFrame(columns=["Ticker","CompositeScore"]),
+                                     ticker_input.upper())
 
-# --- Minimal CSS for Goldman-style polish ---
-st.markdown(
-    """
-    <style>
-    .positive-metric { color: #00cc66; font-weight: 600; }
-    .negative-metric { color: #ff4d4f; font-weight: 600; }
-    .metric-card {
-        padding: 0.75rem 1rem;
-        border-radius: 0.75rem;
-        background: #111827;
-        border: 1px solid #1f2933;
-    }
-    .metric-label {
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        color: #9ca3af;
-        letter-spacing: 0.08em;
-    }
-    .metric-value {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: #e5e7eb;
-    }
-    .metric-sub {
-        font-size: 0.8rem;
-        color: #9ca3af;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+            st.session_state["analysis_data"] = {
+                "ticker": ticker_input.upper(),
+                "scored_df": scored_df,
+                "view_df": view_df,
+                "text_synopsis": text_synopsis,
+                "metrics_summary": metrics_summary,
+                "kpi_ratings": kpi_ratings,
+                "waterfall": waterfall,
+                "news": news,
+                "fig1": fig1,
+                "fig2": fig2,
+                "fig3": fig3,
+                "max_peers_input": max_peers_input # Store max_peers_input for valuation scenarios
+            }
+            st.session_state["valuation_results_Base"] = {}
+            st.session_state["valuation_results_Bull"] = {}
+            st.session_state["valuation_results_Bear"] = {}
 
-# --- Sidebar: Control Center ---
-with st.sidebar:
-    st.title("📊 Carlo Equity Tool")
-    ticker = st.text_input("Ticker", value="AAPL").upper().strip()
-    max_peers = st.slider("Max peers", min_value=3, max_value=12, value=6)
-    st.markdown("---")
-    st.markdown("**Valuation Scenario (default focus)**")
-    default_scenario = st.radio(
-        "Default scenario",
-        options=["Base", "Bull", "Bear"],
-        index=0,
-        horizontal=True
-    )
-    st.markdown("---")
-    st.markdown("**Thesis Builder Settings**")
-    thesis_ticker = st.text_input("Ticker for thesis metrics", value=ticker)
 
-# --- Initialize simple session state for notes & library ---
-if "notes_text" not in st.session_state:
-    st.session_state["notes_text"] = ""
-if "doc_library" not in st.session_state:
-    st.session_state["doc_library"] = {}
-if "doc_selected" not in st.session_state:
-    st.session_state["doc_selected"] = ""
-if "pinned_tickers" not in st.session_state:
-    st.session_state["pinned_tickers"] = []
+    # Conditional rendering based on page selection
+    current_analysis_data = st.session_state.get("analysis_data", {})
+    ticker_analyzed = current_analysis_data.get("ticker", "")
 
-# --- Main App Logic ---
-st.title("Equity Research Workbench")
-
-if not ticker:
-    st.info("Enter a ticker in the sidebar to begin.")
-else:
-    with st.spinner(f"Running analysis for {ticker}..."):
-        view, text_synopsis_md, metrics_summary_md, kpi_ratings_md_val, waterfall_md_val, fig1, fig2, fig3, news_md = run_app(
-            ticker, max_peers=max_peers
-        )
-
-        # Pre-compute scenarios
-        scen_base_df, scen_base_md = _scenario_valuation_core(ticker, max_peers=max_peers, scenario="Base")
-        scen_bull_df, scen_bull_md = _scenario_valuation_core(ticker, max_peers=max_peers, scenario="Bull")
-        scen_bear_df, scen_bear_md = _scenario_valuation_core(ticker, max_peers=max_peers, scenario="Bear")
-
-        # Pull raw metrics for KPI row
-        raw_metrics = get_metrics(ticker)
-        price_now = raw_metrics.get("Latest Price", np.nan)
-        mktcap = raw_metrics.get("MarketCap", np.nan)
-
-        base_target = np.nan
-        if not scen_base_df.empty and "Implied Price" in scen_base_df.columns:
-            base_target = float(scen_base_df["Implied Price"].mean())
-
-        upside_pct = np.nan
-        if np.isfinite(price_now) and np.isfinite(base_target) and price_now > 0:
-            upside_pct = (base_target / price_now - 1.0) * 100.0
-
-    # ---------------- TOP KPI ROW ----------------
-    kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
-
-    with kpi_col1:
-        st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
-        st.markdown("<div class='metric-label'>Price</div>", unsafe_allow_html=True)
-        if np.isfinite(price_now):
-            st.markdown(f"<div class='metric-value'>${price_now:,.2f}</div>", unsafe_allow_html=True)
+    if st.session_state["current_page"] == "Company Summary":
+        st.header(f"Company Summary for {ticker_analyzed}")
+        if ticker_analyzed:
+            st.markdown(current_analysis_data["text_synopsis"])
+            st.markdown(current_analysis_data["metrics_summary"])
+            st.markdown(current_analysis_data["kpi_ratings"])
+            st.markdown(current_analysis_data["waterfall"])
+            if st.button(f"Pin {ticker_analyzed} for Comparison", key="pin_summary"):
+                st.session_state["pinned_tickers"], _, _ = add_pin(st.session_state["pinned_tickers"], ticker_analyzed)
+                st.success(f"Pinned {ticker_analyzed}!")
         else:
-            st.markdown("<div class='metric-value'>N/A</div>", unsafe_allow_html=True)
-        st.markdown("<div class='metric-sub'>Last close (approx)</div>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+            st.info("Run an analysis using the ticker input above.")
 
-    with kpi_col2:
-        st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
-        st.markdown("<div class='metric-label'>Market Cap</div>", unsafe_allow_html=True)
-        if np.isfinite(mktcap):
-            if mktcap >= 1000:
-                mc_txt = f"${mktcap/1000:,.1f}B"
+    elif st.session_state["current_page"] == "Peer Analysis Table":
+        st.header(f"Peer Analysis Table for {ticker_analyzed} and its peers")
+        if ticker_analyzed and not current_analysis_data["view_df"].empty:
+            st.dataframe(current_analysis_data["view_df"].set_index("Ticker"))
+        else:
+            st.info("Run an analysis using the ticker input above to see peer comparison table.")
+
+    elif st.session_state["current_page"] == "Valuation Scenarios":
+        st.header(f"Valuation Scenarios for {ticker_analyzed}")
+        if ticker_analyzed:
+            max_peers_for_val = current_analysis_data.get("max_peers_input", 6)
+            col_base, col_bull, col_bear = st.columns(3)
+            scenarios = {"Base": col_base, "Bull": col_bull, "Bear": col_bear}
+            for scen_name, col in scenarios.items():
+                with col:
+                    if st.button(f"Run {scen_name} Case Valuation", key=f"val_button_{scen_name}"):
+                        with st.spinner(f"Running {scen_name} valuation for {ticker_analyzed}..."):
+                            val_df, val_md = _scenario_valuation_core(ticker_analyzed, max_peers_for_val, scen_name)
+                            st.session_state[f"valuation_results_{scen_name}"] = {"df": val_df, "md": val_md}
+            
+            for scen_name in scenarios.keys():
+                if f"valuation_results_{scen_name}" in st.session_state and st.session_state[f"valuation_results_{scen_name}"]:
+                    st.markdown(st.session_state[f"valuation_results_{scen_name}"]["md"])
+                    if not st.session_state[f"valuation_results_{scen_name}"]["df"].empty:
+                        st.dataframe(st.session_state[f"valuation_results_{scen_name}"]["df"].set_index("Method"))
+        else:
+            st.info("Run an analysis using the ticker input above to run valuation scenarios.")
+
+    elif st.session_state["current_page"] == "Recent News":
+        st.header(f"Recent News for {ticker_analyzed}")
+        if ticker_analyzed:
+            st.markdown(current_analysis_data["news"])
+        else:
+            st.info("Run an analysis using the ticker input above to see recent news.")
+
+    elif st.session_state["current_page"] == "Charts":
+        st.header(f"Charts for {ticker_analyzed}")
+        if ticker_analyzed:
+            if current_analysis_data.get("fig1") is not None: st.pyplot(current_analysis_data["fig1"])
+            if current_analysis_data.get("fig2") is not None: st.pyplot(current_analysis_data["fig2"])
+            if current_analysis_data.get("fig3") is not None: st.pyplot(current_analysis_data["fig3"])
+        else:
+            st.info("Run an analysis using the ticker input above to see charts.")
+
+    elif st.session_state["current_page"] == "Research Library":
+        st.header("Notes & Research Library")
+
+        st.subheader("Pinned Companies (Gross Margin %)")
+        st.markdown(render_pins_md(st.session_state["pinned_tickers"])) # Render pinned list
+        if st.session_state["pinned_tickers"]:
+            pinned_plot = build_pins_plot(st.session_state["pinned_tickers"])
+            if pinned_plot: st.pyplot(pinned_plot)
+            if st.button("Clear Pinned Companies", key="clear_pins_btn"): # Clear pins button
+                st.session_state["pinned_tickers"], _, _ = clear_pins()
+                st.experimental_rerun()
+
+        st.subheader("Your Research Notes")
+        st.session_state["notes_text"] = st.text_area("Enter your notes here:", st.session_state["notes_text"], height=300)
+
+        st.write("### Notes Actions")
+        note_action = st.radio("Choose an action:", ("None", "Snapshot Chart", "Insert Metrics"), key="note_action_radio")
+        if note_action == "Snapshot Chart" and ticker_analyzed:
+            if st.button("Add Current Charts Snapshot to Notes"):
+                st.session_state["notes_text"], _ = snapshot_chart_into_notes(st.session_state["notes_text"], ticker_analyzed)
+                st.success("Charts snapshot added to notes!")
+        elif note_action == "Insert Metrics" and ticker_analyzed:
+            if st.button("Add Current Metrics Snippet to Notes"):
+                st.session_state["notes_text"], _ = insert_metrics_into_notes(st.session_state["notes_text"], ticker_analyzed)
+                st.success("Metrics snippet added to notes!")
+
+        st.write("### Research Library")
+        new_doc_title = st.text_input("New Document Title:", key="new_doc_title")
+        new_doc_content = st.text_area("New Document Content:", height=150, key="new_doc_content")
+        if st.button("Save to Library", key="save_to_library_btn"): # Save button
+            if new_doc_title and new_doc_content:
+                st.session_state["library"], st.session_state["library_titles"] = save_document_to_library(st.session_state["library"], new_doc_title, new_doc_content)
+                st.success(f"'{new_doc_title}' saved to library.")
             else:
-                mc_txt = f"${mktcap:,.0f}M"
-            st.markdown(f"<div class='metric-value'>{mc_txt}</div>", unsafe_allow_html=True)
-        else:
-            st.markdown("<div class='metric-value'>N/A</div>", unsafe_allow_html=True)
-        st.markdown("<div class='metric-sub'>Approx free data</div>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+                st.warning("Please provide both a title and content for the document.")
 
-    # Composite score from view (display only)
-    comp_val = np.nan
+        if st.session_state["library_titles"]:
+            selected_doc_title = st.selectbox("Load Document from Library:", ["-- Select --"] + st.session_state["library_titles"], key="load_doc_select")
+            if selected_doc_title != "-- Select --":
+                _, content = load_document_from_library(st.session_state["library"], selected_doc_title)
+                st.markdown(f"**{selected_doc_title}**\n```\n{content}\n```")
+
+        library_search_query = st.text_input("Search Library:", key="library_search_query")
+        if library_search_query:
+            search_results = search_library(st.session_state["library"], library_search_query)
+            st.markdown("**Search Results:**")
+            st.markdown(search_results)
+
+# Run the Streamlit app if this script is executed directly
+if __name__ == "__main__":
+    # THIS IS FOR RUNNING IN COLAB. To run a Streamlit app in Colab, you typically need to use `!streamlit run <filename>`. However, the prompt has a `main_streamlit_app()` function which suggests it should be executable directly in a notebook cell.
+    # Given the previous context and the error, it's likely the user intends for the Streamlit app to be run via this direct execution block, which is then captured by the colab runtime.
     try:
-        if not view.empty and "CompositeScore" in view.columns and "Ticker" in view.columns:
-            row_cs = view.loc[view["Ticker"] == ticker]
-            if not row_cs.empty:
-                comp_val = row_cs["CompositeScore"].iloc[0]
-    except Exception:
-        comp_val = np.nan
-
-    with kpi_col3:
-        st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
-        st.markdown("<div class='metric-label'>Composite Score</div>", unsafe_allow_html=True)
-        if np.isfinite(comp_val):
-            color_class = "positive-metric" if comp_val >= 0 else "negative-metric"
-            st.markdown(
-                f"<div class='metric-value'><span class='{color_class}'>{comp_val:.2f}</span></div>",
-                unsafe_allow_html=True
-            )
-        else:
-            st.markdown("<div class='metric-value'>N/A</div>", unsafe_allow_html=True)
-        st.markdown("<div class='metric-sub'>Factor blend vs peers</div>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    with kpi_col4:
-        st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
-        st.markdown("<div class='metric-label'>Base Scenario Target</div>", unsafe_allow_html=True)
-        if np.isfinite(base_target):
-            st.markdown(f"<div class='metric-value'>${base_target:,.2f}</div>", unsafe_allow_html=True)
-            if np.isfinite(upside_pct):
-                col = "positive-metric" if upside_pct >= 0 else "negative-metric"
-                st.markdown(
-                    f"<div class='metric-sub'>Upside: <span class='{col}'>{upside_pct:+.1f}%</span></div>",
-                    unsafe_allow_html=True
-                )
-            else:
-                st.markdown("<div class='metric-sub'>Upside: N/A</div>", unsafe_allow_html=True)
-        else:
-            st.markdown("<div class='metric-value'>N/A</div>", unsafe_allow_html=True)
-            st.markdown("<div class='metric-sub'>Scenario model unavailable</div>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown("---")
-
-    # ---------------- TABS ----------------
-    tab_overview, tab_peers, tab_val, tab_thesis, tab_news = st.tabs(
-        ["Overview", "Peers", "Valuation", "Thesis Builder", "News & Events"]
-    )
-
-    # ========== OVERVIEW TAB ==========
-    with tab_overview:
-        left, right = st.columns([2.0, 1.2])
-
-        with left:
-            st.markdown(text_synopsis_md, unsafe_allow_html=True)
-            st.markdown(metrics_summary_md, unsafe_allow_html=True)
-            st.markdown(kpi_ratings_md_val, unsafe_allow_html=True)
-            st.markdown(waterfall_md_val, unsafe_allow_html=True)
-
-        with right:
-            st.subheader("5-Day Price")
-            fig_price = five_day_price_plot(ticker)
-            if fig_price is not None:
-                st.pyplot(fig_price, use_container_width=True)
-            else:
-                st.caption("Price history unavailable.")
-
-            st.subheader("Pinned Companies (Gross Margin)")
-            pins = st.session_state["pinned_tickers"]
-            pin_action_col1, pin_action_col2 = st.columns([2,1])
-            with pin_action_col1:
-                pin_ticker_input = st.text_input("Add pin (ticker)", value=ticker, key="pin_ticker_input")
-            with pin_action_col2:
-                if st.button("Pin", key="pin_button"):
-                    pins, pins_md, pins_fig = add_pin(pins, pin_ticker_input)
-                    st.session_state["pinned_tickers"] = pins
-            if st.button("Clear pins", key="clear_pins"):
-                pins, pins_md, pins_fig = clear_pins()
-                st.session_state["pinned_tickers"] = pins
-            pins_md = render_pins_md(st.session_state["pinned_tickers"])
-            st.markdown(pins_md, unsafe_allow_html=True)
-            pins_fig = build_pins_plot(st.session_state["pinned_tickers"])
-            if pins_fig is not None:
-                st.pyplot(pins_fig, use_container_width=True)
-
-    # ========== PEERS TAB ==========
-    with tab_peers:
-        st.subheader("Peer Comparison Table")
-        if not view.empty:
-            st.dataframe(view, use_container_width=True)
-        else:
-            st.write("No peer data available.")
-
-        st.markdown("### Factor & Peer Visuals")
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            st.caption("Composite Score ranking")
-            if fig1 is not None:
-                st.pyplot(fig1, use_container_width=True)
-            else:
-                st.write("No composite score chart available.")
-        with c2:
-            st.caption("EV/EBITDA vs Revenue Growth")
-            if fig2 is not None:
-                st.pyplot(fig2, use_container_width=True)
-            else:
-                st.write("No scatter chart available.")
-        with c3:
-            st.caption("Peer factor heatmap")
-            if fig3 is not None:
-                st.pyplot(fig3, use_container_width=True)
-            else:
-                st.write("No heatmap available.")
-
-    # ========== VALUATION TAB ==========
-    with tab_val:
-        st.subheader("Scenario Valuation — DCF & Comps")
-
-        scen_tabs = st.tabs(["Base", "Bull", "Bear"])
-
-        # Helper to render one scenario
-        def _render_scenario(df_scen, md_scen, label: str):
-            if df_scen is not None and not df_scen.empty:
-                st.dataframe(df_scen, use_container_width=True)
-            else:
-                st.write(f"No {label} scenario results.")
-            st.markdown(md_scen, unsafe_allow_html=True)
-
-        with scen_tabs[0]:
-            _render_scenario(scen_base_df, scen_base_md, "Base")
-        with scen_tabs[1]:
-            _render_scenario(scen_bull_df, scen_bull_md, "Bull")
-        with scen_tabs[2]:
-            _render_scenario(scen_bear_df, scen_bear_md, "Bear")
-
-        st.markdown("---")
-        st.markdown("#### Methodology")
-        with st.expander("How are these scenario valuations built?"):
-            st.markdown(
-                """
-                - FCFF is estimated from free yfinance statements as a rough proxy.\n
-                - 5-year FCFF is projected using scenario-specific growth rates.\n
-                - A terminal value is computed with a Gordon growth model.\n
-                - Net debt is subtracted to arrive at equity value.\n
-                - P/E and P/S comps are based on median peers, then adjusted by a scenario multiple.\n
-                - All of this is based on free data, so treat it as a **rough scenario range**, not a precise target.
-                """.strip()
-            )
-
-    # ========== THESIS BUILDER TAB ==========
-    with tab_thesis:
-        st.subheader("Thesis Builder — Notes & Metrics")
-
-        col_notes, col_tools = st.columns([2.0, 1.0])
-
-        with col_notes:
-            st.markdown("##### Notes")
-            st.session_state["notes_text"] = st.text_area(
-                "Free-form thesis notes",
-                value=st.session_state["notes_text"],
-                height=350
-            )
-
-            st.markdown("##### Save / Load")
-            save_title = st.text_input("Save as title", value=f"{ticker} thesis", key="save_title")
-            col_save, col_load = st.columns(2)
-            with col_save:
-                if st.button("💾 Save to library"):
-                    lib, choices = save_document_to_library(
-                        st.session_state["doc_library"],
-                        save_title,
-                        st.session_state["notes_text"]
-                    )
-                    st.session_state["doc_library"] = lib
-                    st.success("Saved to library.")
-            with col_load:
-                lib = st.session_state["doc_library"]
-                choices = sorted(list(lib.keys()))
-                if choices:
-                    sel = st.selectbox("Load from library", options=["(pick)"] + choices)
-                    if sel != "(pick)":
-                        title_loaded, text_loaded = load_document_from_library(lib, sel)
-                        st.session_state["notes_text"] = text_loaded
-                        st.session_state["doc_selected"] = title_loaded
-                        st.success(f"Loaded '{title_loaded}'")
-
-        with col_tools:
-            st.markdown("##### Insert Metrics Snippet")
-            if st.button("➕ Insert metrics for ticker", key="insert_metrics_btn"):
-                new_notes, _ = insert_metrics_into_notes(
-                    st.session_state["notes_text"],
-                    thesis_ticker or ticker
-                )
-                st.session_state["notes_text"] = new_notes
-            st.caption("Adds P/E, EV/EBITDA, growth, margin, leverage if available.")
-
-            st.markdown("##### Snapshot Tag")
-            if st.button("📸 Tag current snapshot", key="snapshot_btn"):
-                new_notes, _ = snapshot_chart_into_notes(
-                    st.session_state["notes_text"],
-                    ticker
-                )
-                st.session_state["notes_text"] = new_notes
-            st.caption("Adds a timestamped snapshot tag to your notes.")
-
-            st.markdown("##### Library Search")
-            search_q = st.text_input("Search across library", value="", key="lib_search_q")
-            if st.button("Search library", key="lib_search_btn"):
-                lib = st.session_state["doc_library"]
-                res = search_library(lib, search_q)
-                st.markdown(res, unsafe_allow_html=True)
-
-            st.markdown("##### Term Lookup")
-            term = st.selectbox(
-                "Fundamental series",
-                options=["Revenue", "Net Income", "EPS (TTM)", "Gross Margin", "EBITDA"]
-            )
-            if st.button("Lookup term", key="term_lookup_btn"):
-                md_term, fig_term = term_lookup_metrics(ticker, term)
-                st.markdown(md_term, unsafe_allow_html=True)
-                if fig_term is not None:
-                    st.pyplot(fig_term, use_container_width=True)
-
-    # ========== NEWS TAB ==========
-    with tab_news:
-        st.subheader("News & Events")
-        st.markdown(news_md, unsafe_allow_html=True)
-        st.caption("Headlines pulled from Finnhub and yfinance where available (last ~14 days).")
+        main_streamlit_app()
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
+        logging.error(f"Streamlit app failed: {e}")

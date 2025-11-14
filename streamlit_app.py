@@ -1052,9 +1052,8 @@ def inject_global_css():
 
         /* --- NEW TOP NAVIGATION TABS --- */
         div[data-testid="stRadio"] {
-            /* --- MODIFICATION: White Background Nav --- */
-            background: #ffffff;
-            border-bottom: 1px solid #dfe6ed; /* Light border */
+            /* --- MODIFICATION: Reverted white background --- */
+            border-bottom: 1px solid #30363d; /* Separator line */
             padding-bottom: 0px;
             margin: -2rem -2rem 1.5rem -2rem; /* Full-bleed hack */
             padding-left: 2rem;
@@ -1071,7 +1070,7 @@ def inject_global_css():
             margin: 0;
             border-radius: 0;
             background: transparent;
-            color: #555555; /* Dark grey text */
+            color: #8b949e; /* Inactive tab color (grey) */
             border-bottom: 3px solid transparent;
             transition: all 0.2s ease;
             cursor: pointer;
@@ -1089,14 +1088,14 @@ def inject_global_css():
 
         /* Hover style for inactive tabs */
         div[data-testid="stRadio"] label:hover {
-            background: #f4f4f4; /* Light gray hover */
-            color: #111111;
+            background: rgba(139, 148, 158, 0.1); /* Faint grey hover */
+            color: #c9d1d9; /* Lighter grey on hover */
         }
 
         /* Selected tab style */
         div[data-testid="stRadio"] label[data-checked="true"] {
             background: transparent;
-            color: #3b82f6; /* Blue text */
+            color: #f0f6fc; /* Active tab color (white) */
             border-bottom: 3px solid #3b82f6; /* Blue accent line */
         }
         /* --- End Top Nav --- */
@@ -1312,7 +1311,8 @@ def render_dashboard():
         st.write("")
         analyze_clicked = st.button("Analyze", use_container_width=True)
 
-    max_peers = st.slider("Max peers to compare", 2, 15, 6, key="max_peers_dashboard")
+    # max_peers = st.slider("Max peers to compare", 2, 15, 6, key="max_peers_dashboard") # <-- REMOVED
+    max_peers = 6 # Set default since slider is removed
 
     if analyze_clicked and ticker:
         with st.spinner(f"Analyzing {ticker.upper()}..."):

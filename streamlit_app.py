@@ -1044,7 +1044,7 @@ def inject_global_css():
 
         /* --- TOP NAVIGATION TABS (LIGHT THEME) --- */
         div[data-testid="stRadio"] {
-            background: #ffffff; /* White background */
+            background: #0d1117; /* White background */
             border-bottom: 1px solid #e1e4e8; /* Light grey border */
             padding-bottom: 0px;
             margin: 1rem -2rem 1.5rem -2rem; /* Full-bleed hack */

@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+    # -*- coding: utf-8 -*-
 """Carlo Equity Tool — Streamlit App (Blocks-style UI)"""
 
 import os, time, math, logging, textwrap, datetime as dt
@@ -1071,63 +1071,46 @@ def inject_global_css():
              color: #213547 !important;
         }
 
-        /* --- TOP NAVIGATION BUTTONS (GHOST STYLE LIKE SCREENSHOT) --- */
-        div.top-nav-container div[data-testid="stRadio"] { 
-            background: #0d1117; /* Dark bar behind buttons */
+      /* --- TOP NAV BAR + GHOST BUTTONS (LIKE SCREENSHOT) --- */
+        .top-nav-bar {
+            background: #0d1117;          /* dark bar */
             padding: 12px 0;
-            position: relative;
             width: 100vw;
+            position: relative;
             left: 50%;
             right: 50%;
             margin-left: -50vw;
             margin-right: -50vw;
         }
 
-        /* Center content and align buttons to the LEFT (like screenshot) */
-        div.top-nav-container div[data-testid="stRadio"] > div {
-            gap: 12px;
+        .top-nav-inner {
             max-width: 1100px;
             margin: 0 auto;
-            justify-content: flex-start;  /* left-align buttons */
+            display: flex;
+            gap: 12px;
+            justify-content: flex-start;  /* buttons on the LEFT */
         }
 
-        /* Each nav option becomes a ghost button */
-        div.top-nav-container div[data-testid="stRadio"] label {
-            padding: 10px 26px;
-            margin: 0;
+        /* Ghost-style top nav buttons */
+        .top-nav-container .stButton > button {
             border-radius: 0;
+            border: 1px solid rgba(255,255,255,0.9);
             background: transparent;
             color: #ffffff;
-            border: 1px solid rgba(255,255,255,0.85);
-            box-shadow: none;
-            transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-        }
-
-        /* Hide the little radio-circle */
-        div.top-nav-container div[data-testid="stRadio"] label > div:first-child {
-            display: none;
-        }
-
-        /* Text styling: uppercase, spaced out like in the image */
-        div.top-nav-container div[data-testid="stRadio"] label span {
+            padding: 8px 26px;
             font-size: 13px;
             font-weight: 600;
             letter-spacing: 0.18em;
             text-transform: uppercase;
+            box-shadow: none;
+            cursor: pointer;
         }
 
-        /* Hover state: slightly brighter background */
-        div.top-nav-container div[data-testid="stRadio"] label:hover {
-            background: rgba(255,255,255,0.08);
+        .top-nav-container .stButton > button:hover {
+            background: rgba(255,255,255,0.12);
             border-color: #ffffff;
         }
 
-        /* Active page button: stronger border + subtle fill */
-        div.top-nav-container div[data-testid="stRadio"] label[data-checked="true"] {
-            background: rgba(255,255,255,0.13);
-            color: #ffffff;
-            border-color: #ffffff;
-        }
 
                 /* --- End Top Nav --- */
 
@@ -2213,10 +2196,10 @@ def main():
         page_title="Equity Research Platform",
         page_icon="📊",
         layout="wide",
-        initial_sidebar_state="collapsed",  # Collapse it, CSS will hide it
+        initial_sidebar_state="collapsed",
     )
-    
-    # --- NEW: Global Font Import ---
+
+    # Font import (keep as you had it)
     st.markdown(
         """
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2226,70 +2209,77 @@ def main():
         unsafe_allow_html=True
     )
 
-    # --- TOP NAVIGATION BAR (MOVED) ---
-    # This element is now at the very top, so its CSS can go full-width.
-    
-    # --- START FIX: Add wrapper for CSS targeting ---
-    st.markdown('<div class="top-nav-container">', unsafe_allow_html=True)
-    page = st.radio(
-        "Navigation",
-        [
-            "📊  Dashboard",
-            "📈  Analysis",
-            "🧮  Valuation",
-            "📚  Research",
-            "📝  Theses",
-        ],
-        horizontal=True,
-        label_visibility="collapsed",
-        key="top_nav_radio",
-    )
-    st.markdown('</div>', unsafe_allow_html=True)
-    # --- END FIX ---
-    
-    # Inject CSS *after* the radio button to ensure it can be styled
-    # This function now contains the default LIGHT theme
+    # Track which page is active
+    if "top_nav_page" not in st.session_state:
+        st.session_state.top_nav_page = "Dashboard"
+
     inject_global_css()
 
-    # --- Center content + workspace badge ---
+    # --- TOP NAV BAR WITH GHOST BUTTONS ---
+    st.markdown(
+        """
+        <div class="top-nav-bar">
+          <div class="top-nav-inner top-nav-container">
+        """,
+        unsafe_allow_html=True,
+    )
+
+    col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
+
+    with col1:
+        if st.button("Dashboard", key="nav_dashboard"):
+            st.session_state.top_nav_page = "Dashboard"
+    with col2:
+        if st.button("Analysis", key="nav_analysis"):
+            st.session_state.top_nav_page = "Analysis"
+    with col3:
+        if st.button("Valuation", key="nav_valuation"):
+            st.session_state.top_nav_page = "Valuation"
+    with col4:
+        if st.button("Research", key="nav_research"):
+            st.session_state.top_nav_page = "Research"
+    with col5:
+        if st.button("Theses", key="nav_theses"):
+            st.session_state.top_nav_page = "Theses"
+
+    st.markdown("</div></div>", unsafe_allow_html=True)
+
+    # Center main content
     st.markdown(
         "<div style='max-width:1100px;margin:0 auto;'>",
         unsafe_allow_html=True,
     )
-    
-    # --- GLOBAL TITLE (MOVED HERE) ---
+
+    # Global title
     st.markdown(
-        f"""
+        """
         <h1 style='text-align: center; margin-bottom: 1rem; padding-top: 1rem; 
                    font-weight: 400; font-family: "DM Serif Display", serif;
                    font-size: 2.75rem; 
                    color: #0d1117;'> 
             Equity Research Platform
         </h1>
-        """, 
-        unsafe_allow_html=True
+        """,
+        unsafe_allow_html=True,
     )
 
+    # Route based on selected page
+    page = st.session_state.top_nav_page
 
-    # --- REMOVED: Workspace Badge ---
-    # st.markdown( ... "Fricano Capital" ... )
-
-    # Strip emoji prefix to route
-    if "Dashboard" in page:
+    if page == "Dashboard":
         render_dashboard()
-    elif "Analysis" in page:
+    elif page == "Analysis":
         render_analysis_page()
-    elif "Valuation" in page:
+    elif page == "Valuation":
         render_valuation_page()
-    elif "Research" in page:
+    elif page == "Research":
         render_research_page()
-    elif "Theses" in page:
+    elif page == "Theses":
         render_theses_page()
 
-    # Close centering div
     st.markdown("</div>", unsafe_allow_html=True)
-
 
 
 if __name__ == "__main__":
     main()
+

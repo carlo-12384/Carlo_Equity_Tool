@@ -1026,13 +1026,11 @@ def inject_global_css():
         /* =========================
            GLOBAL TEXT COLOR OVERRIDE
            ========================= */
-        /* Make all default text a dark navy/charcoal so it's readable on white */
         html, body, .stApp, .markdown-text-container, .stMarkdown,
         p, li, span, small, td, th, label, div[data-testid="stMarkdownContainer"] {
             color: #111827 !important;  /* dark navy/charcoal */
         }
 
-        /* Keep special metric colors intact */
         .positive-metric { color: #228B22 !important; } 
         .negative-metric { color: #D90429 !important; } 
 
@@ -1043,35 +1041,36 @@ def inject_global_css():
         
         /* --- GLOBAL TITLE --- */
         h1, h2, h3, h4, h5, h6 {
-            color: #0d1117 !important; /* Dark navy for headings */
+            color: #0d1117 !important;
         }
         
-        /* --- MAIN APP STYLING (LIGHT THEME DEFAULT) --- */
+        /* --- MAIN APP STYLING --- */
         .stApp {
             background: #ffffff;  
-            color: #213547; /* Fallback dark text */
+            color: #213547;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
         }
         header[data-testid="stHeader"] {background: transparent;}
         footer {visibility: hidden;}
 
-        /* --- Make all widget labels dark --- */
+        /* --- Widget labels --- */
         .st-emotion-cache-16txtl3,
         label,
         .stTextInput > label,
         .stSlider > label,
         .stSelectbox > label,
         .stNumberInput > label {
-            color: #213547 !important; /* Dark Navy text */
+            color: #213547 !important;
             font-weight: 500;
         }
 
-        /* Make captions dark */
         .stCaption {
              color: #213547 !important;
         }
 
-      /* --- TOP NAV BAR + GHOST BUTTONS (LIKE SCREENSHOT) --- */
+        /* =========================
+           TOP NAV: FULL-WIDTH BAR
+           ========================= */
         .top-nav-bar {
             background: #0d1117;          /* dark bar */
             padding: 12px 0;
@@ -1083,36 +1082,12 @@ def inject_global_css():
             margin-right: -50vw;
         }
 
+        /* Container that holds the 5 columns */
         .top-nav-inner {
+            display: flex;
+            width: 100%;
             max-width: 1100px;
             margin: 0 auto;
-            display: flex;
-            gap: 12px;
-            justify-content: flex-start;  /* buttons on the LEFT */
-        }
-
-        /* Ghost-style top nav buttons */
-        .top-nav-container .stButton > button {
-            border-radius: 0;
-            border: 1px solid rgba(255,255,255,0.9);
-            background: transparent;
-            color: #ffffff;
-            padding: 8px 26px;
-            font-size: 13px;
-            font-weight: 600;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            box-shadow: none;
-            cursor: pointer;
-        }
-
-        .top-nav-container .stButton > button:hover {
-            background: rgba(255,255,255,0.12);
-            border-color: #ffffff;
-        }
-        /* === Make top nav buttons form one continuous bar === */
-        .top-nav-inner {
-            display: flex;                 /* lay out columns in a row */
         }
 
         /* Remove side padding between the nav columns */
@@ -1121,32 +1096,46 @@ def inject_global_css():
             padding-right: 0 !important;
         }
 
-        /* Remove default margins around buttons and make them fill each column */
+        /* Make each button fill its column and remove gaps */
         .top-nav-container .stButton {
             width: 100%;
             margin: 0 !important;
         }
 
+        /* NAV BUTTONS: blue rectangles, white text, white borders */
         .top-nav-container .stButton > button {
             width: 100%;
-            border-radius: 0;              /* no rounded corners between buttons */
+            padding: 14px 0;
+            border: 1px solid rgba(255,255,255,0.9);     /* white separators */
+            border-radius: 0;                             /* merged look */
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: #ffffff !important;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            box-shadow: none;
+            cursor: pointer;
         }
 
-        /* (Optional) Rounded corners only at the very ends of the bar */
+        .top-nav-container .stButton > button:hover {
+            filter: brightness(1.15);
+        }
+
+        /* Rounded corners only on the outer ends of the bar */
         .top-nav-inner [data-testid="column"]:first-child .stButton > button {
-            border-top-left-radius: 10px;
-            border-bottom-left-radius: 10px;
+            border-top-left-radius: 12px;
+            border-bottom-left-radius: 12px;
         }
         .top-nav-inner [data-testid="column"]:last-child .stButton > button {
-            border-top-right-radius: 10px;
-            border-bottom-right-radius: 10px;
+            border-top-right-radius: 12px;
+            border-bottom-right-radius: 12px;
         }
 
-
-
-                /* --- End Top Nav --- */
-
-        /* --- FACTOR BAR CHART STYLES --- */
+        /* =========================
+           FACTOR BAR + CARDS, ETC.
+           (unchanged from yours)
+           ========================= */
         .factor-bar-container { margin-bottom: 12px; }
         .factor-bar-label { font-size: 14px; color: #213547; margin-bottom: 6px; }
         .factor-bar-score { float: right; font-weight: 500; color: #0d1117; }
@@ -1209,7 +1198,6 @@ def inject_global_css():
             font-weight: 600;
         }
 
-        /* --- CARD STYLING --- */
         .hero-card, .section-card, .kpi-card-new {
             padding: 28px 28px 24px 28px;
             background: #f9f9f9;
@@ -1237,7 +1225,7 @@ def inject_global_css():
         .section-subtitle { margin-bottom: 12px; }
         .kpi-label-new { margin-bottom: 4px; }
 
-        /* --- Button Styling - Blue Accent --- */
+        /* Global button styling (non-nav) */
         .stButton > button {
             border-radius: 8px;
             padding: 0.45rem 1.3rem;
@@ -1252,7 +1240,6 @@ def inject_global_css():
             color: #ffffff;
         }
         
-        /* --- Input boxes --- */
         .stTextInput input,
         .stTextArea textarea,
         .stSelectbox div[data-baseweb="select"] {
@@ -1277,7 +1264,6 @@ def inject_global_css():
             border: 1px solid #e1e4e8;
         }
 
-        /* --- Custom styles for Valuation Page --- */
         .valuation-metric-label {
             font-size: 16px;
             color: #213547;
@@ -1302,7 +1288,6 @@ def inject_global_css():
         .valuation-upside.positive { color: #228B22; }
         .valuation-upside.negative { color: #D90429; }
         
-        /* Scenario Button Group */
         div.scenario-radio-group div[data-testid="stRadio"] label {
             border: 1px solid #d1d5db;
             background: #ffffff;
@@ -1330,7 +1315,6 @@ def inject_global_css():
             color: #0d1117 !important;
         }
         
-        /* --- Load Company button alignment --- */
         .valuation-load-section {
             display: flex;
             align-items: flex-end;
@@ -2238,16 +2222,17 @@ def main():
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:wght@400&display=swap" rel="stylesheet">
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
 
     # Track which page is active
     if "top_nav_page" not in st.session_state:
         st.session_state.top_nav_page = "Dashboard"
 
+    # Inject ALL CSS (including the new nav styles)
     inject_global_css()
 
-    # --- TOP NAV BAR WITH GHOST BUTTONS ---
+    # --- TOP NAV BAR WITH BUTTONS ---
     st.markdown(
         """
         <div class="top-nav-bar">
@@ -2294,82 +2279,9 @@ def main():
         """,
         unsafe_allow_html=True,
     )
-    st.markdown(
-     /* ------------------------------
-           TOP NAV BAR (FULL-WIDTH BAR)
-        ------------------------------ */
-        .top-nav-bar {
-            background: #0d1117;        /* dark background bar */
-            padding: 0;
-            width: 100vw;
-            position: relative;
-            left: 50%;
-            right: 50%;
-            margin-left: -50vw;
-            margin-right: -50vw;
-        }
-
-        /* Container holding all buttons */
-        .top-nav-inner {
-            display: flex;
-            width: 100%;
-            max-width: 1100px;
-            margin: 0 auto;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
-        /* Remove column padding (so buttons touch) */
-        .top-nav-inner [data-testid="column"] {
-            padding-left: 0 !important;
-            padding-right: 0 !important;
-        }
-
-        /* ------------------------------
-           BUTTON STYLE (BLUE RECTANGLES)
-        ------------------------------ */
-        .top-nav-container .stButton {
-            width: 100%;
-            margin: 0 !important;
-        }
-
-        /* Actual button styling */
-        .top-nav-container .stButton > button {
-            width: 100%;
-            padding: 14px 0;
-            border: 1px solid rgba(255,255,255,0.8);     /* WHITE BORDER BETWEEN BUTTONS */
-            border-radius: 0;                              /* merged look */
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8); /* gradient blue */
-            color: #ffffff !important;                     /* WHITE TEXT */
-            font-size: 15px;
-            font-weight: 600;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-        }
-
-        /* Hover effect */
-        .top-nav-container .stButton > button:hover {
-            filter: brightness(1.15);
-        }
-
-        /* ------------------------------
-           ROUNDED CORNERS FOR OUTER EDGES
-        ------------------------------ */
-        .top-nav-inner [data-testid="column"]:first-child .stButton > button {
-            border-top-left-radius: 12px;
-            border-bottom-left-radius: 12px;
-        }
-
-        .top-nav-inner [data-testid="column"]:last-child .stButton > button {
-            border-top-right-radius: 12px;
-            border-bottom-right-radius: 12px;
-        }
-
 
     # Route based on selected page
-page = st.session_state.top_nav_page
+    page = st.session_state.top_nav_page
 
     if page == "Dashboard":
         render_dashboard()
@@ -2382,6 +2294,7 @@ page = st.session_state.top_nav_page
     elif page == "Theses":
         render_theses_page()
 
+    # Close centering div
     st.markdown("</div>", unsafe_allow_html=True)
 
 

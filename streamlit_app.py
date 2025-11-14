@@ -1019,6 +1019,9 @@ def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
 # ======================================================================
 # GLOBAL STYLING (Blocks-style + nicer sidebar)
 # ======================================================================
+# ======================================================================
+# GLOBAL STYLING (Blocks-style + nicer sidebar)
+# ======================================================================
 def inject_global_css():
     st.markdown(
         """
@@ -1035,7 +1038,7 @@ def inject_global_css():
         
         /* --- MAIN APP STYLING (LIGHT THEME DEFAULT) --- */
         .stApp {
-            background: #ffffff; 
+            background: #ffffff;  
             color: #213547; /* Dark Navy text */
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
         }
@@ -1046,7 +1049,7 @@ def inject_global_css():
         /* --- MODIFICATION: Full-width black bar --- */
         div[data-testid="stRadio"] {
             background: #0d1117; /* Black background */
-            padding: 0; 
+            padding: 0;  
             
             /* --- NEW: Full-width "bust-out" --- */
             position: relative;
@@ -1170,7 +1173,7 @@ def inject_global_css():
         }
         .methodology-card p {
             font-size: 13px;
-            color: #4a5568; /* Medium text */
+            color: #213547; /* MODIFIED: Dark Navy text */
             margin-bottom: 4px;
         }
         .methodology-card strong {
@@ -1198,7 +1201,7 @@ def inject_global_css():
         }
         
         .hero-title, .section-title, .kpi-value-new {
-            font-size: 30px; 
+            font-size: 30px;  
             font-weight: 600;
             letter-spacing: 0.01em;
             margin-bottom: 4px;
@@ -1213,7 +1216,7 @@ def inject_global_css():
         
         .hero-subtitle, .section-subtitle, .kpi-label-new {
             font-size: 14px;
-            color: #4a5568; /* Medium grey/navy text */
+            color: #213547; /* MODIFIED: Dark Navy text */
             margin-bottom: 20px;
         }
         .section-subtitle {
@@ -1251,7 +1254,7 @@ def inject_global_css():
         }
         /* Placeholder text for light mode */
         .stTextInput input::placeholder {
-            color: #6b7280;
+            color: #4a5568; /* MODIFIED: Darker placeholder */
         }
         /* Command bar input on light */
         .stTextInput input[type="text"] {
@@ -1271,7 +1274,7 @@ def inject_global_css():
         /* Custom styles for Valuation Page (Light Theme) */
         .valuation-metric-label {
             font-size: 16px;
-            color: #4a5568;
+            color: #213547; /* MODIFIED: Dark Navy text */
             margin-bottom: 5px;
             font-weight: 400;
         }
@@ -1283,7 +1286,7 @@ def inject_global_css():
         }
         .valuation-current-price {
             font-size: 14px;
-            color: #4a5568;
+            color: #213547; /* MODIFIED: Dark Navy text */
             margin-top: 10px;
         }
         .valuation-upside {

@@ -1356,6 +1356,7 @@ def render_analysis_page():
     st.markdown("</div>", unsafe_allow_html=True)
 
 # ---------- VALUATION PAGE ----------
+# ---------- VALUATION PAGE ----------
 def render_valuation_page():
     st.markdown(
         """
@@ -1492,41 +1493,63 @@ def render_valuation_page():
         company_name = prof.get("name") or current_ticker
         eps = metrics.get("EPS_TTM")
 
-        # --- MODIFIED: Added 'snapshot-card' and 'snapshot-title' classes ---
+        # --- THIS IS THE NEW SOLUTION ---
+        # We build the metric component manually with st.markdown
+        # to apply inline styles that CANNOT be overridden.
+        
         st.markdown(
             """
             <div class="section-card snapshot-card">
-                <div class="snapshot-title">Company Snapshot</div>
+                <div class="snapshot-title" style="color: #001f3f !important;">Company Snapshot</div>
             """,
             unsafe_allow_html=True,
         )
 
         c1, c2, c3 = st.columns(3)
         with c1:
-            st.metric("Ticker", current_ticker)
+            st.markdown(f"""
+            <div style="color: #001f3f !important;">
+                <div style="font-size: 0.875rem; color: #001f3f !important;">Ticker</div>
+                <div style="font-size: 1.25rem; font-weight: 600; color: #001f3f !important;">{current_ticker}</div>
+            </div>
+            """, unsafe_allow_html=True)
         with c2:
-            st.metric("Company", company_name)
+            st.markdown(f"""
+            <div style="color: #001f3f !important;">
+                <div style="font-size: 0.875rem; color: #001f3f !important;">Company</div>
+                <div style="font-size: 1.25rem; font-weight: 600; color: #001f3f !important;">{company_name}</div>
+            </div>
+            """, unsafe_allow_html=True)
         with c3:
-            st.metric("Current Price", format_currency(current_price or np.nan))
+            st.markdown(f"""
+            <div style="color: #001f3f !important;">
+                <div style="font-size: 0.875rem; color: #001f3f !important;">Current Price</div>
+                <div style="font-size: 1.25rem; font-weight: 600; color: #001f3f !important;">{format_currency(current_price or np.nan)}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
         if metrics.get("MarketCap"):
             mc = metrics["MarketCap"]
             if np.isfinite(mc):
-                st.caption(f"Approx. market cap: ${mc:,.0f}M")
+                st.markdown(f"""
+                <div style="font-size: 0.875rem; color: #001f3f !important;">
+                    Approx. market cap: ${mc:,.0f}M
+                </div>
+                """, unsafe_allow_html=True)
 
         if eps is None or not np.isfinite(eps):
             st.warning(
                 "EPS_TTM is not available. DCF and P/E valuations may be limited or N/A."
             )
 
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True) # Closes section-card
         st.write("")
 
         st.markdown(
             """
             <div class="section-card">
-                <div class="section-title">Scenario Selection</div>
-                <div class="section-subtitle">Choose valuation scenario assumptions</div>
+                <div class="section-title" style="color: #001f3f !important;">Scenario Selection</div>
+                <div class="section-subtitle" style="color: #001f3f !important;">Choose valuation scenario assumptions</div>
             """,
             unsafe_allow_html=True,
         )
@@ -1537,19 +1560,28 @@ def render_valuation_page():
             "Bear Case": {"revenue_growth": 5.0,  "discount_rate": 12.0, "terminal_growth": 2.0, "pe_multiple": 15.0},
         }
 
-        # --- MODIFIED: Wrapped radio in its class for CSS targeting ---
-        st.markdown('<div class="scenario-radio-group">', unsafe_allow_html=True)
+        # --- NEW SOLUTION FOR RADIO ---
+        # We add a markdown title, then make the real radio label invisible.
+        # We must keep st.radio to get the user's selection.
+        st.markdown(f"""
+        <p style="font-size: 1rem; font-weight: 600; color: #001f3f !important; margin-bottom: 0.25rem;">
+            Scenario
+        </p>
+        """, unsafe_allow_html=True)
+        
         selected_scenario = st.radio(
             "Scenario",
             ["Bull Case", "Base Case", "Bear Case"],
             index=1,
             horizontal=True,
             key="valuation_scenario_radio",
+            label_visibility="collapsed" # This hides the white "Scenario" label
         )
-        st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown("</div>", unsafe_allow_html=True)
         st.write("")
+        
+        # --- The rest of the function is the same ---
 
         st.markdown(
             """

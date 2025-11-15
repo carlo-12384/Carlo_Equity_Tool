@@ -1052,7 +1052,13 @@ def inject_global_css():
         }
 
         /* Simple cards */
-        
+        .hero-card {
+            background: #30f000;
+            border-radius: 16px;
+            padding: 24px 28px;
+            margin-top: 16px;
+            margin-bottom: 16px;
+            border: 1px solid #30f000;
         }
         .hero-title {
             font-size: 24px;
@@ -1069,7 +1075,7 @@ def inject_global_css():
             padding: 18px 20px;
             margin-top: 18px;
             margin-bottom: 18px;
-            border: 1px solid #282957;
+            border: 1px solid 30f000;
         }
         .section-title {
             font-weight: 600;
@@ -1077,18 +1083,18 @@ def inject_global_css():
         }
         .section-subtitle {
             font-size: 13px;
-            color: #6b7280;
+            color: #30f000;
             margin-bottom: 12px;
         }
         .kpi-card-new {
-            background: #f3f4f6;
+            background: #30f000;
             border-radius: 16px;
             padding: 14px 16px;
-            border: 1px solid #e5e7eb;
+            border: 1px solid #30f000;
         }
         .kpi-label-new {
             font-size: 12px;
-            color: #6b7280;
+            color: #30f000;
             text-transform: uppercase;
             letter-spacing: 0.08em;
         }
@@ -1104,7 +1110,7 @@ def inject_global_css():
         .main-content .stMetricLabel,
         .main-content .section-title,
         .main-content .section-subtitle {
-            color: #111827 !important;
+            color: #30f000 !important;
         }
 
         </style>

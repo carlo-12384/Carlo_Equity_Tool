@@ -993,7 +993,7 @@ def inject_global_css():
         button[kind="primary"],
         button[kind="secondary"],
         button[kind="outline"] {
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+            background: linear-gradient(135deg, #282957, #282957) !important;
             color: #ffffff !important;
             border-radius: 8px !important;
             border: 1px solid #1c64f2 !important;
@@ -1053,12 +1053,12 @@ def inject_global_css():
 
         /* Simple cards */
         .hero-card {
-            background: #f9fafb;
+            background: #282957;
             border-radius: 16px;
             padding: 24px 28px;
             margin-top: 16px;
             margin-bottom: 16px;
-            border: 1px solid #e5e7eb;
+            border: 1px solid #282957;
         }
         .hero-title {
             font-size: 24px;
@@ -1067,7 +1067,7 @@ def inject_global_css():
         }
         .hero-subtitle {
             font-size: 14px;
-            color: #6b7280;
+            color: #282957;
         }
         .section-card {
             background: #ffffff;
@@ -1075,7 +1075,7 @@ def inject_global_css():
             padding: 18px 20px;
             margin-top: 18px;
             margin-bottom: 18px;
-            border: 1px solid #e5e7eb;
+            border: 1px solid #282957;
         }
         .section-title {
             font-weight: 600;

@@ -968,6 +968,9 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
 # ======================================================================
 # GLOBAL STYLING
 # ======================================================================
+# ======================================================================
+# GLOBAL STYLING
+# ======================================================================
 def inject_global_css():
     st.markdown(
         """
@@ -985,9 +988,15 @@ def inject_global_css():
         
         /* ===== GLOBAL LAYOUT ===== */
         html, body, .stApp {
-            background: var(--color-page-bg);
-            color: var(--color-primary-text);
+            background: var(--color-page-bg) !important;
+            color: var(--color-primary-text) !important;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+        }
+        
+        /* This is a default override for the whole app,
+           just in case Streamlit's "body" rule is winning */
+        body {
+            color: var(--color-primary-text) !important;
         }
 
         header[data-testid="stHeader"] { background: transparent; }
@@ -1120,37 +1129,42 @@ def inject_global_css():
         }
         
         /* ====================================================== */
-        /* ===== AGGRESSIVE OVERRIDE FOR VALUATION PAGE TEXT ===== */
+        /* == HYPER-SPECIFIC ("NUCLEAR") OVERRIDE FOR VALUATION == */
         /* ====================================================== */
         
-        /* This targets all metric labels, values, and deltas
-           inside the .main-content wrapper. */
-        .main-content [data-testid="stMetric"] div {
+        /* This selector is so specific it is almost impossible to lose. */
+        
+        /* Targets "Ticker", "Company", "Current Price" labels and values */
+        html body .stApp .main-content [data-testid="stMetric"] div {
             color: var(--color-primary-text) !important;
         }
 
-        /* This targets the "Approx. market cap..." caption */
-        .main-content [data-testid="stCaption"] {
+        /* Targets "Approx. market cap..." */
+        html body .stApp .main-content [data-testid="stCaption"] {
             color: var(--color-primary-text) !important;
         }
 
-        /* This targets all radio button text ("Scenario")
-           and labels ("Bull Case", "Base Case") */
-        .main-content [data-testid="stRadio"] p,
-        .main-content [data-testid="stRadio"] label {
+        /* Targets "Scenario" label */
+        html body .stApp .main-content [data-testid="stRadio"] p {
             color: var(--color-primary-text) !important;
-            font-weight: 600;
+            font-weight: 600 !important;
         }
         
-        /* This targets the snapshot title specifically */
-        .main-content .snapshot-title {
+        /* Targets "Bull Case", "Base Case", "Bear Case" labels */
+        html body .stApp .main-content [data-testid="stRadio"] label {
+            color: var(--color-primary-text) !important;
+            font-weight: 500 !important;
+        }
+        
+        /* Targets the "Company Snapshot" title */
+        html body .stApp .main-content .snapshot-title {
             color: var(--color-primary-text) !important;
         }
 
         /* ====================================================== */
         /* ===== UTILITY: METRIC COLORS ===== */
         .positive-metric { color: #057A55; } /* Green */
-        .negative-metric { E02424; } /* Red */
+        .negative-metric { color: #E02424; } /* Red */
         
         </style>
         """,

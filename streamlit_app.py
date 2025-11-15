@@ -1601,7 +1601,7 @@ def render_valuation_page():
                 else:
                     st.markdown("<div class='valuation-metric-value'>N/A</div>", unsafe_allow_html=True)
 
-                st.markdown("<hr style='border-top: 1px solid #e1e4e8;'>", unsafe_allow_html=True)
+                st.markdown("<hr style='border-top: 1px solid #30f000;'>", unsafe_allow_html=True)
 
                 st.markdown(
                     "<div class='valuation-metric-label'>P/E-Based Valuation</div>",
@@ -1620,7 +1620,7 @@ def render_valuation_page():
                 else:
                     st.markdown("<div class='valuation-metric-value'>N/A</div>", unsafe_allow_html=True)
 
-                st.markdown("<hr style='border-top: 1px solid #e1e4e8;'>", unsafe_allow_html=True)
+                st.markdown("<hr style='border-top: 1px solid #30f000;'>", unsafe_allow_html=True)
 
                 st.markdown(
                     "<div class='valuation-metric-label'>P/S-Based Valuation (scaled vs current P/S)</div>",

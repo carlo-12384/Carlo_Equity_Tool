@@ -1006,7 +1006,7 @@ def inject_global_css():
         button[kind="secondary"]:hover,
         button[kind="outline"]:hover {
             filter: brightness(1.1);
-            color: #ffffff !important;
+            color: #30f000 !important;
         }
 
         /* ===== TOP NAV BAR (FULL-WIDTH STRIP) ===== */

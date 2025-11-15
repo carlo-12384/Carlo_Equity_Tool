@@ -972,7 +972,7 @@ def inject_global_css():
         /* ===== GLOBAL LAYOUT ===== */
         html, body, .stApp {
             background: #ffffff;
-            color: #111827;
+            color: #30f000;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
         }
 
@@ -984,7 +984,7 @@ def inject_global_css():
         }
 
         h1, h2, h3, h4, h5, h6 {
-            color: #0d1117 !important;
+            color: #30f000 !important;
         }
 
         /* ===== GLOBAL BUTTON RESET ===== */
@@ -994,7 +994,7 @@ def inject_global_css():
         button[kind="secondary"],
         button[kind="outline"] {
             background: linear-gradient(135deg, #282957, #282957) !important;
-            color: #ffffff !important;
+            color: #30f000 !important;
             border-radius: 8px !important;
             border: 1px solid #1c64f2 !important;
             font-weight: 500;
@@ -1869,7 +1869,7 @@ def main():
         <h1 style='text-align: center; margin-bottom: 1rem; padding-top: 1rem; 
                    font-weight: 400; font-family: "DM Serif Display", serif;
                    font-size: 2.75rem; 
-                   color: #0d1117;'> 
+                   color: #30f000;'> 
             Equity Research Platform
         </h1>
         """,

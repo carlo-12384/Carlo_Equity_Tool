@@ -1078,7 +1078,7 @@ def inject_global_css():
         }
         .hero-subtitle {
             font-size: 14px;
-            color: var(--color-tertiary-text) !important;
+            color: var(--color-tertiary-text) ;
         }
         .section-card {
             background: var(--color-page-bg);

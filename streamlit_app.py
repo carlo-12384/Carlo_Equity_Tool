@@ -1130,18 +1130,18 @@ def inject_global_css():
             font-size: 1.25rem;
             font-weight: 600;
             margin-bottom: 4px;
-            color: var(--color-primary-text) !important;
+            color: #001f3f !important;
         }
         .snapshot-card .stMetricLabel {
-            color: var(--color-primary-text) !important;
+            color: #001f3f !important;
         }
         .snapshot-card [data-testid="stMetricValue"] {
-            color: var(--color-primary-text) !important;
+            color: #001f3f !important;
         }
         .snapshot-card .stCaption {
-            color: #555555 !important;
+            color: #001f3f !important;
         }
-
+        
         /* ===== VALUATION PAGE: Scenario Controls (NEW) ===== */
         /* This targets the main label: "Scenario" */
         .scenario-radio-group [data-testid="stRadio"] p {

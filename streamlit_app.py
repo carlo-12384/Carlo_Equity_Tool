@@ -1174,6 +1174,9 @@ def inject_global_css():
 # ======================================================================
 # PAGE RENDER FUNCTIONS
 # ======================================================================
+# ======================================================================
+# PAGE RENDER FUNCTIONS
+# ======================================================================
 def render_dashboard():
     st.markdown(
         """
@@ -1189,19 +1192,22 @@ def render_dashboard():
 
     st.write("")
     
-    col_search, col_btn = st.columns([4, 1])
+    # --- THIS IS THE FIX ---
+    # We removed the col_search and col_btn columns
+    # and just stacked the elements.
+    
+    ticker = st.text_input(
+        "Search ticker symbol (e.g., AAPL, MSFT).",
+        key="ticker_input",
+        label_visibility="collapsed",
+        placeholder="ENTER TICKER SYMBOL TO ANALYZE (E.G., AAPL)",
+    ).upper()
 
-    with col_search:
-        ticker = st.text_input(
-            "Search ticker symbol (e.g., AAPL, MSFT).",
-            key="ticker_input",
-            label_visibility="collapsed",
-            placeholder="ENTER TICKER SYMBOL TO ANALYZE (E.G., AAPL)",
-        ).upper()
+    st.write("") # Adds a little space
+    analyze_clicked = st.button("Analyze", use_container_width=True)
+    
+    # --- END OF FIX ---
 
-    with col_btn:
-        st.write("")
-        analyze_clicked = st.button("Analyze", use_container_width=True)
 
     max_peers = 6
 

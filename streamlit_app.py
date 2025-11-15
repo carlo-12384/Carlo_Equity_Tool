@@ -987,6 +987,28 @@ def inject_global_css():
             color: #0d1117 !important;
         }
 
+        /* ===== GLOBAL BUTTON RESET ===== */
+        /* Catch all Streamlit buttons & force visible text */
+        .stButton > button,
+        button[kind="primary"],
+        button[kind="secondary"],
+        button[kind="outline"] {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+            color: #ffffff !important;
+            border-radius: 8px !important;
+            border: 1px solid #1c64f2 !important;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .stButton > button:hover,
+        button[kind="primary"]:hover,
+        button[kind="secondary"]:hover,
+        button[kind="outline"]:hover {
+            filter: brightness(1.1);
+            color: #ffffff !important;
+        }
+
         /* ===== TOP NAV BAR (FULL-WIDTH STRIP) ===== */
         .top-nav-bar {
             background: #0d1117;
@@ -1018,43 +1040,15 @@ def inject_global_css():
         .top-nav-container .stButton > button {
             width: 100%;
             padding: 14px 0;
-            border: 1px solid rgba(255,255,255,0.85);
-            border-radius: 0;
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            color: #ffffff !important;
-            font-size: 15px;
-            font-weight: 600;
-            letter-spacing: 0.08em;
+            border-radius: 999px !important;
             text-transform: uppercase;
+            letter-spacing: 0.08em;
             box-shadow: none;
         }
 
-        .top-nav-container .stButton > button:hover {
-            filter: brightness(1.08);
-        }
-
-        .top-nav-inner [data-testid="column"]:first-child .stButton > button {
-            border-top-left-radius: 12px;
-            border-bottom-left-radius: 12px;
-        }
-        .top-nav-inner [data-testid="column"]:last-child .stButton > button {
-            border-top-right-radius: 12px;
-            border-bottom-right-radius: 12px;
-        }
-
         .main-content .stButton > button {
-            border-radius: 8px;
+            border-radius: 8px !important;
             padding: 0.45rem 1.3rem;
-            font-weight: 500;
-            border: 1px solid #1c64f2;
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            color: #ffffff !important;
-        }
-
-        .main-content .stButton > button:hover {
-            border-color: #60a5fa;
-            filter: brightness(1.1);
-            color: #ffffff !important;
         }
 
         /* Simple cards */

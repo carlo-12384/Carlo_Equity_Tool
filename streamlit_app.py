@@ -1600,10 +1600,6 @@ def render_valuation_page():
         )
 
         preset = scenario_presets[selected_scenario]
-
-        # --- THIS IS THE NEW FIX FOR NUMBER INPUTS ---
-        # We create a custom markdown label and then hide the default
-        # (white) label on the component itself.
         
         col_a, col_b, col_c, col_d = st.columns(4)
         
@@ -1629,7 +1625,9 @@ def render_valuation_page():
             """, unsafe_allow_html=True)
             discount_rate = st.number_input(
                 "Discount Rate / WACC (%)",
-                value=float(preset["discount_state"]),
+                # --- THIS IS THE FIX ---
+                value=float(preset["discount_rate"]), # Changed "discount_state" to "discount_rate"
+                # --- END OF FIX ---
                 step=0.5,
                 format="%.1f",
                 key="val_discount_rate",
@@ -1663,8 +1661,6 @@ def render_valuation_page():
                 key="val_pe_multiple",
                 label_visibility="collapsed" # Hide the default label
             )
-
-        # --- END OF FIX ---
 
         st.markdown("</div>", unsafe_allow_html=True)
         st.write("")
@@ -1758,7 +1754,7 @@ def render_valuation_page():
                         f"<div class='valuation-current-price'>Current Price"
                         f"<span style='float:right'>{format_currency(current_price or np.nan)}</span></div>"
                         f"<div class='valuation-upside {cls}'>Upside/Downside"
-                        f"<span style='float:right'>{format_percent(ps_upside)}</span></div>",
+                        f"<span style'float:right'>{format_percent(ps_upside)}</span></div>",
                         unsafe_allow_html=True,
                     )
                 else:

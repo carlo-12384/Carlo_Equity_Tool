@@ -1052,13 +1052,7 @@ def inject_global_css():
         }
 
         /* Simple cards */
-        .hero-card {
-            background: #30f000;
-            border-radius: 16px;
-            padding: 24px 28px;
-            margin-top: 16px;
-            margin-bottom: 16px;
-            border: 1px solid #30f000;
+        
         }
         .hero-title {
             font-size: 24px;
@@ -1067,7 +1061,7 @@ def inject_global_css():
         }
         .hero-subtitle {
             font-size: 14px;
-            color: #282957;
+            color: #30f000;
         }
         .section-card {
             background: #ffffff;

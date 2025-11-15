@@ -1011,7 +1011,7 @@ def inject_global_css():
 
         /* ===== TOP NAV BAR (FULL-WIDTH STRIP) ===== */
         .top-nav-bar {
-            background: #0d1117;
+            background: #30f000;
             padding: 0;
             width: 100vw;
             position: relative;

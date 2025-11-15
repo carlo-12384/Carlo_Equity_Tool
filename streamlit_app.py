@@ -1053,7 +1053,7 @@ def inject_global_css():
 
         /* Simple cards */
         .hero-card {
-            background: #282957;
+            background: #30f000;
             border-radius: 16px;
             padding: 24px 28px;
             margin-top: 16px;

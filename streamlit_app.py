@@ -1103,6 +1103,16 @@ def inject_global_css():
             font-weight: 600;
             margin-top: 4px;
         }
+        /* Make labels / text around controls dark so they don't appear white */
+        .main-content [data-testid="stNumberInput"] label,
+        .main-content [data-testid="stRadio"] label,
+        .main-content [data-testid="stSelectbox"] label,
+        .main-content .stMetricLabel,
+        .main-content .section-title,
+        .main-content .section-subtitle {
+            color: #111827 !important;
+        }
+
         </style>
         """,
         unsafe_allow_html=True,

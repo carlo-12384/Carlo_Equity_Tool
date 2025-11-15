@@ -1357,6 +1357,7 @@ def render_analysis_page():
 
 # ---------- VALUATION PAGE ----------
 # ---------- VALUATION PAGE ----------
+# ---------- VALUATION PAGE ----------
 def render_valuation_page():
     st.markdown(
         """
@@ -1492,10 +1493,6 @@ def render_valuation_page():
         prof = get_profile(current_ticker) or {}
         company_name = prof.get("name") or current_ticker
         eps = metrics.get("EPS_TTM")
-
-        # --- THIS IS THE NEW SOLUTION ---
-        # We build the metric component manually with st.markdown
-        # to apply inline styles that CANNOT be overridden.
         
         st.markdown(
             """
@@ -1539,7 +1536,7 @@ def render_valuation_page():
 
         if eps is None or not np.isfinite(eps):
             st.warning(
-                "EPS_TTM is not available. DCF and P/E valuations may be limited or N/A."
+                "EPS_TTM is not available. DCF andP/E valuations may be limited or N/A."
             )
 
         st.markdown("</div>", unsafe_allow_html=True) # Closes section-card
@@ -1560,23 +1557,33 @@ def render_valuation_page():
             "Bear Case": {"revenue_growth": 5.0,  "discount_rate": 12.0, "terminal_growth": 2.0, "pe_multiple": 15.0},
         }
 
-        # --- NEW SOLUTION FOR RADIO ---
-        # We add a markdown title, then make the real radio label invisible.
-        # We must keep st.radio to get the user's selection.
-        st.markdown(f"""
-        <p style="font-size: 1rem; font-weight: 600; color: #001f3f !important; margin-bottom: 0.25rem;">
-            Scenario
-        </p>
-        """, unsafe_allow_html=True)
+        # --- THIS IS THE NEW SOLUTION FOR RADIO BUTTONS ---
         
-        selected_scenario = st.radio(
-            "Scenario",
-            ["Bull Case", "Base Case", "Bear Case"],
-            index=1,
-            horizontal=True,
-            key="valuation_scenario_radio",
-            label_visibility="collapsed" # This hides the white "Scenario" label
-        )
+        # 1. Initialize the scenario in session state if it's not there
+        if "valuation_scenario" not in st.session_state:
+            st.session_state.valuation_scenario = "Base Case"
+
+        # 2. Create columns for the buttons
+        scen_c1, scen_c2, scen_c3 = st.columns(3)
+        
+        # 3. Create the buttons. When clicked, they update session state.
+        with scen_c1:
+            if st.button("Bull Case", use_container_width=True, key="scen_bull"):
+                st.session_state.valuation_scenario = "Bull Case"
+        with scen_c2:
+            if st.button("Base Case", use_container_width=True, key="scen_base"):
+                st.session_state.valuation_scenario = "Base Case"
+        with scen_c3:
+            if st.button("Bear Case", use_container_width=True, key="scen_bear"):
+                st.session_state.valuation_scenario = "Bear Case"
+        
+        # 4. Read the current scenario from session state
+        selected_scenario = st.session_state.valuation_scenario
+        
+        # 5. (Optional) Show which one is active
+        st.markdown(f"**Active Scenario:** `{selected_scenario}`")
+        
+        # --- END OF NEW SOLUTION ---
 
         st.markdown("</div>", unsafe_allow_html=True)
         st.write("")
@@ -1724,7 +1731,7 @@ def render_valuation_page():
                         unsafe_allow_html=True,
                     )
                 else:
-                    st.markdown("<div class='valuation-metric-value'>N/A</div>", unsafe_allow_html=True)
+                    st.markdown("<div class'valuation-metric-value'>N/A</div>", unsafe_allow_html=True)
 
                 st.markdown("</div>", unsafe_allow_html=True)
                 st.write("")

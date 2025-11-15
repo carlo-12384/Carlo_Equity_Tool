@@ -1125,33 +1125,29 @@ def inject_global_css():
             color: var(--color-primary-text) !important;
         }
         
-        /* ===== VALUATION PAGE: Company Snapshot (NEW) ===== */
-        .snapshot-card .snapshot-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 4px;
+       /* ===== VALUATION PAGE: Company Snapshot (NEW) ===== */
+       /* This is an aggressive override. It targets the metric containers
+           and forces ALL text (divs) inside them to be your primary color. */
+        .section-card.snapshot-card [data-testid="stMetric"] div {
             color: var(--color-primary-text) !important;
         }
-        .snapshot-card .stMetricLabel {
+        
+        /* This targets the title, just in case */
+        .section-card.snapshot-card .snapshot-title {
             color: var(--color-primary-text) !important;
         }
-        .snapshot-card [data-testid="stMetricValue"] {
-            color: var(--color-primary-text) !important;
-        }
-        .snapshot-card .stCaption {
+        
+        /* This targets the caption */
+        .section-card.snapshot-card .stCaption {
             color: var(--color-primary-text) !important;
         }
 
         /* ===== VALUATION PAGE: Scenario Controls (NEW) ===== */
-        /* This targets the main label: "Scenario" */
-        .scenario-radio-group [data-testid="stRadio"] p {
+        /* This forces all text (p) and all radio labels (label)
+           inside the radio group to be your primary color. */
+        .section-card .scenario-radio-group p,
+        .section-card .scenario-radio-group label {
             color: var(--color-primary-text) !important;
-            font-weight: 600;
-        }
-        /* This targets the labels: "Bull Case", "Base Case", "Bear Case" */
-        .scenario-radio-group [data-testid="stRadio"] label {
-            color: var(--color-primary-text) !important;
-            font-weight: 500;
         }
         
         /* ===== UTILITY: METRIC COLORS ===== */

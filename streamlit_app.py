@@ -1058,7 +1058,7 @@ def inject_global_css():
             padding: 24px 28px;
             margin-top: 16px;
             margin-bottom: 16px;
-            border: 1px solid #282957;
+            border: 1px solid #30f000;
         }
         .hero-title {
             font-size: 24px;

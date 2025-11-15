@@ -319,7 +319,7 @@ def render_news_md(news_list):
         ts = ""
         if isinstance(it.get("datetime"), pd.Timestamp) and pd.notna(it["datetime"]):
             ts = it["datetime"].strftime("%Y-%m-%d %H:%M")
-        src = f" — {it.get('source')}" if it.get("source") else ""
+        src = f" — {it.get('source')}" if it.get('source') else ""
         h = it.get("headline"," ").replace("\n"," ").strip()
         url = it.get("url"," ")
         sumline = it.get("summary"," ").strip()
@@ -888,7 +888,7 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
         if not np.isfinite(ebitda_ttm):
             ebit_ttm = ttm_from_rows(t_is, ["Ebit","EBIT","Operating Income"])
             dep_ttm = ttm_from_rows(yf.Ticker(ticker).quarterly_cashflow,
-                                    ["Depreciation","Depreciation And Amortization"])
+                                     ["Depreciation","Depreciation And Amortization"])
             if np.isfinite(ebit_ttm) and np.isfinite(dep_ttm):
                 ebitda_ttm = ebit_ttm + dep_ttm
 
@@ -969,10 +969,21 @@ def inject_global_css():
     st.markdown(
         """
         <style>
+        /* ===== COLOR PALETTE ===== */
+        :root {
+            --color-primary-bg: #001f3f;   /* Dark Navy Blue */
+            --color-secondary-bg: #F5EAAA; /* Khaki */
+            --color-page-bg: #FFFFFF;      /* White */
+            
+            --color-primary-text: #001f3f;   /* Dark Navy Blue */
+            --color-secondary-text: #F5EAAA; /* Khaki */
+            --color-tertiary-text: #FFFFFF;  /* White */
+        }
+        
         /* ===== GLOBAL LAYOUT ===== */
         html, body, .stApp {
-            background: #ffffff;
-            color: #30f000;
+            background: var(--color-page-bg);
+            color: var(--color-primary-text);
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
         }
 
@@ -984,19 +995,18 @@ def inject_global_css():
         }
 
         h1, h2, h3, h4, h5, h6 {
-            color: #30f000 !important;
+            color: var(--color-primary-text) !important;
         }
 
         /* ===== GLOBAL BUTTON RESET ===== */
-        /* Catch all Streamlit buttons & force visible text */
         .stButton > button,
         button[kind="primary"],
         button[kind="secondary"],
         button[kind="outline"] {
-            background: linear-gradient(135deg, #282957, #282957) !important;
-            color: #30f000 !important;
+            background: var(--color-secondary-bg) !important;
+            color: var(--color-primary-text) !important;
             border-radius: 8px !important;
-            border: 1px solid #1c64f2 !important;
+            border: 1px solid var(--color-primary-text) !important;
             font-weight: 500;
             font-size: 14px;
         }
@@ -1006,12 +1016,12 @@ def inject_global_css():
         button[kind="secondary"]:hover,
         button[kind="outline"]:hover {
             filter: brightness(1.1);
-            color: #30f000 !important;
+            color: var(--color-primary-text) !important;
         }
 
         /* ===== TOP NAV BAR (FULL-WIDTH STRIP) ===== */
         .top-nav-bar {
-            background: #30f000;
+            background: var(--color-primary-bg);
             padding: 0;
             width: 100vw;
             position: relative;
@@ -1053,29 +1063,30 @@ def inject_global_css():
 
         /* Simple cards */
         .hero-card {
-            background: #30f000;
+            background: var(--color-primary-bg);
             border-radius: 16px;
             padding: 24px 28px;
             margin-top: 16px;
             margin-bottom: 16px;
-            border: 1px solid #30f000;
+            border: 1px solid var(--color-secondary-bg);
         }
         .hero-title {
             font-size: 24px;
             font-weight: 600;
             margin-bottom: 4px;
+            color: var(--color-secondary-text) !important;
         }
         .hero-subtitle {
             font-size: 14px;
-            color: #30f000;
+            color: var(--color-tertiary-text) !important;
         }
         .section-card {
-            background: #ffffff;
+            background: var(--color-page-bg);
             border-radius: 16px;
             padding: 18px 20px;
             margin-top: 18px;
             margin-bottom: 18px;
-            border: 1px solid 30f000;
+            border: 1px solid var(--color-primary-bg);
         }
         .section-title {
             font-weight: 600;
@@ -1083,18 +1094,18 @@ def inject_global_css():
         }
         .section-subtitle {
             font-size: 13px;
-            color: #30f000;
+            color: var(--color-primary-text);
             margin-bottom: 12px;
         }
         .kpi-card-new {
-            background: #30f000;
+            background: var(--color-primary-bg);
             border-radius: 16px;
             padding: 14px 16px;
-            border: 1px solid #30f000;
+            border: 1px solid var(--color-secondary-bg);
         }
         .kpi-label-new {
             font-size: 12px;
-            color: #30f000;
+            color: var(--color-secondary-text);
             text-transform: uppercase;
             letter-spacing: 0.08em;
         }
@@ -1102,17 +1113,51 @@ def inject_global_css():
             font-size: 22px;
             font-weight: 600;
             margin-top: 4px;
+            color: var(--color-tertiary-text);
         }
-        /* Make labels / text around controls dark so they don't appear white */
+        
+        /* Make labels / text around controls dark */
         .main-content [data-testid="stNumberInput"] label,
-        .main-content [data-testid="stRadio"] label,
         .main-content [data-testid="stSelectbox"] label,
         .main-content .stMetricLabel,
         .main-content .section-title,
         .main-content .section-subtitle {
-            color: #30f000 !important;
+            color: var(--color-primary-text) !important;
+        }
+        
+        /* ===== VALUATION PAGE: Company Snapshot (NEW) ===== */
+        .snapshot-card .snapshot-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--color-primary-text) !important;
+        }
+        .snapshot-card .stMetricLabel {
+            color: var(--color-primary-text) !important;
+        }
+        .snapshot-card [data-testid="stMetricValue"] {
+            color: var(--color-primary-text) !important;
+        }
+        .snapshot-card .stCaption {
+            color: #555555 !important;
         }
 
+        /* ===== VALUATION PAGE: Scenario Controls (NEW) ===== */
+        /* This targets the main label: "Scenario" */
+        .scenario-radio-group [data-testid="stRadio"] p {
+            color: var(--color-primary-text) !important;
+            font-weight: 600;
+        }
+        /* This targets the labels: "Bull Case", "Base Case", "Bear Case" */
+        .scenario-radio-group [data-testid="stRadio"] label {
+            color: var(--color-primary-text) !important;
+            font-weight: 500;
+        }
+        
+        /* ===== UTILITY: METRIC COLORS ===== */
+        .positive-metric { color: #057A55; } /* Green */
+        .negative-metric { color: #E02424; } /* Red */
+        
         </style>
         """,
         unsafe_allow_html=True,
@@ -1439,10 +1484,11 @@ def render_valuation_page():
         company_name = prof.get("name") or current_ticker
         eps = metrics.get("EPS_TTM")
 
+        # --- MODIFIED: Added 'snapshot-card' and 'snapshot-title' classes ---
         st.markdown(
             """
-            <div class="section-card">
-                <div class="section-title">Company Snapshot</div>
+            <div class="section-card snapshot-card">
+                <div class="snapshot-title">Company Snapshot</div>
             """,
             unsafe_allow_html=True,
         )
@@ -1483,6 +1529,7 @@ def render_valuation_page():
             "Bear Case": {"revenue_growth": 5.0,  "discount_rate": 12.0, "terminal_growth": 2.0, "pe_multiple": 15.0},
         }
 
+        # --- MODIFIED: Wrapped radio in its class for CSS targeting ---
         st.markdown('<div class="scenario-radio-group">', unsafe_allow_html=True)
         selected_scenario = st.radio(
             "Scenario",
@@ -1601,7 +1648,7 @@ def render_valuation_page():
                 else:
                     st.markdown("<div class='valuation-metric-value'>N/A</div>", unsafe_allow_html=True)
 
-                st.markdown("<hr style='border-top: 1px solid #30f000;'>", unsafe_allow_html=True)
+                st.markdown("<hr style='border-top: 1px solid #001f3f;'>", unsafe_allow_html=True)
 
                 st.markdown(
                     "<div class='valuation-metric-label'>P/E-Based Valuation</div>",
@@ -1620,7 +1667,7 @@ def render_valuation_page():
                 else:
                     st.markdown("<div class='valuation-metric-value'>N/A</div>", unsafe_allow_html=True)
 
-                st.markdown("<hr style='border-top: 1px solid #30f000;'>", unsafe_allow_html=True)
+                st.markdown("<hr style='border-top: 1px solid #001f3f;'>", unsafe_allow_html=True)
 
                 st.markdown(
                     "<div class='valuation-metric-label'>P/S-Based Valuation (scaled vs current P/S)</div>",
@@ -1869,7 +1916,7 @@ def main():
         <h1 style='text-align: center; margin-bottom: 1rem; padding-top: 1rem; 
                    font-weight: 400; font-family: "DM Serif Display", serif;
                    font-size: 2.75rem; 
-                   color: #30f000;'> 
+                   color: var(--color-primary-text);'> 
             Equity Research Platform
         </h1>
         """,

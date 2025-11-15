@@ -965,6 +965,9 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
 # ======================================================================
 # GLOBAL STYLING
 # ======================================================================
+# ======================================================================
+# GLOBAL STYLING
+# ======================================================================
 def inject_global_css():
     st.markdown(
         """
@@ -1078,7 +1081,7 @@ def inject_global_css():
         }
         .hero-subtitle {
             font-size: 14px;
-            color: var(--color-tertiary-text) ;
+            color: var(--color-tertiary-text) !important;
         }
         .section-card {
             background: var(--color-page-bg);
@@ -1116,43 +1119,38 @@ def inject_global_css():
             color: var(--color-tertiary-text);
         }
         
-        /* Make labels / text around controls dark */
-        .main-content [data-testid="stNumberInput"] label,
-        .main-content [data-testid="stSelectbox"] label,
-        .main-content .stMetricLabel,
-        .main-content .section-title,
-        .main-content .section-subtitle {
-            color: var(--color-primary-text) !important;
-        }
+        /* ====================================================== */
+        /* ===== AGGRESSIVE OVERRIDE FOR VALUATION PAGE TEXT ===== */
+        /* ====================================================== */
         
-       /* ===== VALUATION PAGE: Company Snapshot (NEW) ===== */
-       /* This is an aggressive override. It targets the metric containers
-           and forces ALL text (divs) inside them to be your primary color. */
-        .section-card.snapshot-card [data-testid="stMetric"] div {
-            color: var(--color-primary-text) !important;
-        }
-        
-        /* This targets the title, just in case */
-        .section-card.snapshot-card .snapshot-title {
-            color: var(--color-primary-text) !important;
-        }
-        
-        /* This targets the caption */
-        .section-card.snapshot-card .stCaption {
+        /* This targets all metric labels, values, and deltas
+           inside the .main-content wrapper. */
+        .main-content [data-testid="stMetric"] div {
             color: var(--color-primary-text) !important;
         }
 
-        /* ===== VALUATION PAGE: Scenario Controls (NEW) ===== */
-        /* This forces all text (p) and all radio labels (label)
-           inside the radio group to be your primary color. */
-        .section-card .scenario-radio-group p,
-        .section-card .scenario-radio-group label {
+        /* This targets the "Approx. market cap..." caption */
+        .main-content [data-testid="stCaption"] {
             color: var(--color-primary-text) !important;
         }
+
+        /* This targets all radio button text ("Scenario")
+           and labels ("Bull Case", "Base Case") */
+        .main-content [data-testid="stRadio"] p,
+        .main-content [data-testid="stRadio"] label {
+            color: var(--color-primary-text) !important;
+            font-weight: 600;
+        }
         
+        /* This targets the snapshot title specifically */
+        .main-content .snapshot-title {
+            color: var(--color-primary-text) !important;
+        }
+
+        /* ====================================================== */
         /* ===== UTILITY: METRIC COLORS ===== */
         .positive-metric { color: #057A55; } /* Green */
-        .negative-metric { color: #E02424; } /* Red */
+        .negative-metric { E02424; } /* Red */
         
         </style>
         """,

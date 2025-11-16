@@ -338,6 +338,76 @@ def get_live_index_data():
         except Exception as e:
             logging.warning(f"Failed to get live index data for {ticker}: {e}")
     return data
+    
+@st.cache_data(ttl=300)
+def get_top_movers_sp500(n_gainers: int = 6, n_losers: int = 6):
+    """
+    Approximate daily top gainers/losers using S&P 500 constituents.
+    Uses 2 days of daily data and ranks by % change.
+    """
+    try:
+        sp500 = yf.tickers_sp500()
+        # yfinance sometimes returns DataFrame, sometimes list
+        if isinstance(sp500, pd.DataFrame):
+            tickers = sp500["Symbol"].dropna().astype(str).tolist()
+        elif isinstance(sp500, (list, tuple)):
+            tickers = list(sp500)
+        else:
+            tickers = list(sp500.keys())
+
+        # Safety: don't hammer the API – cap number of tickers
+        tickers = tickers[:350]
+
+        if not tickers:
+            return [], []
+
+        data = yf.download(
+            tickers,
+            period="2d",
+            interval="1d",
+            group_by="ticker",
+            auto_adjust=False,
+            progress=False,
+            threads=True,
+        )
+
+        movers = []
+        for t in tickers:
+            try:
+                df = data[t]
+                closes = df["Close"].dropna()
+                if len(closes) < 2:
+                    continue
+                prev, last = float(closes.iloc[-2]), float(closes.iloc[-1])
+                if prev <= 0:
+                    continue
+                change = last - prev
+                pct = (last / prev - 1.0) * 100.0
+                movers.append(
+                    {
+                        "symbol": t.upper(),
+                        "price": last,
+                        "change": change,
+                        "pct_change": pct,
+                    }
+                )
+            except Exception:
+                continue
+
+        movers = [m for m in movers if np.isfinite(m["pct_change"])]
+
+        if not movers:
+            return [], []
+
+        movers_sorted = sorted(movers, key=lambda x: x["pct_change"], reverse=True)
+        top_gainers = movers_sorted[:n_gainers]
+        top_losers = sorted(movers, key=lambda x: x["pct_change"])[:n_losers]
+
+        return top_gainers, top_losers
+    except Exception as e:
+        logging.warning(f"Failed to compute top movers: {e}")
+        return [], []
+
 
 # --- Replace this function ---
 @st.cache_data(ttl=300)
@@ -416,68 +486,63 @@ def get_sector_performance():
 # --- NEW FUNCTION ---
 def plot_sector_heatmap(sector_data: dict):
     """
-    Creates a Plotly Treemap (heatmap) of sector performance.
-    This version robustly handles 0.0, None, and np.nan values and
-    uses only valid Plotly Treemap kwargs.
+    Plotly Treemap of sector performance with a red→grey→green gradient.
+    Tiles are equal-sized; color encodes 1-day % change.
     """
-    if not sector_data:  # Safety check for empty data
+    if not sector_data:
         fig = go.Figure()
-        fig.update_layout(title_text="Sector Performance (Data Unavailable)", title_x=0.5)
+        fig.update_layout(
+            title_text="Sector Performance (Data Unavailable)",
+            title_x=0.5,
+            margin=dict(t=40, l=4, r=4, b=4),
+        )
         return fig
 
     labels = list(sector_data.keys())
-    raw_values = list(sector_data.values())
+    perfs = []
 
-    values_for_area = []
-    colors_for_perf = []
-    hover_text_list = []
-
-    for v in raw_values:
-        # Sanitize the value: coerce None, np.nan, etc. to 0.0
+    for v in sector_data.values():
         try:
             perf = float(v)
-            if not np.isfinite(perf):  # catches np.nan, np.inf
+            if not np.isfinite(perf):
                 perf = 0.0
         except (ValueError, TypeError):
             perf = 0.0
+        perfs.append(perf)
 
-        # Area value must be positive
-        if perf == 0.0:
-            values_for_area.append(1.0)
-        else:
-            values_for_area.append(abs(perf))
+    # Equal tile areas; color carries the meaning
+    values = [1.0] * len(labels)
+    customdata = [f"{p:+.2f}%" for p in perfs]
 
-        # Color based on performance
-        if perf > 0:
-            colors_for_perf.append("#057A55")  # green
-        elif perf < 0:
-            colors_for_perf.append("#E02424")  # red
-        else:
-            colors_for_perf.append("#6B7280")  # neutral gray
+    # Make sure we always have a sensible center around 0
+    max_abs = max(max(abs(p) for p in perfs), 1e-6)
 
-        hover_text_list.append(f"{perf:+.2f}%")
-
-    # NOTE:
-    # - marker_colors -> marker=dict(colors=...)
-    # - root_label removed (not a valid Treemap property)
-    # - parents set to "" so Plotly uses a single implicit root
     fig = go.Figure(
         go.Treemap(
             labels=labels,
             parents=[""] * len(labels),
-            values=values_for_area,
-            marker=dict(colors=colors_for_perf),
+            values=values,
+            customdata=customdata,
             texttemplate="<b>%{label}</b><br>%{customdata}",
-            customdata=hover_text_list,
-            hovertemplate="<b>%{label}</b><br>Change: %{customdata}<extra></extra>",
+            hovertemplate="<b>%{label}</b><br>1D Change: %{customdata}<extra></extra>",
+            marker=dict(
+                colors=perfs,
+                colorscale=[
+                    [0.0, "#7F1D1D"],   # deep red
+                    [0.5, "#1F2933"],   # neutral dark grey
+                    [1.0, "#047857"],   # deep green
+                ],
+                cmid=0,  # center colorscale at 0%
+            ),
         )
     )
 
     fig.update_layout(
-        margin=dict(t=25, l=10, r=10, b=10),
+        margin=dict(t=40, l=4, r=4, b=4),
         title=dict(text="Daily Sector Performance Heatmap", x=0.5, font=dict(size=18)),
     )
     return fig
+
 
 # -------------------- FINNHUB (FREE) --------------------
 def safe_finnhub_get(path, **params):
@@ -1059,59 +1124,70 @@ def five_day_price_plot(ticker: str):
 # --- NEW FUNCTION (Using Plotly for better visual charts) ---
 def plot_index_candlestick(chart_df: pd.DataFrame, is_positive: bool):
     """
-    Creates a Plotly-based dark-theme candlestick chart.
+    Finviz-style intraday sparkline:
+      - Smooth line of Close prices
+      - Subtle fill under the line
+      - No axes, grid, or legend
     """
-    
+    if chart_df is None or chart_df.empty:
+        return go.Figure()
+
+    color = "#057A55" if is_positive else "#E02424"
+    fill_color = "rgba(5, 122, 85, 0.15)" if is_positive else "rgba(224, 36, 36, 0.18)"
+
+    closes = chart_df["Close"].astype(float)
+
     fig = go.Figure()
 
-    # Add the candlestick trace
-    fig.add_trace(go.Candlestick(
-        x=chart_df.index,
-        open=chart_df['Open'],
-        high=chart_df['High'],
-        low=chart_df['Low'],
-        close=chart_df['Close'],
-        increasing_line_color='#057A55', # Green
-        decreasing_line_color='#E02424', # Red
-        increasing_fillcolor='#057A55',
-        decreasing_fillcolor='#E02424',
-        name='Candlestick',
-        hoverinfo='none' # Hides the default hover info
-    ))
+    # Main line + area fill
+    fig.add_trace(
+        go.Scatter(
+            x=chart_df.index,
+            y=closes,
+            mode="lines",
+            line=dict(width=2, color=color),
+            fill="tozeroy",
+            fillcolor=fill_color,
+            hoverinfo="skip",
+            showlegend=False,
+        )
+    )
 
-    # --- Style the chart to be dark and clean ---
+    # Dot at the last price
+    fig.add_trace(
+        go.Scatter(
+            x=[chart_df.index[-1]],
+            y=[closes.iloc[-1]],
+            mode="markers",
+            marker=dict(size=6, color=color),
+            hoverinfo="skip",
+            showlegend=False,
+        )
+    )
+
     fig.update_layout(
-        height=150, # Give it a bit more height for candlesticks
-        margin=dict(t=0, l=0, r=0, b=0), # No margins
-        xaxis_rangeslider_visible=False, # Hide the range slider
-        
+        height=120,
+        margin=dict(t=4, l=0, r=0, b=0),
         xaxis=dict(
-            showticklabels=True,
+            showticklabels=False,
             showgrid=False,
-            tickformat="%I:%M %p", # e.g., "02:30 PM"
+            zeroline=False,
+            fixedrange=True,
         ),
         yaxis=dict(
             showticklabels=False,
             showgrid=False,
             zeroline=False,
-            fixedrange=True, # User can't pan/zoom Y-axis
+            fixedrange=True,
         ),
-        
-        # --- Dark Theme Styling ---
-        paper_bgcolor="#1E1E1E", # Dark background for the card
-        plot_bgcolor="#1E1E1E",  # Dark background for the plot
-        
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
         showlegend=False,
-        dragmode=False # Disable dragging
+        dragmode=False,
     )
-    
-    # Hide the "Time" axis title
-    fig.update_xaxes(title_text='')
-    
-    # Auto-set Y-axis to be tight around the data
-    fig.update_yaxes(autorange=True, fixedrange=True)
 
     return fig
+
 
 
 # -------------------- LOCAL STORAGE HELPERS --------------------
@@ -1572,6 +1648,18 @@ def inject_global_css():
             color: #E02424;
         }
 
+        .ticker-section-label {
+            display: inline-block;
+            padding: 0 25px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            opacity: 0.75;
+            color: var(--color-secondary-text);
+        }
+
+
         /* ===== VALUATION PAGE OVERRIDES ===== */
         html body .stApp .main-content [data-testid="stMetric"] div {
             color: var(--color-primary-text) !important;
@@ -1616,23 +1704,44 @@ def inject_global_css():
 def render_dashboard():
     inject_global_css() 
 
-    # --- Live Index Ticker ---
+    # --- Live Index Data (for summary + cards) ---
     index_data = get_live_index_data()
-    if index_data:
+
+    # --- NEW: Top S&P 500 Movers Ticker Tape (replaces index tape) ---
+    top_gainers, top_losers = get_top_movers_sp500()
+
+    if top_gainers or top_losers:
         item_html_list = []
-        for item in index_data:
-            change_class = "positive" if item['change'] >= 0 else "negative"
-            change_sign = "+" if item['change'] >= 0 else ""
-            item_html = (
-                f'<div class="ticker-item">'
-                f'  <span class="ticker-symbol">{item["symbol"]}</span>'
-                f'  <span class="ticker-price">${item["price"]:,.2f}</span>'
-                f'  <span class="ticker-change {change_class}">'
-                f'    {change_sign}{item["change"]:,.2f} ({change_sign}{item["pct_change"]:,.2f}%)'
-                f'  </span>'
-                f'</div>'
-            )
-            item_html_list.append(item_html)
+
+        if top_gainers:
+            item_html_list.append('<span class="ticker-section-label">TOP GAINERS</span>')
+            for item in top_gainers:
+                change_class = "positive"
+                change_sign = "+" if item["change"] >= 0 else ""
+                item_html_list.append(
+                    f'<div class="ticker-item">'
+                    f'  <span class="ticker-symbol">{item["symbol"]}</span>'
+                    f'  <span class="ticker-price">${item["price"]:,.2f}</span>'
+                    f'  <span class="ticker-change {change_class}">'
+                    f'    {change_sign}{item["change"]:,.2f} ({change_sign}{item["pct_change"]:,.2f}%)'
+                    f'  </span>'
+                    f'</div>'
+                )
+
+        if top_losers:
+            item_html_list.append('<span class="ticker-section-label">TOP LOSERS</span>')
+            for item in top_losers:
+                change_class = "negative"
+                change_sign = "+" if item["change"] >= 0 else ""
+                item_html_list.append(
+                    f'<div class="ticker-item">'
+                    f'  <span class="ticker-symbol">{item["symbol"]}</span>'
+                    f'  <span class="ticker-price">${item["price"]:,.2f}</span>'
+                    f'  <span class="ticker-change {change_class}">'
+                    f'    {change_sign}{item["change"]:,.2f} ({change_sign}{item["pct_change"]:,.2f}%)'
+                    f'  </span>'
+                    f'</div>'
+                )
 
         all_items_html = "".join(item_html_list)
         full_ticker_html = f"""
@@ -1716,6 +1825,8 @@ def render_dashboard():
     if sector_perf_data:
         heatmap_fig = plot_sector_heatmap(sector_perf_data)
         st.plotly_chart(heatmap_fig, use_container_width=True)
+        st.caption("Each tile represents a sector ETF. Color = 1-day % change; tiles sized equally for easier comparison.")
+
     else:
         st.warning("Could not retrieve sector performance data.")
 

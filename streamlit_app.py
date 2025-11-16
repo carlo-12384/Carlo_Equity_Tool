@@ -342,9 +342,9 @@ def get_live_index_data():
 # --- Retrieving Macro Data ---
 @st.cache_data(ttl=300) # Cache for 5 minutes
 def get_global_macro_data():
-    """
-    Fetches live price data and daily change for key macro assets.
-    """
+    """
+    Fetches live price data and daily change for key macro assets.
+    """
     assets = {
         '^TNX': '10-Yr Yield',
         'CL=F': 'Crude Oil',

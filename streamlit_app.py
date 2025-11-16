@@ -341,25 +341,26 @@ def get_live_index_data():
 
 # --- NEW FUNCTION ---
 @st.cache_data(ttl=300)
+# --- Replace this function ---
+@st.cache_data(ttl=300)
 def get_intraday_index_charts_data():
     """
     Fetches 5-day daily data for the 4 main indices for charting.
     """
     tickers = ['^GSPC', '^IXIC', '^DJI', '^RUT']
     try:
-        # --- FIX: Changed period to "5d" (5 days) and interval to "1d" (1 day) ---
+        # --- This is the "weekly" data from the previous fix ---
         data = yf.download(tickers, period="5d", interval="1d")
-        # --- END FIX ---
         
         if data.empty:
             return None
         
-        # Select and rename columns for clarity
         chart_data = {}
         for ticker in tickers:
             if ('Close', ticker) in data.columns:
-                # This will now get the 'Close' prices for the last 5 days
-                chart_data[ticker] = data[('Close', ticker)].dropna()
+                # --- FIX: Rename to 'Price' and return a DataFrame ---
+                chart_srs = data[('Close', ticker)].dropna().rename("Price")
+                chart_data[ticker] = pd.DataFrame(chart_srs)
         return chart_data
     except Exception as e:
         logging.warning(f"Failed to get chart data: {e}")
@@ -1049,6 +1050,61 @@ def five_day_price_plot(ticker: str):
     except Exception:
         plt_fig = None
     return plt_fig
+    
+# --- NEW FUNCTION (Using Plotly for better visual charts) ---
+def plot_index_sparkline(chart_df: pd.DataFrame, is_positive: bool):
+    """
+    Creates a Plotly-based sparkline chart (a simplified, good-looking line chart).
+    """
+    # Use green if the price ended higher than it started, else red
+    line_color = "#057A55" if is_positive else "#E02424" # Green or Red
+    
+    fig = go.Figure()
+
+    # Add the line
+    fig.add_trace(go.Scatter(
+        x=chart_df.index,
+        y=chart_df['Price'], # Assumes the series is named 'Price'
+        mode='lines',
+        line=dict(color=line_color, width=2.5),
+        hoverinfo='none' # We use the header for info, not the hover
+    ))
+    
+    # Add a dot for the last point
+    fig.add_trace(go.Scatter(
+        x=[chart_df.index[-1]],
+        y=[chart_df['Price'].iloc[-1]],
+        mode='markers',
+        marker=dict(color=line_color, size=8),
+        hoverinfo='none'
+    ))
+
+    # --- Style the chart to look clean ---
+    fig.update_layout(
+        height=120, # Give it a readable height
+        margin=dict(t=0, l=0, r=0, b=0), # No margins
+        xaxis_rangeslider_visible=False, # Hide the range slider
+        xaxis=dict(
+            showticklabels=True,
+            showgrid=False,
+            tickformat="%a %d" # e.g., "Mon 12"
+        ),
+        yaxis=dict(
+            showticklabels=False,
+            showgrid=False,
+            zeroline=False,
+            fixedrange=True # User can't pan/zoom Y-axis
+        ),
+        paper_bgcolor='rgba(0,0,0,0)', # Transparent background
+        plot_bgcolor='#FAFAFA', # Match the card background
+        showlegend=False,
+        dragmode=False # Disable dragging
+    )
+    
+    # Auto-set Y-axis to be tight around the data
+    fig.update_yaxes(autorangeoptions=dict(tight=True))
+    
+    return fig
 
 # -------------------- LOCAL STORAGE HELPERS --------------------
 NOTES_FILE = "research_notes.json"
@@ -1597,6 +1653,7 @@ def inject_global_css():
     )
 
 
+# --- Replace this function ---
 def render_dashboard():
     inject_global_css() # You were missing this call in the original function
 
@@ -1630,11 +1687,11 @@ def render_dashboard():
         st.markdown(full_ticker_html, unsafe_allow_html=True)
 
     # ============================
-    # --- NEW --- ROW 0: Index Charts
+    # --- ROW 0: Index Charts
     # ============================
     st.markdown("### Market Snapshot")
     chart_cols = st.columns(4)
-    chart_data = get_intraday_index_charts_data() # Get 1-day 15m data
+    chart_data = get_intraday_index_charts_data() # Get 5d/1d data
     
     # Map index data (summary) to chart data (intraday)
     index_map = {
@@ -1667,32 +1724,34 @@ def render_dashboard():
                 st.markdown(f"<div class='index-chart-title'>{display_name}</div>", unsafe_allow_html=True)
                 st.markdown("<span class='index-chart-price'>N/A</span>", unsafe_allow_html=True)
                 
-            # ... inside render_dashboard ...
+            
+            # --- !!! ---
+            # --- THIS IS THE FIX ---
+            # --- !!! ---
+            
             # Plot the chart
             if chart_data and ticker in chart_data and not chart_data[ticker].empty:
-                # Create a simple line chart, remove axis labels for a cleaner look
                 chart_df = chart_data[ticker]
-                chart_df.index.name = "Time"
                 
-                # --- FIX ---
-                # Rename the series to a simple string.
-                # The tuple name ('Close', 'TICKER') causes a KeyError inside st.line_chart
-                chart_df = chart_df.rename("Price")
-                # --- END FIX ---
+                # We need to know if the 5-day trend is positive
+                is_positive = chart_df['Price'].iloc[-1] >= chart_df['Price'].iloc[0]
+
+                # Create the Plotly figure using our new function
+                fig = plot_index_sparkline(chart_df, is_positive)
                 
-                # --- !!! ---
-                # --- FIX: Removed height=100 to make chart auto-size and be readable ---
-                st.line_chart(chart_df)
-                # --- !!! ---
+                # Render the Plotly figure
+                st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+                
             else:
                 st.caption("Chart data unavailable.")
+            # --- END OF FIX ---
                 
             st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("---") # Horizontal rule
 
     # ============================
-    # --- NEW --- ROW 1: Heatmap
+    # --- ROW 1: Heatmap
     # ============================
     st.markdown("### Sector Performance")
     sector_perf_data = get_sector_performance()

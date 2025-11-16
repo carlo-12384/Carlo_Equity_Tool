@@ -10,6 +10,8 @@ from datetime import datetime
 import streamlit as st
 import json
 import plotly.graph_objects as go # --- NEW --- Import Plotly
+from streamlit_autorefresh import st_autorefresh
+
 
 # -------------------- CONFIG / LOGGING --------------------
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
@@ -300,7 +302,7 @@ def get_price_and_shares(symbol: str):
 
 # --- MODIFIED FUNCTION ---
 # Changed to fetch the 4 indices from the screenshot
-@st.cache_data(ttl=300) # Cache for 5 minutes
+@st.cache_data(ttl=60) # Cache for 1 minute
 def get_live_index_data():
     """
     Fetches live price data and daily change for major indices.
@@ -340,7 +342,7 @@ def get_live_index_data():
     return data
     
 # --- Retrieving Macro Data ---
-@st.cache_data(ttl=300)  # Cache for 5 minutes
+@st.cache_data(ttl=60)  # Cache for 1 minute
 def get_global_macro_data():
     """
     Fetches live price data and daily change for key macro assets.
@@ -2579,6 +2581,10 @@ def main():
 
     # Inject all global CSS
     inject_global_css()
+
+    # Auto-refresh the app every 60 seconds to pull fresh data
+    st_autorefresh(interval=60_000, key="auto_refresh_live_data")
+
 
     # ---------- PAGE HEADER ----------
     st.markdown(

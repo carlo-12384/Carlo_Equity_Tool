@@ -345,8 +345,8 @@ def get_global_macro_data():
     """
     Fetches live price data and daily change for key macro assets.
     """
-    assets = {
-        '^TNX': '10-Yr Yield',
+    assets = {
+        '^TNX': '10-Yr Yield',
         'CL=F': 'Crude Oil',
         'GC=F': 'Gold',
         'AGG': 'US Bonds (AGG)'

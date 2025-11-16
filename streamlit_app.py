@@ -9,6 +9,7 @@ from typing import List, Dict, Any
 from datetime import datetime
 import streamlit as st
 import json
+import plotly.graph_objects as go # --- NEW --- Import Plotly
 
 # -------------------- CONFIG / LOGGING --------------------
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
@@ -297,7 +298,8 @@ def get_price_and_shares(symbol: str):
             pass
     return price, shares
 
-# --- NEW FUNCTION ---
+# --- MODIFIED FUNCTION ---
+# Changed to fetch the 4 indices from the screenshot
 @st.cache_data(ttl=300) # Cache for 5 minutes
 def get_live_index_data():
     """
@@ -307,9 +309,7 @@ def get_live_index_data():
         '^GSPC': 'S&P 500',
         '^IXIC': 'NASDAQ',
         '^DJI': 'Dow Jones',
-        'CL=F': 'Crude Oil',
-        'GC=F': 'Gold',
-        'EURUSD=X': 'EUR/USD'
+        '^RUT': 'Russell 2000' # --- NEW ---
     }
     data = []
     for ticker, name in indices.items():
@@ -338,6 +338,98 @@ def get_live_index_data():
         except Exception as e:
             logging.warning(f"Failed to get live index data for {ticker}: {e}")
     return data
+
+# --- NEW FUNCTION ---
+@st.cache_data(ttl=300)
+def get_intraday_index_charts_data():
+    """
+    Fetches 1-day intraday data for the 4 main indices for charting.
+    """
+    tickers = ['^GSPC', '^IXIC', '^DJI', '^RUT']
+    try:
+        # Fetch 1-day data at 15-minute intervals
+        data = yf.download(tickers, period="1d", interval="15m")
+        if data.empty:
+            return None
+        
+        # Select and rename columns for clarity
+        chart_data = {}
+        for ticker in tickers:
+            if ('Close', ticker) in data.columns:
+                chart_data[ticker] = data[('Close', ticker)].dropna()
+        return chart_data
+    except Exception as e:
+        logging.warning(f"Failed to get intraday chart data: {e}")
+        return None
+
+# --- NEW FUNCTION ---
+@st.cache_data(ttl=300)
+def get_sector_performance():
+    """
+    Fetches daily performance for the 11 main S&P 500 sector ETFs.
+    """
+    sectors = {
+        'XLK': 'Technology',
+        'XLF': 'Financials',
+        'XLV': 'Healthcare',
+        'XLE': 'Energy',
+        'XLC': 'Communication',
+        'XLY': 'Consumer Discr.',
+        'XLP': 'Consumer Staples',
+        'XLU': 'Utilities',
+        'XLB': 'Materials',
+        'XLRE': 'Real Estate',
+        'XLI': 'Industrials'
+    }
+    
+    try:
+        data = yf.Tickers(list(sectors.keys())).history(period="2d", interval="1d")
+        if data.empty:
+            return {}
+        
+        perf = {}
+        for ticker, name in sectors.items():
+            try:
+                close_prices = data[('Close', ticker)].dropna()
+                if len(close_prices) >= 2:
+                    pct_change = (close_prices.iloc[-1] / close_prices.iloc[0]) - 1
+                    perf[name] = pct_change * 100
+            except Exception:
+                perf[name] = 0.0
+        return perf
+    except Exception as e:
+        logging.warning(f"Failed to get sector performance data: {e}")
+        return {}
+
+# --- NEW FUNCTION ---
+def plot_sector_heatmap(sector_data: dict):
+    """
+    Creates a Plotly Treemap (heatmap) of sector performance.
+    """
+    labels = list(sector_data.keys())
+    values = [abs(v) for v in sector_data.values()] # Use absolute value for size
+    colors = ['#E02424' if v < 0 else '#057A55' for v in sector_data.values()] # Red/Green
+    
+    # Create hover text
+    hover_text = [f"{v:+.2f}%" for v in sector_data.values()]
+
+    fig = go.Figure(go.Treemap(
+        labels = labels,
+        parents = ["Sectors"] * len(labels), # All have one parent
+        values = values,
+        marker_colors = colors,
+        texttemplate = "<b>%{label}</b><br>%{customdata}",
+        customdata = hover_text,
+        hovertemplate = "<b>%{label}</b><br>Change: %{customdata}<extra></extra>",
+        root_label="Sectors"
+    ))
+    
+    fig.update_layout(
+        margin = dict(t=25, l=10, r=10, b=10),
+        title=dict(text="Daily Sector Performance Heatmap", x=0.5, font=dict(size=18))
+    )
+    return fig
+
 
 # -------------------- FINNHUB (FREE) --------------------
 def safe_finnhub_get(path, **params):
@@ -396,7 +488,7 @@ def corr_peers(ticker: str, candidates: list, lookback_days=365, top_k=6):
     cors = []
     for c in candidates:
         try:
-            h = yf.Ticker(c).history(period="1y", interval="1d")["Close"].pct_change().dropna()
+            h = yf.Ticker(c).history(period="1Y", interval="1d")["Close"].pct_change().dropna()
             j = base.index.intersection(h.index)
             if len(j) >= 60:
                 cors.append((c, float(np.corrcoef(base.loc[j], h.loc[j])[0, 1])))
@@ -1089,7 +1181,7 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
         if not np.isfinite(ebitda_ttm):
             ebit_ttm = ttm_from_rows(t_is, ["Ebit","EBIT","Operating Income"])
             dep_ttm = ttm_from_rows(yf.Ticker(ticker).quarterly_cashflow,
-                                    ["Depreciation","Depreciation And Amortization"])
+                                     ["Depreciation","Depreciation And Amortization"])
             if np.isfinite(ebit_ttm) and np.isfinite(dep_ttm):
                 ebitda_ttm = ebit_ttm + dep_ttm
 
@@ -1211,6 +1303,31 @@ def inject_global_css():
         h1, h2, h3, h4, h5, h6 {
             color: var(--color-primary-text) !important;
         }
+        
+        /* --- NEW --- ===== PAGE HEADER ===== */
+        .page-header {
+            text-align: center;
+            padding: 1rem 0 2rem 0;
+            margin: 0 auto;
+            max-width: 900px;
+        }
+
+        .page-title {
+            font-family: 'DM Serif Display', serif; /* The "cooler" font */
+            font-size: 3.25rem; /* Big and bold */
+            font-weight: 400;
+            color: var(--color-primary-text) !important;
+            margin-bottom: 0.25rem;
+        }
+        
+        .page-subtitle {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #4B5563; /* A muted gray */
+            margin: 0;
+        }
+        /* --- END NEW --- */
+
 
         /* ===== GLOBAL BUTTON RESET ===== */
         .stButton > button,
@@ -1288,6 +1405,37 @@ def inject_global_css():
             color: var(--color-primary-text);
             margin-bottom: 12px;
         }
+        
+        /* --- NEW --- ===== INDEX CHART CARDS ===== */
+        .index-chart-card {
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            padding: 12px 16px;
+            background: #FAFAFA;
+        }
+        
+        .index-chart-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--color-primary-text);
+        }
+        
+        .index-chart-price {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--color-primary-text);
+        }
+        
+        .index-chart-change {
+            font-weight: 500;
+            font-size: 0.9rem;
+            margin-left: 8px;
+        }
+        
+        .index-chart-change.positive { color: #057A55; }
+        .index-chart-change.negative { color: #E02424; }
+        /* --- END NEW --- */
+
 
         /* ===== METRIC COLORS ===== */
         .positive-metric { color: #057A55; } /* Green */
@@ -1352,7 +1500,7 @@ def inject_global_css():
         /* ===== END TICKER TAPE ===== */
 
         /* ====================================================== */
-        /* == VALUATION PAGE OVERRIDES (labels, captions)        */
+        /* == VALUATION PAGE OVERRIDES (labels, captions)       */
         /* ====================================================== */
         html body .stApp .main-content [data-testid="stMetric"] div {
             color: var(--color-primary-text) !important;
@@ -1380,6 +1528,7 @@ def inject_global_css():
         /* ===== TOP NAV: PROFESSIONAL TEXT TABS (st.radio) ===== */
         /* ====================================================== */
 
+        /* This is the main container we will wrap the st.radio widget in */
         .nav-tabs-pro {
             display: flex;
             justify-content: center;
@@ -1388,12 +1537,18 @@ def inject_global_css():
             border-bottom: 1px solid #E5E7EB; /* light line */
             max-width: 900px;
         }
+        
+        /* Hide the label for the radio group */
+        .nav-tabs-pro [data-testid="stRadio"] > label {
+            display: none !important;
+        }
 
         /* Lay out the radio options horizontally */
         .nav-tabs-pro [role="radiogroup"] {
             display: flex !important;
             gap: 1.75rem;
             align-items: flex-end;
+            justify-content: center; /* --- NEW --- Center the tabs */
         }
 
         /* Hide default radio circles */
@@ -1408,7 +1563,7 @@ def inject_global_css():
             box-shadow: none !important;
             border-radius: 0 !important;
             padding: 0.25rem 0;
-            margin-bottom: -1px;
+            margin-bottom: -1px; /* Pulls the tab "down" to the border */
             cursor: pointer;
         }
 
@@ -1426,7 +1581,7 @@ def inject_global_css():
         /* Active tab (checked input) – underline + navy text + khaki accent */
         .nav-tabs-pro [role="radiogroup"] label:has(input[checked]) span {
             color: var(--color-primary-text) !important;
-            border-bottom: 2px solid var(--color-secondary-bg);
+            border-bottom: 2px solid var(--color-primary-text); /* --- MODIFIED --- Use primary text color for underline */
             padding-bottom: 0.3rem;
         }
         </style>
@@ -1437,12 +1592,13 @@ def inject_global_css():
 
 
 def render_dashboard():
-    inject_global_css()
+    inject_global_css() # You were missing this call in the original function
 
     # --- Live Index Ticker ---
     index_data = get_live_index_data()
     if index_data:
         item_html_list = []
+        # --- MODIFIED --- Use only the first 4 indices for the ticker tape
         for item in index_data:
             change_class = "positive" if item['change'] >= 0 else "negative"
             change_sign = "+" if item['change'] >= 0 else ""
@@ -1468,7 +1624,71 @@ def render_dashboard():
         st.markdown(full_ticker_html, unsafe_allow_html=True)
 
     # ============================
-    # ROW 1: Summary (left) + Econ/Smart Money (right)
+    # --- NEW --- ROW 0: Index Charts
+    # ============================
+    st.markdown("### Market Snapshot")
+    chart_cols = st.columns(4)
+    chart_data = get_intraday_index_charts_data() # Get 1-day 15m data
+    
+    # Map index data (summary) to chart data (intraday)
+    index_map = {
+        'Dow Jones': ('^DJI', chart_cols[0]),
+        'NASDAQ': ('^IXIC', chart_cols[1]),
+        'S&P 500': ('^GSPC', chart_cols[2]),
+        'Russell 2000': ('^RUT', chart_cols[3])
+    }
+    
+    for display_name, (ticker, col) in index_map.items():
+        with col:
+            st.markdown(f"<div class='index-chart-card'>", unsafe_allow_html=True)
+            
+            # Find the summary data for this index
+            summary = next((item for item in index_data if item["symbol"] == display_name), None)
+            
+            if summary:
+                change_class = "positive" if summary['change'] >= 0 else "negative"
+                change_sign = "+" if summary['change'] >= 0 else ""
+                
+                st.markdown(f"<div class='index-chart-title'>{display_name}</div>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<span class='index-chart-price'>${summary['price']:,.2f}</span>"
+                    f"<span class='index-chart-change {change_class}'>"
+                    f"{change_sign}{summary['change']:,.2f} ({change_sign}{summary['pct_change']:,.2f}%)"
+                    f"</span>",
+                    unsafe_allow_html=True
+                )
+            else:
+                st.markdown(f"<div class='index-chart-title'>{display_name}</div>", unsafe_allow_html=True)
+                st.markdown("<span class='index-chart-price'>N/A</span>", unsafe_allow_html=True)
+                
+            # Plot the chart
+            if chart_data and ticker in chart_data and not chart_data[ticker].empty:
+                # Create a simple line chart, remove axis labels for a cleaner look
+                chart_df = chart_data[ticker]
+                chart_df.index.name = "Time"
+                st.line_chart(chart_df, height=100)
+            else:
+                st.caption("Chart data unavailable.")
+                
+            st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("---") # Horizontal rule
+
+    # ============================
+    # --- NEW --- ROW 1: Heatmap
+    # ============================
+    st.markdown("### Sector Performance")
+    sector_perf_data = get_sector_performance()
+    if sector_perf_data:
+        heatmap_fig = plot_sector_heatmap(sector_perf_data)
+        st.plotly_chart(heatmap_fig, use_container_width=True)
+    else:
+        st.warning("Could not retrieve sector performance data.")
+
+    st.markdown("---") # Horizontal rule
+
+    # ============================
+    # ROW 2: Summary (left) + Econ/Smart Money (right)
     # ============================
     left_col, right_col = st.columns([1.4, 1])
 
@@ -1505,7 +1725,7 @@ def render_dashboard():
     st.write("")
 
     # ============================
-    # ROW 2: Trending Market News (full width)
+    # ROW 3: Trending Market News (full width)
     # ============================
     st.markdown(
         "<div class='section-card'><div class='section-title'>Trending Market News</div>",
@@ -1531,12 +1751,15 @@ def render_dashboard():
 
 
 def render_analysis_page():
+    # --- MODIFIED --- Added CSS call
+    inject_global_css()
+    
     st.markdown(
         """
         <div class="hero-card">
-            <div class="hero-title">Analysis</div>
+            <div class="hero-title">Screener & Analysis</div>
             <div class="hero-subtitle">
-                Review factor scores, peer set, charts, and recent headlines for the last analyzed company.
+                Review factor scores, peer set, charts, and recent headlines for any company.
             </div>
         </div>
         """,
@@ -1632,6 +1855,9 @@ def render_analysis_page():
 
 # ---------- VALUATION PAGE ----------
 def render_valuation_page():
+    # --- MODIFIED --- Added CSS call
+    inject_global_css()
+    
     st.markdown(
         """
         <div class="hero-card">
@@ -2085,6 +2311,9 @@ def render_valuation_page():
 
 # ---------- RESEARCH PAGE ----------
 def render_research_page():
+    # --- MODIFIED --- Added CSS call
+    inject_global_css()
+    
     st.markdown(
         """
         <div class="hero-card">
@@ -2143,6 +2372,9 @@ def render_research_page():
 
 # ---------- THESES PAGE ----------
 def render_theses_page():
+    # --- MODIFIED --- Added CSS call
+    inject_global_css()
+    
     st.markdown(
         """
         <div class="hero-card">
@@ -2232,32 +2464,7 @@ def main():
 
     inject_global_css()
 
-    # --------- NAV STATE ----------
-    pages = ["Dashboard", "Analysis", "Valuation", "Research", "Theses"]
-    if "active_page" not in st.session_state:
-        st.session_state["active_page"] = "Dashboard"
-
-    # --------- TOP NAV BAR (BUTTONS) ----------
-    st.markdown('<div class="top-nav-bar"><div class="top-nav-inner top-nav-container">', unsafe_allow_html=True)
-
-    cols = st.columns(len(pages))
-    for page_name, col in zip(pages, cols):
-        with col:
-            is_active = st.session_state["active_page"] == page_name
-
-            # Render the button
-            if st.button(page_name, key=f"nav_{page_name}", use_container_width=True):
-                st.session_state["active_page"] = page_name
-
-            # Tiny underline for the active tab
-            if is_active:
-                st.markdown('<div class="nav-active-underline"></div>', unsafe_allow_html=True)
-            else:
-                st.markdown('<div class="nav-inactive-spacer"></div>', unsafe_allow_html=True)
-
-    st.markdown("</div></div>", unsafe_allow_html=True)
-
-    # --------- PAGE HEADER ----------
+    # --- MODIFIED --- Center the Page Title ---
     st.markdown(
         """
         <div class="page-header">
@@ -2270,11 +2477,40 @@ def main():
         unsafe_allow_html=True,
     )
 
+    # --- MODIFIED --- Use st.radio for a sticky tab-like nav ---
+    pages = ["Home", "Screener", "Valuation", "Research", "Theses"]
+    
+    # Set default page if not in session state
+    if "active_page" not in st.session_state:
+        st.session_state.active_page = "Home"
+
+    # Wrap the radio widget in our custom CSS class
+    st.markdown('<div class="nav-tabs-pro">', unsafe_allow_html=True)
+    
+    # Get the index of the active page for st.radio's `index` param
+    try:
+        default_index = pages.index(st.session_state.active_page)
+    except ValueError:
+        default_index = 0
+
+    page = st.radio(
+        "Main navigation",
+        pages,
+        index=default_index,
+        key="nav_radio", # A key is good practice
+        horizontal=True
+    )
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Update session state
+    st.session_state.active_page = page
+    
     # --------- ROUTING ----------
-    page = st.session_state["active_page"]
-    if page == "Dashboard":
+    # --- MODIFIED --- Use new page names
+    if page == "Home":
         render_dashboard()
-    elif page == "Analysis":
+    elif page == "Screener":
         render_analysis_page()
     elif page == "Valuation":
         render_valuation_page()
@@ -2282,5 +2518,6 @@ def main():
         render_research_page()
     elif page == "Theses":
         render_theses_page()
+
 if __name__ == "__main__":
     main()

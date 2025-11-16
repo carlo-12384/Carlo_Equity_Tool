@@ -1178,7 +1178,7 @@ def inject_global_css():
             
             --color-primary-text: #001f3f;    /* Dark Navy Blue */
             --color-secondary-text: #F5EAAA; /* Khaki */
-            --color-tertiary-text: #FFFFFF;   /* White */
+            --color-tertiary-text: #FFFFFF;  /* White */
         }
         
         /* ===== GLOBAL LAYOUT ===== */
@@ -1190,7 +1190,7 @@ def inject_global_css():
             padding: 0 !important;
         }
 
-        /* Remove Streamlit header (the white bar at the very top) */
+        /* Remove Streamlit default header bar */
         header[data-testid="stHeader"] {
             background: transparent !important;
             height: 0 !important;
@@ -1198,21 +1198,21 @@ def inject_global_css():
             padding: 0 !important;
         }
 
-        /* ===== NUCLEAR TOP-SPACING FIX ===== */
-        /* This is the key part that actually pulls your content up. */
-
-        /* Kill extra padding on the main block container */
+        /* Kill extra padding on the main block container & pull content up */
         div.block-container {
             padding-top: 0rem !important;
-            margin-top: -40px !important;   /* tweak -20 to -60 if you want it higher/lower */
+            margin-top: -20px !important;   /* tweak -10 to -40 if you want it higher/lower */
         }
 
-        /* If Streamlit wraps it differently, this also helps: */
         div[data-testid="stAppViewContainer"] {
             padding-top: 0 !important;
         }
 
-        /* ===== BUTTONS ===== */
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--color-primary-text) !important;
+        }
+
+        /* ===== GLOBAL BUTTON RESET ===== */
         .stButton > button,
         button[kind="primary"],
         button[kind="secondary"],
@@ -1233,46 +1233,23 @@ def inject_global_css():
             color: var(--color-primary-text) !important;
         }
 
-        /* ===== TOP NAV BAR (not fixed; just tight to top) ===== */
+        /* ===== OPTIONAL TOP NAV BAR BACKGROUND (if you wrap tabs in .top-nav-bar) ===== */
         .top-nav-bar {
             background: var(--color-primary-bg);
-            padding: 10px 0;
+            padding: 8px 0;
             width: 100%;
         }
 
         .top-nav-inner {
             max-width: 1100px;
             margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            gap: 12px;
         }
 
-        .top-nav-container .stButton {
-            width: 100%;
-            margin: 0 !important;
-        }
-
-        .top-nav-container .stButton > button {
-            width: 100%;
-            padding: 10px 0;
-            border-radius: 999px !important;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            box-shadow: none;
-        }
-
-        .top-nav-container .stButton > button:hover {
-            background: var(--color-secondary-bg) !important;
-            color: var(--color-primary-bg) !important;
-            filter: none;
-        }
-
-        /* Main content wrapper (you already have this div in main()) */
+        /* ===== MAIN CONTENT WRAPPER ===== */
         .main-content {
             max-width: 1100px;
             margin: 0 auto;
-            padding-top: 10px;  /* small breathing room under nav */
+            padding-top: 10px;  /* breathing room under nav */
         }
 
         /* ===== CARDS ===== */
@@ -1374,93 +1351,89 @@ def inject_global_css():
         }
         /* ===== END TICKER TAPE ===== */
 
-        /* ===== TOP NAV: MINIMAL TEXT TABS ===== */
+        /* ====================================================== */
+        /* == VALUATION PAGE OVERRIDES (labels, captions)        */
+        /* ====================================================== */
+        html body .stApp .main-content [data-testid="stMetric"] div {
+            color: var(--color-primary-text) !important;
+        }
+
+        html body .stApp .main-content [data-testid="stCaption"] {
+            color: var(--color-primary-text) !important;
+        }
+
+        html body .stApp .main-content [data-testid="stRadio"] p {
+            color: var(--color-primary-text) !important;
+            font-weight: 600 !important;
+        }
+
+        html body .stApp .main-content [data-testid="stRadio"] label {
+            color: var(--color-primary-text) !important;
+            font-weight: 500 !important;
+        }
+
+        html body .stApp .main-content .snapshot-title {
+            color: var(--color-primary-text) !important;
+        }
+
+        /* ====================================================== */
+        /* ===== TOP NAV: PROFESSIONAL TEXT TABS (st.radio) ===== */
+        /* ====================================================== */
+
         .nav-tabs-pro {
             display: flex;
             justify-content: center;
             margin: 0.25rem auto 0.75rem;
             padding-top: 0.25rem;
-            border-bottom: 1px solid #E5E7EB; /* light separator line */
+            border-bottom: 1px solid #E5E7EB; /* light line */
             max-width: 900px;
         }
 
-        /* Make the radio behave like horizontal tabs */
-        .nav-tabs-pro [data-baseweb="radio"] {
-            display: flex;
-            gap: 1.75rem;          /* spacing between tabs */
+        /* Lay out the radio options horizontally */
+        .nav-tabs-pro [role="radiogroup"] {
+            display: flex !important;
+            gap: 1.75rem;
             align-items: flex-end;
         }
 
+        /* Hide default radio circles */
+        .nav-tabs-pro [role="radiogroup"] label > div:first-child {
+            display: none !important;
+        }
+
         /* Base tab style */
-        .nav-tabs-pro [data-baseweb="radio"] label {
+        .nav-tabs-pro [role="radiogroup"] label {
             background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
             border-radius: 0 !important;
             padding: 0.25rem 0;
             margin-bottom: -1px;
-            border: none !important;
-            box-shadow: none !important;
             cursor: pointer;
         }
 
-        /* Base text style */
-        .nav-tabs-pro [data-baseweb="radio"] span {
+        .nav-tabs-pro [role="radiogroup"] label span {
             font-size: 0.95rem;
             font-weight: 500;
             color: #6B7280 !important; /* muted gray */
         }
 
-        /* Hover state */
-        .nav-tabs-pro [data-baseweb="radio"] label:hover span {
-            color: #111827 !important; /* darker on hover */
+        /* Hover */
+        .nav-tabs-pro [role="radiogroup"] label:hover span {
+            color: #111827 !important;
         }
 
-        /* ACTIVE tab: underline + navy text */
-        .nav-tabs-pro [data-baseweb="radio"] input:checked + span {
-            color: #001f3f !important;               /* navy */
-            border-bottom: 2px solid #F5EAAA;        /* khaki underline */
-            padding-bottom: 0.3rem;
-        }
-
-        /* ===== TOP NAV: TEXT TABS ===== */
-        .nav-tabs-pro {
-            display: flex;
-            justify-content: center;
-            margin-top: 0.5rem;
-            margin-bottom: 0.5rem;
-        }
-
-        /* Layout the radio options in a row with spacing */
-        .nav-tabs-pro [role="radiogroup"] {
-            display: flex !important;
-            gap: 1.75rem;
-        }
-
-        /* Hide the default radio circle */
-        .nav-tabs-pro [role="radiogroup"] label > div:first-child {
-            display: none !important;
-        }
-
-        /* Base style for each tab */
-        .nav-tabs-pro [role="radiogroup"] label {
-            background: transparent !important;
-            border-bottom: 2px solid transparent;
+        /* Active tab (checked input) – underline + navy text + khaki accent */
+        .nav-tabs-pro [role="radiogroup"] label:has(input[checked]) span {
             color: var(--color-primary-text) !important;
-            font-weight: 500;
-            font-size: 0.95rem;
-            padding: 0.35rem 0.2rem;
-            opacity: 0.6;
-            cursor: pointer;
-        }
-
-        /* Active tab (the selected page) */
-        .nav-tabs-pro [role="radiogroup"] label:has(input[checked]) {
-            border-bottom-color: var(--color-primary-text);
-            opacity: 1;
+            border-bottom: 2px solid var(--color-secondary-bg);
+            padding-bottom: 0.3rem;
         }
         </style>
         """,
         unsafe_allow_html=True,
     )
+
 
 
 def render_dashboard():

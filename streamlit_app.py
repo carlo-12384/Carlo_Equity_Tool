@@ -1421,6 +1421,42 @@ def inject_global_css():
             padding-bottom: 0.3rem;
         }
 
+        /* ===== TOP NAV: TEXT TABS ===== */
+        .nav-tabs-pro {
+            display: flex;
+            justify-content: center;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Layout the radio options in a row with spacing */
+        .nav-tabs-pro [role="radiogroup"] {
+            display: flex !important;
+            gap: 1.75rem;
+        }
+
+        /* Hide the default radio circle */
+        .nav-tabs-pro [role="radiogroup"] label > div:first-child {
+            display: none !important;
+        }
+
+        /* Base style for each tab */
+        .nav-tabs-pro [role="radiogroup"] label {
+            background: transparent !important;
+            border-bottom: 2px solid transparent;
+            color: var(--color-primary-text) !important;
+            font-weight: 500;
+            font-size: 0.95rem;
+            padding: 0.35rem 0.2rem;
+            opacity: 0.6;
+            cursor: pointer;
+        }
+
+        /* Active tab (the selected page) */
+        .nav-tabs-pro [role="radiogroup"] label:has(input[checked]) {
+            border-bottom-color: var(--color-primary-text);
+            opacity: 1;
+        }
         </style>
         """,
         unsafe_allow_html=True,

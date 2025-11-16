@@ -1300,6 +1300,67 @@ def inject_global_css():
             margin-top: 18px;
             margin-bottom: 18px;
             border: 1px solid var(--color-primary-bg);
+            
+        /* ===== DASHBOARD HEADER ===== */
+        .dashboard-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-top: 12px;
+            margin-bottom: 10px;
+            padding: 6px 4px 4px 4px;
+            border-bottom: 1px solid var(--color-primary-bg);
+        }
+
+        .dashboard-header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .dash-kicker {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            color: #6B7280; /* muted gray */
+        }
+
+        .dash-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--color-primary-text);
+        }
+
+        .dash-subtitle {
+            font-size: 13px;
+            color: #4B5563; /* slightly darker gray */
+        }
+
+        .dashboard-header-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .dash-pill {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid #D1D5DB;
+            background: #F9FAFB;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #374151;
+        }
+
+        .dash-pill-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            background: #10B981; /* green */
+        }
+
         }
         .section-title {
             font-weight: 600;
@@ -2274,16 +2335,20 @@ def main():
     )
 
     st.markdown(
-        """
-        <h1 style='text-align: center; margin-bottom: 1rem; padding-top: 1rem; 
-                   font-weight: 400; font-family: "DM Serif Display", serif;
-                   font-size: 2.75rem; 
-                   color: var(--color-primary-text);'> 
-            Equity Research Platform
-        </h1>
-        """,
-        unsafe_allow_html=True,
+    """
+    <h1 style='text-align:center; margin-bottom:0.35rem; padding-top:0.35rem;
+               font-weight:400; font-family:"DM Serif Display", serif;
+               font-size:2.6rem; color:var(--color-primary-text);'>
+        Equity Research Platform
+    </h1>
+    <p style='text-align:center; margin-top:0; margin-bottom:1.3rem;
+              font-size:0.95rem; color:#4B5563;'>
+        Live market insights · Equity analysis · Valuation modeling
+    </p>
+    """,
+    unsafe_allow_html=True,
     )
+
 
     page = st.session_state.top_nav_page
     if page == "Dashboard":

@@ -1231,23 +1231,33 @@ def inject_global_css():
             filter: brightness(1.1);
             color: var(--color-primary-text) !important;
         }
+        
+        /* Reduce top padding of the main Streamlit block container */
+        .main .block-container {
+            padding-top: 0.5rem !important;
+        }
+
 
         /* ===== TOP NAV BAR (FULL-WIDTH STRIP) ===== */
-        .top-nav-bar {
+                .top-nav-bar {
             background: var(--color-primary-bg);
-            padding: 0;
+            padding: 6px 0 4px;
             width: 100vw;
             position: relative;
             left: 50%;
             right: 50%;
             margin-left: -50vw;
             margin-right: -50vw;
+            border-bottom: 1px solid rgba(245, 234, 170, 0.25);
         }
 
         .top-nav-inner {
-            max-width: 1100px;
+            max-width: 720px;
             margin: 0 auto;
             display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
         }
 
         .top-nav-inner [data-testid="column"] {
@@ -1256,18 +1266,26 @@ def inject_global_css():
         }
 
         .top-nav-container .stButton {
-            width: 100%;
             margin: 0 !important;
         }
 
         .top-nav-container .stButton > button {
-            width: 100%;
-            padding: 14px 0;
+            background: transparent !important;
+            color: var(--color-secondary-text) !important;
             border-radius: 999px !important;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            box-shadow: none;
+            border: 1px solid rgba(245, 234, 170, 0.65) !important;
+            font-weight: 500;
+            font-size: 13px;
+            padding: 6px 18px;
+            box-shadow: none !important;
         }
+
+        .top-nav-container .stButton > button:hover {
+            background: var(--color-secondary-bg) !important;
+            color: var(--color-primary-bg) !important;
+            filter: none;
+        }
+
 
         .main-content .stButton > button {
             border-radius: 8px !important;
@@ -1293,16 +1311,37 @@ def inject_global_css():
             font-size: 14px;
             color: var(--color-tertiary-text) !important;
         }
-        .section-card {
+                .section-card {
             background: var(--color-page-bg);
             border-radius: 16px;
             padding: 18px 20px;
             margin-top: 18px;
             margin-bottom: 18px;
             border: 1px solid var(--color-primary-bg);
-            
-        /* ===== DASHBOARD HEADER ===== */
+        }
+
+        /* ===== PAGE HEADER (TITLE + TAGLINE) ===== */
+        .page-header {
+            text-align: center;
+            margin: 0 auto 0.75rem;
+            padding-top: 0.4rem;
+        }
+        .page-title {
+            font-family: "DM Serif Display", serif;
+            font-size: 2.6rem;
+            font-weight: 400;
+            margin: 0;
+            color: var(--color-primary-text);
+        }
+        .page-subtitle {
+            margin-top: 0.25rem;
+            font-size: 0.95rem;
+            color: #4B5563;
+        }
+
+        /* ===== DASHBOARD HEADER (if you use later) ===== */
         .dashboard-header {
+
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
@@ -1491,12 +1530,6 @@ def inject_global_css():
         unsafe_allow_html=True,
     )
 
-# ======================================================================
-# PAGE RENDER FUNCTIONS
-# ======================================================================
-# ======================================================================
-# PAGE RENDER FUNCTIONS
-# ======================================================================
 def render_dashboard():
     inject_global_css()
 
@@ -1529,11 +1562,12 @@ def render_dashboard():
         st.markdown(full_ticker_html, unsafe_allow_html=True)
 
     # ============================
-    # ROW 1: AI MARKET SUMMARY (LEFT HALF)
+    # ROW 1: Summary (left) + Econ/Smart Money (right)
     # ============================
-    summary_left, summary_right = st.columns([1.2, 1])  # ~55% / 45%
+    left_col, right_col = st.columns([1.4, 1])
 
-    with summary_left:
+    # --- LEFT: AI Market Summary ---
+    with left_col:
         st.markdown(
             "<div class='section-card'><div class='section-title'>Market Summary (AI-Generated)</div>",
             unsafe_allow_html=True,
@@ -1542,41 +1576,8 @@ def render_dashboard():
         st.markdown(summary_text)
         st.markdown("</div>", unsafe_allow_html=True)
 
-    with summary_right:
-        # keep empty for clean whitespace (or add future widgets)
-        st.write("")
-
-    st.write("")
-
-    # ============================
-    # ROW 2: TWO-COLUMN LAYOUT
-    # ============================
-    left, right = st.columns([1.4, 1])
-
-    # ------- LEFT: Trending News -------
-    with left:
-        st.markdown(
-            "<div class='section-card'><div class='section-title'>Trending Market News</div>",
-            unsafe_allow_html=True,
-        )
-        news_items = get_market_news()
-        if news_items:
-            for n in news_items:
-                ts_str = (
-                    n["time"].strftime("%Y-%m-%d %H:%M")
-                    if isinstance(n["time"], pd.Timestamp)
-                    else ""
-                )
-                meta = " — " + n["publisher"] if n["publisher"] else ""
-                if ts_str:
-                    meta += f" • {ts_str}"
-                st.markdown(f"**[{n['headline']}]({n['url']})**{meta}")
-        else:
-            st.write("No recent broad-market headlines available.")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    # ------- RIGHT: Econ Calendar + Smart Money -------
-    with right:
+    # --- RIGHT: Econ Calendar + Smart Money ---
+    with right_col:
         # Economic calendar
         st.markdown(
             "<div class='section-card'><div class='section-title'>Economic Calendar (Focus)</div>",
@@ -1594,6 +1595,32 @@ def render_dashboard():
         for label, value in get_smart_money_signals().items():
             st.markdown(f"**{label}:** {value}")
         st.markdown("</div>", unsafe_allow_html=True)
+
+    st.write("")
+
+    # ============================
+    # ROW 2: Trending Market News (full width)
+    # ============================
+    st.markdown(
+        "<div class='section-card'><div class='section-title'>Trending Market News</div>",
+        unsafe_allow_html=True,
+    )
+    news_items = get_market_news()
+    if news_items:
+        for n in news_items:
+            ts_str = (
+                n["time"].strftime("%Y-%m-%d %H:%M")
+                if isinstance(n["time"], pd.Timestamp)
+                else ""
+            )
+            meta = " — " + n["publisher"] if n["publisher"] else ""
+            if ts_str:
+                meta += f" • {ts_str}"
+            st.markdown(f"**[{n['headline']}]({n['url']})**{meta}")
+    else:
+        st.write("No recent broad-market headlines available.")
+    st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 
@@ -2330,9 +2357,17 @@ def main():
     st.markdown("</div></div>", unsafe_allow_html=True)
 
     st.markdown(
-        "<div class='main-content' style='max-width:1100px;margin:0 auto;'>",
+        """
+        <div class="page-header">
+            <h1 class="page-title">Equity Research Platform</h1>
+            <p class="page-subtitle">
+                Live market insights · Equity analysis · Valuation modeling
+            </p>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
+
 
     st.markdown(
     """

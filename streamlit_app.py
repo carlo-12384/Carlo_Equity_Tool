@@ -1547,20 +1547,18 @@ def inject_global_css():
         .positive-metric { color: #057A55; } /* Green */
         .negative-metric { color: #E02424; } /* Red */
 
-        /* === START: COMPLETE TICKER TAPE CSS === */
-      
-        /* === START: COMPLETE TICKER TAPE CSS (Simple) === */
-      
+        /* === START: COMPLETE TICKER TAPE CSS (Continuous Loop) === */
+
         @keyframes scroll-left {
-            from { transform: translateX(0%); }
-            /* This scrolls 50% of the element's width, which is 1 full copy */
-            to { transform: translateX(-50%); }
+            from { transform: translateX(0); }
+            /* We scroll 25% of the width because we will render 4 copies of the items */
+            to   { transform: translateX(-25%); }
         }
 
         .ticker-tape-container {
             background: var(--color-primary-bg);
             color: var(--color-tertiary-text);
-            overflow: hidden; /* Clips the content */
+            overflow: hidden;
             padding: 10px 0;
             width: 100vw;
             position: relative;
@@ -1571,25 +1569,22 @@ def inject_global_css():
             border-top: 1px solid var(--color-secondary-bg);
             border-bottom: 1px solid var(--color-secondary-bg);
         }
-      
-        /* THIS IS THE ONLY DIV THAT MOVES */
+
+        /* This is the moving strip */
         .ticker-tape-inner {
-            /* This makes the div as wide as its 2x content */
-            width: max-content; 
-          
-            /* This applies the animation */
+            display: inline-flex;       /* keep items in a row */
+            white-space: nowrap;        /* prevent wrapping */
+            width: max-content;         /* width = content */
             animation: scroll-left 40s linear infinite;
         }
 
-        /* This adds spacing to the items */
         .ticker-item {
             display: inline-block;
-            padding: 0 25px; 
+            padding: 0 25px;
             font-size: 16px;
             font-weight: 500;
         }
-      
-        /* This styles the "MACRO DATA" label */
+
         .ticker-section-label {
             display: inline-block;
             padding: 0 25px;
@@ -1600,7 +1595,7 @@ def inject_global_css():
             opacity: 0.75;
             color: var(--color-secondary-text);
         }
-      
+
         .ticker-symbol {
             color: var(--color-secondary-text);
             font-weight: 600;
@@ -1619,9 +1614,8 @@ def inject_global_css():
         .ticker-change.negative {
             color: #F87171; /* Brighter Red */
         }
-      
-      
-        /* === END: COMPLETE TICKER TAPE CSS === */
+
+        /* === END: COMPLETE TICKER TAPE CSS (Continuous Loop) === */
 
 
         /* ===== VALUATION PAGE OVERRIDES ===== */
@@ -1692,16 +1686,21 @@ def render_dashboard():
                 f'</div>'
             )
 
-        # Create one copy of the items
+                # Create one copy of the items
         all_items_html = "".join(item_html_list)
-        # We will render this copy twice, back-to-back, inside ONE div
+
+        # Render 4 copies back-to-back so the strip is long enough
+        inner_html = all_items_html * 4
+
         full_ticker_html = f"""
         <div class="ticker-tape-container">
             <div class="ticker-tape-inner">
-                {all_items_html}{all_items_html}
+                {inner_html}
             </div>
         </div>
         """
+
+        
         st.markdown(full_ticker_html, unsafe_allow_html=True)
 
 

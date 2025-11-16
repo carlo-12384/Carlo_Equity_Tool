@@ -2370,7 +2370,7 @@ def main():
         <div class="page-header">
             <h1 class="page-title">Equity Research Platform</h1>
             <p class="page-subtitle">
-                Live market insights · Equity analysis · Valuation modeling
+                Fricano Capital
             </p>
         </div>
         """,

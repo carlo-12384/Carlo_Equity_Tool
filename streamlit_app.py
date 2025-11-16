@@ -1550,12 +1550,12 @@ def inject_global_css():
         /* ===== TICKER TAPE ===== */
         @keyframes scroll-left {
             from { transform: translateX(0%); }
-            to { transform: translateX(-100%); }
+            to { transform: translateX(-50%); }
         }
         .ticker-tape-container {
           background: var(--color-primary-bg);
           color: var(--color-tertiary-text);
-          overflow: hidden;
+          overflow: hidden; /* Clips the content */
           padding: 10px 0;
           width: 100vw;
           position: relative;
@@ -1565,20 +1565,21 @@ def inject_global_css():
           margin-right: -50vw;
           border-top: 1px solid var(--color-secondary-bg);
           border-bottom: 1px solid var(--color-secondary-bg);
-          
-          /* --- THIS IS THE FIX --- */
-          display: flex;
-          /* ----------------------- */
         }
-        .ticker-tape-inner {
-          /* --- THIS IS THE FIX --- */
-          display: flex; /* Lines up items inside */
-          align-items: center; /* Vertically centers items */
-          flex-shrink: 0; /* Prevents the div from shrinking */
-          width: max-content; /* Makes div as wide as its content */
-          /* ----------------------- */
-          
+      
+        /* THIS WRAPPER IS THE "TRACK" THAT MOVES */
+        .ticker-tape-wrapper {
+          display: flex; /* Lines up the two inner-divs */
+          width: max-content; /* Makes wrapper as wide as 2x content */
           animation: scroll-left 40s linear infinite;
+        }
+
+        /* THIS HOLDS THE ACTUAL ITEMS */
+        .ticker-tape-inner {
+          display: flex; /* Lines up items (SPY, 10YR) inside */
+          align-items: center; /* Vertically centers items */
+          width: max-content; /* Makes div as wide as its content */
+        }
         }
         .ticker-item {
             display: inline-block;
@@ -1690,11 +1691,13 @@ def render_dashboard():
         # We will render this copy twice, in two separate divs
         full_ticker_html = f"""
         <div class="ticker-tape-container">
-            <div class="ticker-tape-inner">
-                {all_items_html}
-            </div>
-            <div class="ticker-tape-inner" aria-hidden="true">
-                {all_items_html}
+            <div class="ticker-tape-wrapper">
+                <div class="ticker-tape-inner">
+                    {all_items_html}
+                </div>
+                <div class="ticker-tape-inner" aria-hidden="true">
+                    {all_items_html}
+                </div>
             </div>
         </div>
         """

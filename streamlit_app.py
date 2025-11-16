@@ -339,31 +339,36 @@ def get_live_index_data():
             logging.warning(f"Failed to get live index data for {ticker}: {e}")
     return data
 
-# --- NEW FUNCTION ---
-@st.cache_data(ttl=300)
 # --- Replace this function ---
 @st.cache_data(ttl=300)
 def get_intraday_index_charts_data():
     """
-    Fetches 5-day daily data for the 4 main indices for charting.
+    Fetches 1-day intraday OHLC data for the 4 main indices for charting.
     """
     tickers = ['^GSPC', '^IXIC', '^DJI', '^RUT']
     try:
-        # --- This is the "weekly" data from the previous fix ---
-        data = yf.download(tickers, period="5d", interval="1d")
+        # --- FIX: Changed period to "1d" and interval to "15m" ---
+        data = yf.download(tickers, period="1d", interval="15m")
         
         if data.empty:
             return None
         
         chart_data = {}
         for ticker in tickers:
-            if ('Close', ticker) in data.columns:
-                # --- FIX: Rename to 'Price' and return a DataFrame ---
-                chart_srs = data[('Close', ticker)].dropna().rename("Price")
-                chart_data[ticker] = pd.DataFrame(chart_srs)
+            # --- FIX: Select all OHLC columns for this ticker ---
+            ohlc_df = data.loc[:, (slice(None), ticker)]
+            
+            # Check if we have data for this ticker
+            if not ohlc_df.empty:
+                # Clean up column names
+                ohlc_df.columns = ohlc_df.columns.droplevel(1) # Remove 'ticker' from multi-index
+                ohlc_df = ohlc_df[['Open', 'High', 'Low', 'Close']].dropna()
+                if not ohlc_df.empty:
+                    chart_data[ticker] = ohlc_df
+
         return chart_data
     except Exception as e:
-        logging.warning(f"Failed to get chart data: {e}")
+        logging.warning(f"Failed to get intraday OHLC chart data: {e}")
         return None
 
 # --- NEW FUNCTION ---
@@ -1052,58 +1057,59 @@ def five_day_price_plot(ticker: str):
     return plt_fig
     
 # --- NEW FUNCTION (Using Plotly for better visual charts) ---
-# --- Replace this function ---
-# --- NEW FUNCTION (Using Plotly for better visual charts) ---
-def plot_index_sparkline(chart_df: pd.DataFrame, is_positive: bool):
+def plot_index_candlestick(chart_df: pd.DataFrame, is_positive: bool):
     """
-    Creates a Plotly-based sparkline chart (a simplified, good-looking line chart).
+    Creates a Plotly-based dark-theme candlestick chart.
     """
-    # Use green if the price ended higher than it started, else red
-    line_color = "#057A55" if is_positive else "#E02424"  # Green or Red
-
+    
     fig = go.Figure()
 
-    # Add the line
-    fig.add_trace(go.Scatter(
+    # Add the candlestick trace
+    fig.add_trace(go.Candlestick(
         x=chart_df.index,
-        y=chart_df["Price"],  # Assumes the series is named 'Price'
-        mode="lines",
-        line=dict(color=line_color, width=2.5),
-        hoverinfo="none",  # We use the header for info, not the hover
+        open=chart_df['Open'],
+        high=chart_df['High'],
+        low=chart_df['Low'],
+        close=chart_df['Close'],
+        increasing_line_color='#057A55', # Green
+        decreasing_line_color='#E02424', # Red
+        increasing_fillcolor='#057A55',
+        decreasing_fillcolor='#E02424',
+        name='Candlestick',
+        hoverinfo='none' # Hides the default hover info
     ))
 
-    # Add a dot for the last point
-    fig.add_trace(go.Scatter(
-        x=[chart_df.index[-1]],
-        y=[chart_df["Price"].iloc[-1]],
-        mode="markers",
-        marker=dict(color=line_color, size=8),
-        hoverinfo="none",
-    ))
-
-    # --- Style the chart to look clean ---
+    # --- Style the chart to be dark and clean ---
     fig.update_layout(
-        height=120,  # Give it a readable height
-        margin=dict(t=0, l=0, r=0, b=0),  # No margins
-        xaxis_rangeslider_visible=False,  # Hide the range slider
+        height=150, # Give it a bit more height for candlesticks
+        margin=dict(t=0, l=0, r=0, b=0), # No margins
+        xaxis_rangeslider_visible=False, # Hide the range slider
+        
         xaxis=dict(
             showticklabels=True,
             showgrid=False,
-            tickformat="%a %d",  # e.g., "Mon 12"
-            fixedrange=True,     # Disable panning/zoom on X as well
+            tickformat="%I:%M %p", # e.g., "02:30 PM"
         ),
         yaxis=dict(
             showticklabels=False,
             showgrid=False,
             zeroline=False,
-            fixedrange=True,  # User can't pan/zoom Y-axis
-            # NOTE: removed 'autorangeoptions' because it's not supported
+            fixedrange=True, # User can't pan/zoom Y-axis
         ),
-        paper_bgcolor="rgba(0,0,0,0)",  # Transparent background
-        plot_bgcolor="#FAFAFA",         # Match the card background
+        
+        # --- Dark Theme Styling ---
+        paper_bgcolor="#1E1E1E", # Dark background for the card
+        plot_bgcolor="#1E1E1E",  # Dark background for the plot
+        
         showlegend=False,
-        dragmode=False,  # Disable dragging
+        dragmode=False # Disable dragging
     )
+    
+    # Hide the "Time" axis title
+    fig.update_xaxes(title_text='')
+    
+    # Auto-set Y-axis to be tight around the data
+    fig.update_yaxes(autorange=True, fixedrange=True)
 
     return fig
 
@@ -1358,9 +1364,7 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
 # ======================================================================
 # GLOBAL STYLING
 # ======================================================================
-# ======================================================================
-# GLOBAL STYLING
-# ======================================================================
+# --- Replace this function ---
 def inject_global_css():
     st.markdown(
         """
@@ -1374,6 +1378,11 @@ def inject_global_css():
             --color-primary-text: #001f3f;    /* Dark Navy Blue */
             --color-secondary-text: #F5EAAA; /* Khaki */
             --color-tertiary-text: #FFFFFF;  /* White */
+            
+            /* --- NEW DARK THEME --- */
+            --color-dark-card-bg: #1E1E1E;
+            --color-dark-card-text: #FAFAFA;
+            --color-dark-card-border: #333333;
         }
         
         /* ===== GLOBAL LAYOUT ===== */
@@ -1384,25 +1393,19 @@ def inject_global_css():
             margin: 0 !important;
             padding: 0 !important;
         }
-
-        /* Remove Streamlit default header bar */
         header[data-testid="stHeader"] {
             background: transparent !important;
             height: 0 !important;
             min-height: 0 !important;
             padding: 0 !important;
         }
-
-        /* Kill extra padding on the main block container & pull content up */
         div.block-container {
             padding-top: 0rem !important;
-            margin-top: -20px !important;   /* tweak -10 to -40 if you want it higher/lower */
+            margin-top: -20px !important;
         }
-
         div[data-testid="stAppViewContainer"] {
             padding-top: 0 !important;
         }
-
         h1, h2, h3, h4, h5, h6 {
             color: var(--color-primary-text) !important;
         }
@@ -1414,19 +1417,17 @@ def inject_global_css():
             margin: 0 auto;
             max-width: 900px;
         }
-
         .page-title {
-            font-family: 'DM Serif Display', serif; /* The "cooler" font */
-            font-size: 3.25rem; /* Big and bold */
+            font-family: 'DM Serif Display', serif;
+            font-size: 3.25rem;
             font-weight: 400;
             color: var(--color-primary-text) !important;
             margin-bottom: 0.25rem;
         }
-        
         .page-subtitle {
             font-size: 1.1rem;
             font-weight: 500;
-            color: #4B5563; /* A muted gray */
+            color: #4B5563;
             margin: 0;
         }
 
@@ -1442,20 +1443,12 @@ def inject_global_css():
             font-weight: 500;
             font-size: 14px;
         }
-
         .stButton > button:hover,
         button[kind="primary"]:hover,
         button[kind="secondary"]:hover,
         button[kind="outline"]:hover {
             filter: brightness(1.1);
             color: var(--color-primary-text) !important;
-        }
-
-        /* ===== MAIN CONTENT WRAPPER ===== */
-        .main-content {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding-top: 10px;  /* breathing room under nav */
         }
 
         /* ===== CARDS ===== */
@@ -1495,32 +1488,34 @@ def inject_global_css():
             margin-bottom: 12px;
         }
         
-        /* ===== INDEX CHART CARDS ===== */
+        /* --- !!! ---
+           --- FIX: Updated Index Chart Cards to be DARK ---
+           --- !!! --- */
         .index-chart-card {
-            border: 1px solid #E5E7EB;
+            border: 1px solid var(--color-dark-card-border);
             border-radius: 8px;
             padding: 12px 16px;
-            background: #FAFAFA;
+            background: var(--color-dark-card-bg); /* Dark background */
         }
         
         .index-chart-title {
             font-weight: 600;
             font-size: 1.1rem;
-            color: var(--color-primary-text);
+            color: var(--color-dark-card-text); /* Light text */
         }
         
         .index-chart-price {
             font-weight: 600;
             font-size: 1rem;
-            color: var(--color-primary-text);
+            color: var(--color-dark-card-text); /* Light text */
         }
+        /* --- END FIX --- */
         
         .index-chart-change {
             font-weight: 500;
             font-size: 0.9rem;
             margin-left: 8px;
         }
-        
         .index-chart-change.positive { color: #057A55; }
         .index-chart-change.negative { color: #E02424; }
 
@@ -1533,7 +1528,6 @@ def inject_global_css():
             from { transform: translateX(0%); }
             to { transform: translateX(-50%); }
         }
-
         .ticker-tape-container {
             background: var(--color-primary-bg);
             color: var(--color-tertiary-text);
@@ -1549,105 +1543,67 @@ def inject_global_css():
             border-top: 1px solid var(--color-secondary-bg);
             border-bottom: 1px solid var(--color-secondary-bg);
         }
-
         .ticker-tape-inner {
             display: inline-block;
             animation: scroll-left 40s linear infinite;
         }
-
         .ticker-item {
             display: inline-block;
             padding: 0 25px;
             font-size: 16px;
             font-weight: 500;
         }
-
         .ticker-symbol {
             color: var(--color-secondary-text);
             font-weight: 600;
             margin-right: 8px;
         }
-
         .ticker-price {
             color: var(--color-tertiary-text);
             margin-right: 8px;
         }
-
         .ticker-change {
             font-weight: 600;
         }
-
         .ticker-change.positive {
             color: #057A55;
         }
-
         .ticker-change.negative {
             color: #E02424;
         }
-        /* ===== END TICKER TAPE ===== */
 
-        /* ====================================================== */
-        /* == VALUATION PAGE OVERRIDES (labels, captions)      */
-        /* ====================================================== */
+        /* ===== VALUATION PAGE OVERRIDES ===== */
         html body .stApp .main-content [data-testid="stMetric"] div {
             color: var(--color-primary-text) !important;
         }
-
         html body .stApp .main-content [data-testid="stCaption"] {
             color: var(--color-primary-text) !important;
         }
-
         html body .stApp .main-content [data-testid="stRadio"] p {
             color: var(--color-primary-text) !important;
             font-weight: 600 !important;
         }
-
         html body .stApp .main-content [data-testid="stRadio"] label {
             color: var(--color-primary-text) !important;
             font-weight: 500 !important;
         }
-
         html body .stApp .main-content .snapshot-title {
             color: var(--color-primary-text) !important;
         }
         
-
-        /* ============================================================
-           ==  !!! --- ULTIMATE 100% FIX FOR TABS --- !!!
-           ============================================================ */
-        
-        /* This targets the stable Streamlit "test ID" for each tab button.
-           It is the most robust way to override the style.
-        */
-
-        /* UNSELECTED tab text */
+        /* ===== ULTIMATE 100% FIX FOR TABS ===== */
         button[data-testid="stTab"] {
-            color: #4B5563 !important; /* A visible dark gray */
+            color: #4B5563 !important;
             font-weight: 600 !important;
             opacity: 0.7 !important;
         }
-
-        /* SELECTED tab text */
         button[data-testid="stTab"][aria-selected="true"] {
-            color: var(--color-primary-text) !important; /* Your navy blue */
+            color: var(--color-primary-text) !important;
             opacity: 1 !important;
         }
-
-        /* The underline bar */
         div[data-baseweb="tab-highlight"] {
-            /* Make the line match your selected text color */
             background-color: var(--color-primary-text) !important; 
         }
-        
-        /* --- END ULTIMATE FIX --- */
-        
-
-        /* ============================================================
-           ==  [DELETED] APPLE-STYLE SEGMENTED CONTROL CSS         ==
-           ============================================================ 
-           All the CSS starting with '.nav-tabs-pro' has been
-           permanently removed as it was causing the problem.
-        */
 
         </style>
         """,
@@ -1656,14 +1612,14 @@ def inject_global_css():
 
 
 # --- Replace this function ---
+# --- Replace this function ---
 def render_dashboard():
-    inject_global_css() # You were missing this call in the original function
+    inject_global_css() 
 
     # --- Live Index Ticker ---
     index_data = get_live_index_data()
     if index_data:
         item_html_list = []
-        # --- MODIFIED --- Use only the first 4 indices for the ticker tape
         for item in index_data:
             change_class = "positive" if item['change'] >= 0 else "negative"
             change_sign = "+" if item['change'] >= 0 else ""
@@ -1693,9 +1649,8 @@ def render_dashboard():
     # ============================
     st.markdown("### Market Snapshot")
     chart_cols = st.columns(4)
-    chart_data = get_intraday_index_charts_data() # Get 5d/1d data
+    chart_data = get_intraday_index_charts_data() # Get 1d/15m OHLC data
     
-    # Map index data (summary) to chart data (intraday)
     index_map = {
         'Dow Jones': ('^DJI', chart_cols[0]),
         'NASDAQ': ('^IXIC', chart_cols[1]),
@@ -1705,15 +1660,16 @@ def render_dashboard():
     
     for display_name, (ticker, col) in index_map.items():
         with col:
-            st.markdown(f"<div class='index-chart-card'>", unsafe_allow_html=True)
+            # --- CSS class is now dark themed ---
+            st.markdown(f"<div class='index-chart-card'>", unsafe_allow_html=True) 
             
-            # Find the summary data for this index
             summary = next((item for item in index_data if item["symbol"] == display_name), None)
             
             if summary:
                 change_class = "positive" if summary['change'] >= 0 else "negative"
                 change_sign = "+" if summary['change'] >= 0 else ""
                 
+                # --- Text is now light-colored due to CSS ---
                 st.markdown(f"<div class='index-chart-title'>{display_name}</div>", unsafe_allow_html=True)
                 st.markdown(
                     f"<span class='index-chart-price'>${summary['price']:,.2f}</span>"
@@ -1735,11 +1691,11 @@ def render_dashboard():
             if chart_data and ticker in chart_data and not chart_data[ticker].empty:
                 chart_df = chart_data[ticker]
                 
-                # We need to know if the 5-day trend is positive
-                is_positive = chart_df['Price'].iloc[-1] >= chart_df['Price'].iloc[0]
+                # We need to know if the trend is positive
+                is_positive = chart_df['Close'].iloc[-1] >= chart_df['Open'].iloc[0]
 
-                # Create the Plotly figure using our new function
-                fig = plot_index_sparkline(chart_df, is_positive)
+                # --- Call the NEW candlestick function ---
+                fig = plot_index_candlestick(chart_df, is_positive)
                 
                 # Render the Plotly figure
                 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
@@ -1782,7 +1738,6 @@ def render_dashboard():
 
     # --- RIGHT: Econ Calendar + Smart Money ---
     with right_col:
-        # Economic calendar
         st.markdown(
             "<div class='section-card'><div class='section-title'>Economic Calendar (Focus)</div>",
             unsafe_allow_html=True,
@@ -1791,7 +1746,6 @@ def render_dashboard():
             st.markdown(f"• **{event}** — {time_str}")
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # Smart Money Tracker
         st.markdown(
             "<div class='section-card'><div class='section-title'>Smart Money Tracker</div>",
             unsafe_allow_html=True,
@@ -1824,8 +1778,6 @@ def render_dashboard():
     else:
         st.write("No recent broad-market headlines available.")
     st.markdown("</div>", unsafe_allow_html=True)
-
-
 
 
 def render_analysis_page():

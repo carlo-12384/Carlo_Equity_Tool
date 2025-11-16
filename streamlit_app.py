@@ -1286,7 +1286,7 @@ def inject_global_css():
 
         /* Push main content below fixed nav bar */
         .main-content {
-            padding-top: 90px;  /* adjust 70–100 if you see overlap */
+            padding-top: 70px;  /* adjust 70–100 if you see overlap */
         }
 
         /* Buttons inside the main content */
@@ -1519,6 +1519,12 @@ def inject_global_css():
             color: #E02424;
         }
         /* ===== END: TICKER TAPE ===== */
+        
+        /* HARD OVERRIDE: pull all app content closer to the top */
+        html body .stApp main div.block-container {
+            padding-top: 0 !important;
+            margin-top: -70px !important;   /* try -70; adjust to -60 or -80 if needed */
+        }
 
         </style>
         """,

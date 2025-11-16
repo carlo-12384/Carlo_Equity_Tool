@@ -1467,21 +1467,6 @@ def render_dashboard():
         """
         st.markdown(full_ticker_html, unsafe_allow_html=True)
 
-    # --- Hero card ---
-    st.markdown(
-        """
-        <div class="hero-card">
-            <div class="hero-title">Equity Research Platform</div>
-            <div class="hero-subtitle">
-                Analyze companies, build valuations, and create investment theses.
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.write("")
-
     # ============================
     # ROW 1: AI MARKET SUMMARY (LEFT HALF)
     # ============================

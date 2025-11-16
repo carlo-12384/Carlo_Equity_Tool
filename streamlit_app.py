@@ -1301,375 +1301,149 @@ def inject_global_css():
     st.markdown(
         """
         <style>
-        /* ===== COLOR PALETTE ===== */
+
+        /* ============================================================
+           COLOR PALETTE (YOURS)
+        ============================================================ */
         :root {
-            --color-primary-bg: #001f3f;    /* Dark Navy Blue */
-            --color-secondary-bg: #F5EAAA; /* Khaki */
-            --color-page-bg: #FFFFFF;      /* White */
-            
-            --color-primary-text: #001f3f;    /* Dark Navy Blue */
-            --color-secondary-text: #F5EAAA; /* Khaki */
-            --color-tertiary-text: #FFFFFF;  /* White */
+            --color-primary-bg: #001f3f;    /* Dark navy */
+            --color-secondary-bg: #F5EAAA;  /* Khaki */
+            --color-page-bg: #FFFFFF;       /* White */
+            --color-primary-text: #001f3f;  /* Navy */
+            --color-secondary-text: #F5EAAA;
+            --color-tertiary-text: #FFFFFF;
         }
-        
-        /* ===== GLOBAL LAYOUT ===== */
+
+        /* ============================================================
+           GLOBAL RESET / OVERRIDES
+        ============================================================ */
         html, body, .stApp {
             background: var(--color-page-bg) !important;
             color: var(--color-primary-text) !important;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-            margin: 0 !important;
-            padding: 0 !important;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont,
+                         "SF Pro Text", sans-serif !important;
         }
 
-        /* Remove Streamlit default header bar */
         header[data-testid="stHeader"] {
-            background: transparent !important;
-            height: 0 !important;
-            min-height: 0 !important;
-            padding: 0 !important;
+            display: none !important;
         }
 
-        /* Kill extra padding on the main block container & pull content up */
-        div.block-container {
-            padding-top: 0rem !important;
-            margin-top: -20px !important;   /* tweak -10 to -40 if you want it higher/lower */
-        }
-
-        div[data-testid="stAppViewContainer"] {
-            padding-top: 0 !important;
-        }
-
-        h1, h2, h3, h4, h5, h6 {
-            color: var(--color-primary-text) !important;
-        }
-        
-        /* --- NEW --- ===== PAGE HEADER ===== */
-        .page-header {
-            text-align: center;
-            padding: 1rem 0 2rem 0;
-            margin: 0 auto;
-            max-width: 900px;
-        }
-
-        .page-title {
-            font-family: 'DM Serif Display', serif; /* The "cooler" font */
-            font-size: 3.25rem; /* Big and bold */
-            font-weight: 400;
-            color: var(--color-primary-text) !important;
-            margin-bottom: 0.25rem;
-        }
-        
-        .page-subtitle {
-            font-size: 1.1rem;
-            font-weight: 500;
-            color: #4B5563; /* A muted gray */
-            margin: 0;
-        }
-        /* --- END NEW --- */
-
-
-        /* ===== GLOBAL BUTTON RESET ===== */
-        .stButton > button,
-        button[kind="primary"],
-        button[kind="secondary"],
-        button[kind="outline"] {
-            background: var(--color-secondary-bg) !important;
-            color: var(--color-primary-text) !important;
-            border-radius: 8px !important;
-            border: 1px solid var(--color-primary-text) !important;
-            font-weight: 500;
-            font-size: 14px;
-        }
-
-        .stButton > button:hover,
-        button[kind="primary"]:hover,
-        button[kind="secondary"]:hover,
-        button[kind="outline"]:hover {
-            filter: brightness(1.1);
-            color: var(--color-primary-text) !important;
-        }
-
-        /* ===== OPTIONAL TOP NAV BAR BACKGROUND (if you wrap tabs in .top-nav-bar) ===== */
-        .top-nav-bar {
-            background: var(--color-primary-bg);
-            padding: 8px 0;
-            width: 100%;
-        }
-
-        .top-nav-inner {
-            max-width: 1100px;
-            margin: 0 auto;
-        }
-
-        /* ===== MAIN CONTENT WRAPPER ===== */
-        .main-content {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding-top: 10px;  /* breathing room under nav */
-        }
-
-        /* ===== CARDS ===== */
-        .hero-card {
-            background: var(--color-primary-bg);
-            border-radius: 16px;
-            padding: 24px 28px;
-            margin-top: 16px;
-            margin-bottom: 16px;
-            border: 1px solid var(--color-secondary-bg);
-        }
-        .hero-title {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 4px;
-            color: var(--color-secondary-text) !important;
-        }
-        .hero-subtitle {
-            font-size: 14px;
+        /* Force all button text to be visible */
+        button, .stButton > button {
             color: var(--color-tertiary-text) !important;
-        }
-        .section-card {
-            background: var(--color-page-bg);
-            border-radius: 16px;
-            padding: 18px 20px;
-            margin-top: 18px;
-            margin-bottom: 18px;
-            border: 1px solid var(--color-primary-bg);
-        }
-        .section-title {
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-        .section-subtitle {
-            font-size: 13px;
-            color: var(--color-primary-text);
-            margin-bottom: 12px;
-        }
-        
-        /* --- NEW --- ===== INDEX CHART CARDS ===== */
-        .index-chart-card {
-            border: 1px solid #E5E7EB;
-            border-radius: 8px;
-            padding: 12px 16px;
-            background: #FAFAFA;
-        }
-        
-        .index-chart-title {
-            font-weight: 600;
-            font-size: 1.1rem;
-            color: var(--color-primary-text);
-        }
-        
-        .index-chart-price {
-            font-weight: 600;
-            font-size: 1rem;
-            color: var(--color-primary-text);
-        }
-        
-        .index-chart-change {
-            font-weight: 500;
-            font-size: 0.9rem;
-            margin-left: 8px;
-        }
-        
-        .index-chart-change.positive { color: #057A55; }
-        .index-chart-change.negative { color: #E02424; }
-        /* --- END NEW --- */
-
-
-        /* ===== METRIC COLORS ===== */
-        .positive-metric { color: #057A55; } /* Green */
-        .negative-metric { color: #E02424; } /* Red */
-
-        /* ===== TICKER TAPE ===== */
-        @keyframes scroll-left {
-            from { transform: translateX(0%); }
-            to { transform: translateX(-50%); }
-        }
-
-        .ticker-tape-container {
-            background: var(--color-primary-bg);
-            color: var(--color-tertiary-text);
-            overflow: hidden;
-            white-space: nowrap;
-            padding: 10px 0;
-            width: 100vw;
-            position: relative;
-            left: 50%;
-            right: 50%;
-            margin-left: -50vw;
-            margin-right: -50vw;
-            border-top: 1px solid var(--color-secondary-bg);
-            border-bottom: 1px solid var(--color-secondary-bg);
-        }
-
-        .ticker-tape-inner {
-            display: inline-block;
-            animation: scroll-left 40s linear infinite;
-        }
-
-        .ticker-item {
-            display: inline-block;
-            padding: 0 25px;
-            font-size: 16px;
-            font-weight: 500;
-        }
-
-        .ticker-symbol {
-            color: var(--color-secondary-text);
-            font-weight: 600;
-            margin-right: 8px;
-        }
-
-        .ticker-price {
-            color: var(--color-tertiary-text);
-            margin-right: 8px;
-        }
-
-        .ticker-change {
-            font-weight: 600;
-        }
-
-        .ticker-change.positive {
-            color: #057A55;
-        }
-
-        .ticker-change.negative {
-            color: #E02424;
-        }
-        /* ===== END TICKER TAPE ===== */
-
-        /* ====================================================== */
-        /* == VALUATION PAGE OVERRIDES (labels, captions)       */
-        /* ====================================================== */
-        html body .stApp .main-content [data-testid="stMetric"] div {
-            color: var(--color-primary-text) !important;
-        }
-
-        html body .stApp .main-content [data-testid="stCaption"] {
-            color: var(--color-primary-text) !important;
-        }
-
-        html body .stApp .main-content [data-testid="stRadio"] p {
-            color: var(--color-primary-text) !important;
-            font-weight: 600 !important;
-        }
-
-        html body .stApp .main-content [data-testid="stRadio"] label {
-            color: var(--color-primary-text) !important;
             font-weight: 500 !important;
         }
 
-        html body .stApp .main-content .snapshot-title {
+        /* Make any text under buttons white */
+        .stButton + p, .stButton + span, .stButton + div {
+            color: #FFFFFF !important;
+        }
+
+        /* ============================================================
+           STREAMLIT FIXES FOR VISIBILITY
+        ============================================================ */
+        [data-testid="stMarkdown"], p, span, label, div {
             color: var(--color-primary-text) !important;
         }
 
-        /* ====================================================== */
-        /* ===== TOP NAV: PROFESSIONAL TEXT TABS (st.radio) ===== */
-        /* ====================================================== */
+        /* Negative metrics red */
+        .neg-metric {
+            color: #E02424 !important;
+            font-weight: 600;
+        }
 
-        /* This is the main container we will wrap the st.radio widget in */
+        /* ============================================================
+           APPLE-STYLE SEGMENTED CONTROL NAV
+        ============================================================ */
+
+        /* Container around your st.radio nav */
         .nav-tabs-pro {
             display: flex;
             justify-content: center;
-            margin: 0.25rem auto 0.75rem;
-            padding-top: 0.25rem;
-            border-bottom: 1px solid #E5E7EB; /* light line */
-            max-width: 900px;
+            margin: 1.1rem auto 1.6rem;
         }
-        
-        /* Hide the label for the radio group */
+
+        /* Segmented control track */
+        .nav-tabs-pro [role="radiogroup"] {
+            display: inline-flex !important;
+            align-items: center;
+            gap: 4px;
+            padding: 4px;
+            border-radius: 999px;
+            background: #F3F4F6;
+            box-shadow:
+                0 0 0 1px rgba(15, 23, 42, 0.06),
+                0 4px 10px rgba(15, 23, 42, 0.06);
+        }
+
+        /* Hide radio dot */
+        .nav-tabs-pro [role="radiogroup"] label > div:first-child {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
+        /* Hide the input */
+        .nav-tabs-pro [role="radiogroup"] input {
+            opacity: 0 !important;
+            position: absolute !important;
+            pointer-events: none !important;
+        }
+
+        /* Base pill style */
+        .nav-tabs-pro [role="radiogroup"] label {
+            cursor: pointer !important;
+            border-radius: 999px !important;
+            padding: 8px 18px !important;
+            margin: 0 !important;
+            border: 1px solid transparent !important;
+            background: transparent !important;
+            transition:
+                background 0.15s ease,
+                box-shadow 0.15s ease,
+                border-color 0.15s ease,
+                color 0.15s ease;
+        }
+
+        /* Label text */
+        .nav-tabs-pro [role="radiogroup"] label span {
+            font-size: 1.05rem;
+            font-weight: 500;
+            color: #111827 !important;
+            opacity: 0.85;
+        }
+
+        /* Hover effect */
+        .nav-tabs-pro [role="radiogroup"] label:hover {
+            background: rgba(255, 255, 255, 0.92) !important;
+        }
+        .nav-tabs-pro [role="radiogroup"] label:hover span {
+            opacity: 1;
+        }
+
+        /* Active tab — Apple style filled pill */
+        .nav-tabs-pro [role="radiogroup"] label:has(input[checked]) {
+            background: #FFFFFF !important;
+            border-color: #001f3f !important;
+            box-shadow:
+                0 0 0 1px rgba(0, 31, 63, 0.12),
+                0 6px 14px rgba(15, 23, 42, 0.18);
+        }
+
+        .nav-tabs-pro [role="radiogroup"] label:has(input[checked]) span {
+            color: #001f3f !important;
+            opacity: 1 !important;
+            font-weight: 600;
+        }
+
+        /* Hide the "Main navigation" helper label */
         .nav-tabs-pro [data-testid="stRadio"] > label {
             display: none !important;
         }
-
-        /* Lay out the radio options horizontally */
-        .nav-tabs-pro [role="radiogroup"] {
-            display: flex !important;
-            gap: 1.75rem;
-            align-items: flex-end;
-            justify-content: center; /* --- NEW --- Center the tabs */
-        }
-
-        /* Hide default radio circles */
-        .nav-tabs-pro [role="radiogroup"] label > div:first-child {
-            display: none !important;
-        }
-
-        /* Base tab style */
-        .nav-tabs-pro [role="radiogroup"] label {
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            border-radius: 0 !important;
-            padding: 0.25rem 0;
-            margin-bottom: -1px; /* Pulls the tab "down" to the border */
-            cursor: pointer;
-        }
-
-        .nav-tabs-pro [role="radiogroup"] label span {
-            font-size: 0.95rem;
-            font-weight: 500;
-            color: #6B7280 !important; /* muted gray */
-        }
-
-        /* Hover */
-        .nav-tabs-pro [role="radiogroup"] label:hover span {
-            color: #111827 !important;
-        }
-
-        /* Active tab (checked input) – underline + navy text + khaki accent */
-        .nav-tabs-pro [role="radiogroup"] label:has(input[checked]) span {
-            color: var(--color-primary-text) !important;
-            border-bottom: 2px solid var(--color-primary-text); /* --- MODIFIED --- Use primary text color for underline */
-            padding-bottom: 0.3rem;
-        }
-        /* ============================================================
-           NUCLEAR FIX — MAKE NAV TEXT ALWAYS VISIBLE
-           ============================================================ */
-
-       /* force visibility of text inside nav tabs */
-       .nav-tabs-pro [role="radiogroup"] label span {
-            color: #001f3f !important;          /* your primary navy */
-            opacity: 1 !important;
-            visibility: visible !important;
-            filter: none !important;
-            text-shadow: none !important;
-       }
-
-       /* ensure selected tab text is visible */
-       .nav-tabs-pro [role="radiogroup"] label:has(input[checked]) span {
-           color: #001f3f !important;
-           opacity: 1 !important;
-       }
-
-       /* ensure the radio input itself never hides text */
-       .nav-tabs-pro [role="radiogroup"] input {
-            opacity: 0 !important; /* hide dot, not text */
-           visibility: hidden !important;
-           height: 0 !important;
-           width: 0 !important;
-           pointer-events: none !important;
-       }
-
-       /* ensure Streamlit does not auto-dim radio label text */
-       .nav-tabs-pro [role="radiogroup"] label {
-           color: #001f3f !important;
-           opacity: 1 !important;
-       }
-
-       /* override Streamlit's default gray text for all radios */
-       [data-testid="stRadio"] p, 
-       [data-testid="stRadio"] label, 
-       [data-testid="stRadio"] span {
-           color: #001f3f !important;
-           opacity: 1 !important;
-       }
 
         </style>
         """,
         unsafe_allow_html=True,
     )
-
 
 
 def render_dashboard():

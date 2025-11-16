@@ -1373,6 +1373,54 @@ def inject_global_css():
             color: #E02424;
         }
         /* ===== END TICKER TAPE ===== */
+
+        /* ===== TOP NAV: MINIMAL TEXT TABS ===== */
+        .nav-tabs-pro {
+            display: flex;
+            justify-content: center;
+            margin: 0.25rem auto 0.75rem;
+            padding-top: 0.25rem;
+            border-bottom: 1px solid #E5E7EB; /* light separator line */
+            max-width: 900px;
+        }
+
+        /* Make the radio behave like horizontal tabs */
+        .nav-tabs-pro [data-baseweb="radio"] {
+            display: flex;
+            gap: 1.75rem;          /* spacing between tabs */
+            align-items: flex-end;
+        }
+
+        /* Base tab style */
+        .nav-tabs-pro [data-baseweb="radio"] label {
+            background: transparent !important;
+            border-radius: 0 !important;
+            padding: 0.25rem 0;
+            margin-bottom: -1px;
+            border: none !important;
+            box-shadow: none !important;
+            cursor: pointer;
+        }
+
+        /* Base text style */
+        .nav-tabs-pro [data-baseweb="radio"] span {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #6B7280 !important; /* muted gray */
+        }
+
+        /* Hover state */
+        .nav-tabs-pro [data-baseweb="radio"] label:hover span {
+            color: #111827 !important; /* darker on hover */
+        }
+
+        /* ACTIVE tab: underline + navy text */
+        .nav-tabs-pro [data-baseweb="radio"] input:checked + span {
+            color: #001f3f !important;               /* navy */
+            border-bottom: 2px solid #F5EAAA;        /* khaki underline */
+            padding-bottom: 0.3rem;
+        }
+
         </style>
         """,
         unsafe_allow_html=True,
@@ -2163,6 +2211,7 @@ def main():
         initial_sidebar_state="collapsed",
     )
 
+    # Load display font
     st.markdown(
         """
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2172,65 +2221,58 @@ def main():
         unsafe_allow_html=True,
     )
 
-    if "top_nav_page" not in st.session_state:
-        st.session_state.top_nav_page = "Dashboard"
-
     inject_global_css()
 
-    st.markdown(
-        """
-        <div class="top-nav-bar">
-          <div class="top-nav-inner top-nav-container">
-        """,
-        unsafe_allow_html=True,
+    # ---------- TOP NAV: TEXT TABS ----------
+    tab_labels = ["Dashboard", "Analysis", "Valuation", "Research", "Theses"]
+
+    # Default tab if none set yet
+    if "active_page" not in st.session_state:
+        st.session_state["active_page"] = "dashboard"
+
+    current_index = [t.lower() for t in tab_labels].index(st.session_state["active_page"])
+
+    st.markdown('<div class="nav-tabs-pro">', unsafe_allow_html=True)
+    selected_tab = st.radio(
+        "Navigation",
+        tab_labels,
+        horizontal=True,
+        label_visibility="collapsed",
+        key="nav_tabs",
+        index=current_index,
     )
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    col1, col2, col3, col4, col5 = st.columns([1, 1, 1, 1, 1])
+    # Map selection to internal page key (lowercase)
+    st.session_state["active_page"] = selected_tab.lower()
 
-    with col1:
-        if st.button("Dashboard", key="nav_dashboard"):
-            st.session_state.top_nav_page = "Dashboard"
-    with col2:
-        if st.button("Analysis", key="nav_analysis"):
-            st.session_state.top_nav_page = "Analysis"
-    with col3:
-        if st.button("Valuation", key="nav_valuation"):
-            st.session_state.top_nav_page = "Valuation"
-    with col4:
-        if st.button("Research", key="nav_research"):
-            st.session_state.top_nav_page = "Research"
-    with col5:
-        if st.button("Theses", key="nav_theses"):
-            st.session_state.top_nav_page = "Theses"
-
-    st.markdown("</div></div>", unsafe_allow_html=True)
-
+    # ---------- PAGE HEADER ----------
     st.markdown(
         """
         <div class="page-header">
             <h1 class="page-title">Equity Research Platform</h1>
             <p class="page-subtitle">
-                Fricano Capital
+                Fricano Capital Research
             </p>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
+    # ---------- ROUTING ----------
+    page = st.session_state["active_page"]
 
-    page = st.session_state.top_nav_page
-    if page == "Dashboard":
+    if page == "dashboard":
         render_dashboard()
-    elif page == "Analysis":
+    elif page == "analysis":
         render_analysis_page()
-    elif page == "Valuation":
+    elif page == "valuation":
         render_valuation_page()
-    elif page == "Research":
+    elif page == "research":
         render_research_page()
-    elif page == "Theses":
+    elif page == "theses":
         render_theses_page()
 
-    st.markdown("</div>", unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()

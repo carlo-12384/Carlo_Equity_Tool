@@ -2247,7 +2247,7 @@ def main():
         initial_sidebar_state="collapsed",
     )
 
-    # Load display font
+    # Load DM Serif for the title
     st.markdown(
         """
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2259,30 +2259,32 @@ def main():
 
     inject_global_css()
 
-    # ---------- TOP NAV: TEXT TABS ----------
-    tab_labels = ["Dashboard", "Analysis", "Valuation", "Research", "Theses"]
-
-    # Default tab if none set yet
+    # --------- NAV STATE ----------
+    pages = ["Dashboard", "Analysis", "Valuation", "Research", "Theses"]
     if "active_page" not in st.session_state:
-        st.session_state["active_page"] = "dashboard"
+        st.session_state["active_page"] = "Dashboard"
 
-    current_index = [t.lower() for t in tab_labels].index(st.session_state["active_page"])
+    # --------- TOP NAV BAR (BUTTONS) ----------
+    st.markdown('<div class="top-nav-bar"><div class="top-nav-inner top-nav-container">', unsafe_allow_html=True)
 
-    st.markdown('<div class="nav-tabs-pro">', unsafe_allow_html=True)
-    selected_tab = st.radio(
-        "Navigation",
-        tab_labels,
-        horizontal=True,
-        label_visibility="collapsed",
-        key="nav_tabs",
-        index=current_index,
-    )
-    st.markdown("</div>", unsafe_allow_html=True)
+    cols = st.columns(len(pages))
+    for page_name, col in zip(pages, cols):
+        with col:
+            is_active = st.session_state["active_page"] == page_name
 
-    # Map selection to internal page key (lowercase)
-    st.session_state["active_page"] = selected_tab.lower()
+            # Render the button
+            if st.button(page_name, key=f"nav_{page_name}", use_container_width=True):
+                st.session_state["active_page"] = page_name
 
-    # ---------- PAGE HEADER ----------
+            # Tiny underline for the active tab
+            if is_active:
+                st.markdown('<div class="nav-active-underline"></div>', unsafe_allow_html=True)
+            else:
+                st.markdown('<div class="nav-inactive-spacer"></div>', unsafe_allow_html=True)
+
+    st.markdown("</div></div>", unsafe_allow_html=True)
+
+    # --------- PAGE HEADER ----------
     st.markdown(
         """
         <div class="page-header">
@@ -2295,20 +2297,6 @@ def main():
         unsafe_allow_html=True,
     )
 
-    # ---------- ROUTING ----------
-    page = st.session_state["active_page"]
+    # --------- ROUTING ----------
+    page = st.sessio
 
-    if page == "dashboard":
-        render_dashboard()
-    elif page == "analysis":
-        render_analysis_page()
-    elif page == "valuation":
-        render_valuation_page()
-    elif page == "research":
-        render_research_page()
-    elif page == "theses":
-        render_theses_page()
-
-
-if __name__ == "__main__":
-    main()

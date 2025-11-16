@@ -347,9 +347,9 @@ def get_global_macro_data():
     """
     assets = {
         '^TNX': '10-Yr Yield',
-        'CL=F': 'Crude Oil',
-        'GC=F': 'Gold',
-        'AGG': 'US Bonds (AGG)'
+        'CL=F': 'Crude Oil',
+        'GC=F': 'Gold',
+        'AGG': 'US Bonds (AGG)'
     }
     data = []
     for ticker, name in assets.items():

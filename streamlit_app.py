@@ -408,70 +408,68 @@ def get_sector_performance():
 def plot_sector_heatmap(sector_data: dict):
     """
     Creates a Plotly Treemap (heatmap) of sector performance.
-    This version robustly handles 0.0, None, and np.nan values to prevent ValueErrors.
+    This version robustly handles 0.0, None, and np.nan values and
+    uses only valid Plotly Treemap kwargs.
     """
-    if not sector_data: # Safety check for empty data
+    if not sector_data:  # Safety check for empty data
         fig = go.Figure()
         fig.update_layout(title_text="Sector Performance (Data Unavailable)", title_x=0.5)
         return fig
-        
+
     labels = list(sector_data.keys())
     raw_values = list(sector_data.values())
 
-    # --- ROBUST FIX ---
-    
-    # 1. Create the `values` (for area) and `colors` lists with extreme safety.
-    #    Iterate *once* and build both lists, handling all bad data.
-    
     values_for_area = []
     colors_for_perf = []
     hover_text_list = []
 
     for v in raw_values:
-        # Step 1: Sanitize the value. Coerce None, np.nan, etc. to 0.0
+        # Sanitize the value: coerce None, np.nan, etc. to 0.0
         try:
             perf = float(v)
-            if not np.isfinite(perf): # Catches np.nan, np.inf
+            if not np.isfinite(perf):  # catches np.nan, np.inf
                 perf = 0.0
         except (ValueError, TypeError):
             perf = 0.0
-            
-        # Step 2: Set the area value. Must be > 0.
-        # If performance was 0.0, we use a default area of 1.0.
+
+        # Area value must be positive
         if perf == 0.0:
             values_for_area.append(1.0)
         else:
             values_for_area.append(abs(perf))
-            
-        # Step 3: Set the color based on the sanitized performance.
+
+        # Color based on performance
         if perf > 0:
-            colors_for_perf.append('#057A55') # Green
+            colors_for_perf.append("#057A55")  # green
         elif perf < 0:
-            colors_for_perf.append('#E02424') # Red
+            colors_for_perf.append("#E02424")  # red
         else:
-            colors_for_perf.append('#6B7280') # Neutral Gray
-            
-        # Step 4: Create the hover text
+            colors_for_perf.append("#6B7280")  # neutral gray
+
         hover_text_list.append(f"{perf:+.2f}%")
 
-    # --- END FIX ---
-    
-    fig = go.Figure(go.Treemap(
-        labels = labels,
-        parents = ["Sectors"] * len(labels), 
-        values = values_for_area,           # Now guaranteed to be all positive floats
-        marker_colors = colors_for_perf,    # Now correctly handles all cases
-        texttemplate = "<b>%{label}</b><br>%{customdata}",
-        customdata = hover_text_list,
-        hovertemplate = "<b>%{label}</b><br>Change: %{customdata}<extra></extra>",
-        root_label="Sectors"
-    ))
-    
+    # NOTE:
+    # - marker_colors -> marker=dict(colors=...)
+    # - root_label removed (not a valid Treemap property)
+    # - parents set to "" so Plotly uses a single implicit root
+    fig = go.Figure(
+        go.Treemap(
+            labels=labels,
+            parents=[""] * len(labels),
+            values=values_for_area,
+            marker=dict(colors=colors_for_perf),
+            texttemplate="<b>%{label}</b><br>%{customdata}",
+            customdata=hover_text_list,
+            hovertemplate="<b>%{label}</b><br>Change: %{customdata}<extra></extra>",
+        )
+    )
+
     fig.update_layout(
-        margin = dict(t=25, l=10, r=10, b=10),
-        title=dict(text="Daily Sector Performance Heatmap", x=0.5, font=dict(size=18))
+        margin=dict(t=25, l=10, r=10, b=10),
+        title=dict(text="Daily Sector Performance Heatmap", x=0.5, font=dict(size=18)),
     )
     return fig
+
 # -------------------- FINNHUB (FREE) --------------------
 def safe_finnhub_get(path, **params):
     try:

@@ -1568,8 +1568,9 @@ def inject_global_css():
             border-bottom: 1px solid var(--color-secondary-bg);
         }
         .ticker-tape-inner {
-            display: inline-block;
-            animation: scroll-left 40s linear infinite;
+          display: inline-block;
+          width: max-content; /* <-- FIX: Forces full width, removes gap */
+          animation: scroll-left 40s linear infinite;
         }
         .ticker-item {
             display: inline-block;
@@ -1590,10 +1591,10 @@ def inject_global_css():
             font-weight: 600;
         }
         .ticker-change.positive {
-            color: #057A55;
+          color: #34D399; /* <-- Brighter Green */
         }
         .ticker-change.negative {
-            color: #E02424;
+          color: #F87171; /* <-- Brighter Red */
         }
 
         .ticker-section-label {

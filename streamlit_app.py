@@ -350,75 +350,75 @@ def get_global_macro_data():
         'CL=F': 'Crude Oil',
         'GC=F': 'Gold',
         'AGG': 'US Bonds (AGG)'
-    }
-    data = []
-    for ticker, name in assets.items():
-        try:
-            hist = yf.Ticker(ticker).history(period="2d", interval="1d")
-            if hist.empty or len(hist) < 2:
-                fast = yf.Ticker(ticker).fast_info
-                last_price = fast.get("last_price")
-                prev_close = fast.get("previous_close")
-                if not last_price or not prev_close:
-                    continue
-            else:
-                prev_close = hist['Close'].iloc[0]
-                last_price = hist['Close'].iloc[-1]
-            
-            change = last_price - prev_close
-            pct_change = (change / prev_close) * 100
-            
-            # Special formatting for yield
-            unit = "%" if ticker == '^TNX' else "$"
-            price_format = f"{last_price:,.2f}{unit}"
-            change_format = f"{change:+.2f} ({pct_change:+.2f}%)"
+    }
+    data = []
+    for ticker, name in assets.items():
+        try:
+            hist = yf.Ticker(ticker).history(period="2d", interval="1d")
+            if hist.empty or len(hist) < 2:
+                fast = yf.Ticker(ticker).fast_info
+                last_price = fast.get("last_price")
+                prev_close = fast.get("previous_close")
+                if not last_price or not prev_close:
+                    continue
+            else:
+                prev_close = hist['Close'].iloc[0]
+                last_price = hist['Close'].iloc[-1]
+            
+            change = last_price - prev_close
+            pct_change = (change / prev_close) * 100
+            
+            # Special formatting for yield
+            unit = "%" if ticker == '^TNX' else "$"
+            price_format = f"{last_price:,.2f}{unit}"
+            change_format = f"{change:+.2f} ({pct_change:+.2f}%)"
 
-            data.append({
-                'symbol': name,
-                'price_str': price_format,
-                'change_str': change_format,
-                'change_val': change
-            })
-        except Exception as e:
-            logging.warning(f"Failed to get macro data for {ticker}: {e}")
-    return data
+            data.append({
+                'symbol': name,
+                'price_str': price_format,
+                'change_str': change_format,
+                'change_val': change
+            })
+        except Exception as e:
+            logging.warning(f"Failed to get macro data for {ticker}: {e}")
+    return data
 
 
 # --- Replace this function ---
 @st.cache_data(ttl=300)
 def get_intraday_index_charts_data():
-    """
-    Fetches 5-day daily OHLC data for the 4 main indices for charting.
-    """
-    tickers = ['^GSPC', '^IXIC', '^DJI', '^RUT']
-    try:
-        # --- FIX: Switched to 5d/1d for reliability vs 1d/15m ---
-        data = yf.download(tickers, period="5d", interval="1d")
-        
-        if data.empty:
-            return None
-        
-        chart_data = {}
-        for ticker in tickers:
-            # --- FIX: Select all OHLC columns for this ticker ---
-            # Use .loc and slicers for multi-index selection
-            try:
-                ohlc_df = data.loc[:, (slice(None), ticker)]
-                
-                if not ohlc_df.empty:
-                    ohlc_df.columns = ohlc_df.columns.droplevel(1) # Remove 'ticker' from multi-index
-                    ohlc_df = ohlc_df[['Open', 'High', 'Low', 'Close']].dropna()
-                    if not ohlc_df.empty:
-                        chart_data[ticker] = ohlc_df
-            except KeyError:
-                # This happens if yf.download only returns one ticker's data
-                logging.warning(f"Could not extract multi-index for {ticker}")
-                continue
+    """
+    Fetches 5-day daily OHLC data for the 4 main indices for charting.
+    """
+    tickers = ['^GSPC', '^IXIC', '^DJI', '^RUT']
+    try:
+        # --- FIX: Switched to 5d/1d for reliability vs 1d/15m ---
+        data = yf.download(tickers, period="5d", interval="1d")
+        
+        if data.empty:
+            return None
+        
+        chart_data = {}
+        for ticker in tickers:
+            # --- FIX: Select all OHLC columns for this ticker ---
+            # Use .loc and slicers for multi-index selection
+            try:
+                ohlc_df = data.loc[:, (slice(None), ticker)]
+                
+                if not ohlc_df.empty:
+                    ohlc_df.columns = ohlc_df.columns.droplevel(1) # Remove 'ticker' from multi-index
+                    ohlc_df = ohlc_df[['Open', 'High', 'Low', 'Close']].dropna()
+                    if not ohlc_df.empty:
+                        chart_data[ticker] = ohlc_df
+            except KeyError:
+                # This happens if yf.download only returns one ticker's data
+                logging.warning(f"Could not extract multi-index for {ticker}")
+                continue
 
-        return chart_data
-    except Exception as e:
-        logging.warning(f"Failed to get 5d chart data: {e}")
-        return None
+        return chart_data
+    except Exception as e:
+        logging.warning(f"Failed to get 5d chart data: {e}")
+        return None
 
 # --- NEW FUNCTION ---
 @st.cache_data(ttl=300)
@@ -1554,16 +1554,16 @@ def inject_global_css():
         }
         
         .index-chart-title {
-            font-weight: 600;
-            font-size: 1.1rem;
-            color: var(--color-primary-text) !important; /* DARK text */
-        }
-        
-        .index-chart-price {
-            font-weight: 600;
-            font-size: 1rem;
-            color: var(--color-primary-text) !important; /* DARK text */
-        }
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--color-primary-text) !important; /* DARK text */
+        }
+        
+        .index-chart-price {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--color-primary-text) !important; /* DARK text */
+        }
         /* --- END FIX --- */
         
         .index-chart-change {

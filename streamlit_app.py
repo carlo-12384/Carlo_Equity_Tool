@@ -2583,7 +2583,7 @@ def render_theses_page():
 # ======================================================================
 def main():
     st.set_page_config(
-        page_title="Equity Research Platform",
+        page_title="Equity Research Tool",
         page_icon="📊",
         layout="wide",
         initial_sidebar_state="collapsed",

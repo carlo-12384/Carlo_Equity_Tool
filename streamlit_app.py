@@ -340,48 +340,80 @@ def get_live_index_data():
     return data
     
 # --- Retrieving Macro Data ---
-@st.cache_data(ttl=300) # Cache for 5 minutes
+@st.cache_data(ttl=300)  # Cache for 5 minutes
 def get_global_macro_data():
     """
     Fetches live price data and daily change for key macro assets.
+    ALWAYS returns all assets so the ticker tape stays full, even
+    if some data is missing.
     """
     assets = {
         '^TNX': '10-Yr Yield',
         'CL=F': 'Crude Oil',
         'GC=F': 'Gold',
-        'AGG': 'US Bonds (AGG)'
+        'AGG':  'US Bonds (AGG)',
     }
-    data = []
-    for ticker, name in assets.items():
-        try:
-            hist = yf.Ticker(ticker).history(period="2d", interval="1d")
-            if hist.empty or len(hist) < 2:
-                fast = yf.Ticker(ticker).fast_info
-                last_price = fast.get("last_price")
-                prev_close = fast.get("previous_close")
-                if not last_price or not prev_close:
-                    continue
-            else:
-                prev_close = hist['Close'].iloc[0]
-                last_price = hist['Close'].iloc[-1]
-            
-            change = last_price - prev_close
-            pct_change = (change / prev_close) * 100
-            
-            # Special formatting for yield
-            unit = "%" if ticker == '^TNX' else "$"
-            price_format = f"{last_price:,.2f}{unit}"
-            change_format = f"{change:+.2f} ({pct_change:+.2f}%)"
 
-            data.append({
-                'symbol': name,
-                'price_str': price_format,
-                'change_str': change_format,
-                'change_val': change
-            })
+    data = []
+
+    for ticker, name in assets.items():
+        last_price = None
+        prev_close = None
+
+        try:
+            t = yf.Ticker(ticker)
+            hist = t.history(period="2d", interval="1d")
+
+            if hist is not None and not hist.empty and len(hist) >= 2:
+                prev_close = float(hist["Close"].iloc[0])
+                last_price = float(hist["Close"].iloc[-1])
+            else:
+                fast = t.fast_info or {}
+                last_price = fast.get("last_price") or fast.get("lastPrice")
+                prev_close = fast.get("previous_close") or fast.get("previousClose")
+
+                if last_price is not None:
+                    last_price = float(last_price)
+                if prev_close is not None:
+                    prev_close = float(prev_close)
         except Exception as e:
             logging.warning(f"Failed to get macro data for {ticker}: {e}")
+
+        # ---- Fallbacks so we NEVER drop an item ----
+        if last_price is None and prev_close is None:
+            unit = "%" if ticker == "^TNX" else "$"
+            price_str = f"N/A{unit}"
+            change_str = "+0.00 (+0.00%)"
+            change_val = 0.0
+        else:
+            if last_price is None:
+                last_price = prev_close
+            if prev_close is None or prev_close == 0:
+                prev_close = last_price
+
+            try:
+                change = last_price - prev_close
+                pct_change = (change / prev_close) * 100 if prev_close else 0.0
+            except Exception:
+                change = 0.0
+                pct_change = 0.0
+
+            unit = "%" if ticker == "^TNX" else "$"
+            price_str = f"{last_price:,.2f}{unit}"
+            change_str = f"{change:+.2f} ({pct_change:+.2f}%)"
+            change_val = change
+
+        data.append(
+            {
+                "symbol": name,
+                "price_str": price_str,
+                "change_str": change_str,
+                "change_val": change_val,
+            }
+        )
+
     return data
+
     
 @st.cache_data(ttl=300)
 def get_index_key_metrics(ticker: str) -> List[Dict[str, str]]:

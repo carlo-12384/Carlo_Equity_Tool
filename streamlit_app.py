@@ -1547,46 +1547,63 @@ def inject_global_css():
         .positive-metric { color: #057A55; } /* Green */
         .negative-metric { color: #E02424; } /* Red */
 
-        /* ===== TICKER TAPE ===== */
+        /* === START: COMPLETE TICKER TAPE CSS === */
+      
         @keyframes scroll-left {
             from { transform: translateX(0%); }
+            /* This scrolls 50% of the wrapper's width, which is 1 full copy */
             to { transform: translateX(-50%); }
         }
+
         .ticker-tape-container {
-          background: var(--color-primary-bg);
-          color: var(--color-tertiary-text);
-          overflow: hidden; /* Clips the content */
-          padding: 10px 0;
-          width: 100vw;
-          position: relative;
-          left: 50%;
-          right: 50%;
-          margin-left: -50vw;
-          margin-right: -50vw;
-          border-top: 1px solid var(--color-secondary-bg);
-          border-bottom: 1px solid var(--color-secondary-bg);
+            background: var(--color-primary-bg);
+            color: var(--color-tertiary-text);
+            overflow: hidden; /* Clips the content */
+            padding: 10px 0;
+            width: 100vw;
+            position: relative;
+            left: 50%;
+            right: 50%;
+            margin-left: -50vw;
+            margin-right: -50vw;
+            border-top: 1px solid var(--color-secondary-bg);
+            border-bottom: 1px solid var(--color-secondary-bg);
         }
       
         /* THIS WRAPPER IS THE "TRACK" THAT MOVES */
         .ticker-tape-wrapper {
-          display: flex; /* Lines up the two inner-divs */
-          width: max-content; /* Makes wrapper as wide as 2x content */
-          animation: scroll-left 40s linear infinite;
+            display: flex; /* Lines up the two inner-divs */
+            width: max-content; /* Makes wrapper as wide as 2x content */
+            animation: scroll-left 40s linear infinite;
         }
 
         /* THIS HOLDS THE ACTUAL ITEMS */
         .ticker-tape-inner {
-          display: flex; /* Lines up items (SPY, 10YR) inside */
-          align-items: center; /* Vertically centers items */
-          width: max-content; /* Makes div as wide as its content */
+            display: flex; /* Lines up items (SPY, 10YR) inside */
+            align-items: center; /* Vertically centers items */
+            width: max-content; /* Makes div as wide as its content */
         }
-        }
+
+        /* [FIX] THIS ADDS THE SPACING BACK */
         .ticker-item {
             display: inline-block;
-            padding: 0 25px;
+            padding: 0 25px; /* <-- ADDS SPACING BETWEEN ITEMS */
             font-size: 16px;
             font-weight: 500;
         }
+      
+        /* [FIX] THIS STYLES THE "MACRO DATA" LABEL */
+        .ticker-section-label {
+            display: inline-block;
+            padding: 0 25px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            opacity: 0.75;
+            color: var(--color-secondary-text);
+        }
+      
         .ticker-symbol {
             color: var(--color-secondary-text);
             font-weight: 600;
@@ -1600,22 +1617,13 @@ def inject_global_css():
             font-weight: 600;
         }
         .ticker-change.positive {
-          color: #34D399; /* <-- Brighter Green */
+            color: #34D399; /* Brighter Green */
         }
         .ticker-change.negative {
-          color: #F87171; /* <-- Brighter Red */
+            color: #F87171; /* Brighter Red */
         }
-
-        .ticker-section-label {
-            display: inline-block;
-            padding: 0 25px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            opacity: 0.75;
-            color: var(--color-secondary-text);
-        }
+      
+        /* === END: COMPLETE TICKER TAPE CSS === */
 
 
         /* ===== VALUATION PAGE OVERRIDES ===== */

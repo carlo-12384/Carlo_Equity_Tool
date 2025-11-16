@@ -394,16 +394,17 @@ def get_sector_performance():
                 if len(close_prices) >= 2:
                     pct_change = (close_prices.iloc[-1] / close_prices.iloc[0]) - 1
                     perf[name] = pct_change * 100
+                else:
+                    perf[name] = np.nan # --- MODIFICATION --- Not enough data
             except Exception:
-                perf[name] = 0.0
+                perf[name] = np.nan # --- MODIFICATION --- Error on this ticker
         return perf
     except Exception as e:
         logging.warning(f"Failed to get sector performance data: {e}")
         return {}
 
+
 # --- NEW FUNCTION ---
-# --- MODIFIED FUNCTION ---
-# --- NEW MODIFIED FUNCTION ---
 def plot_sector_heatmap(sector_data: dict):
     """
     Creates a Plotly Treemap (heatmap) of sector performance.

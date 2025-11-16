@@ -1301,79 +1301,278 @@ def inject_global_css():
     st.markdown(
         """
         <style>
-
-        /* ============================================================
-           COLOR PALETTE (YOURS)
-        ============================================================ */
+        /* ===== COLOR PALETTE ===== */
         :root {
-            --color-primary-bg: #001f3f;    /* Dark navy */
-            --color-secondary-bg: #F5EAAA;  /* Khaki */
-            --color-page-bg: #FFFFFF;       /* White */
-            --color-primary-text: #001f3f;  /* Navy */
-            --color-secondary-text: #F5EAAA;
-            --color-tertiary-text: #FFFFFF;
+            --color-primary-bg: #001f3f;    /* Dark Navy Blue */
+            --color-secondary-bg: #F5EAAA; /* Khaki */
+            --color-page-bg: #FFFFFF;      /* White */
+            
+            --color-primary-text: #001f3f;    /* Dark Navy Blue */
+            --color-secondary-text: #F5EAAA; /* Khaki */
+            --color-tertiary-text: #FFFFFF;  /* White */
         }
-
-        /* ============================================================
-           GLOBAL RESET / OVERRIDES
-        ============================================================ */
+        
+        /* ===== GLOBAL LAYOUT ===== */
         html, body, .stApp {
             background: var(--color-page-bg) !important;
             color: var(--color-primary-text) !important;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont,
-                         "SF Pro Text", sans-serif !important;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            margin: 0 !important;
+            padding: 0 !important;
         }
 
+        /* Remove Streamlit default header bar */
         header[data-testid="stHeader"] {
-            display: none !important;
+            background: transparent !important;
+            height: 0 !important;
+            min-height: 0 !important;
+            padding: 0 !important;
         }
 
-        /* Force all button text to be visible */
-        button, .stButton > button {
-            color: var(--color-tertiary-text) !important;
-            font-weight: 500 !important;
+        /* Kill extra padding on the main block container & pull content up */
+        div.block-container {
+            padding-top: 0rem !important;
+            margin-top: -20px !important;   /* tweak -10 to -40 if you want it higher/lower */
         }
 
-        /* Make any text under buttons white */
-        .stButton + p, .stButton + span, .stButton + div {
-            color: #FFFFFF !important;
+        div[data-testid="stAppViewContainer"] {
+            padding-top: 0 !important;
         }
 
-        /* ============================================================
-           STREAMLIT FIXES FOR VISIBILITY
-        ============================================================ */
-        [data-testid="stMarkdown"], p, span, label, div {
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--color-primary-text) !important;
+        }
+        
+        /* ===== PAGE HEADER ===== */
+        .page-header {
+            text-align: center;
+            padding: 1rem 0 2rem 0;
+            margin: 0 auto;
+            max-width: 900px;
+        }
+
+        .page-title {
+            font-family: 'DM Serif Display', serif; /* The "cooler" font */
+            font-size: 3.25rem; /* Big and bold */
+            font-weight: 400;
+            color: var(--color-primary-text) !important;
+            margin-bottom: 0.25rem;
+        }
+        
+        .page-subtitle {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #4B5563; /* A muted gray */
+            margin: 0;
+        }
+
+        /* ===== GLOBAL BUTTON RESET ===== */
+        .stButton > button,
+        button[kind="primary"],
+        button[kind="secondary"],
+        button[kind="outline"] {
+            background: var(--color-secondary-bg) !important;
+            color: var(--color-primary-text) !important;
+            border-radius: 8px !important;
+            border: 1px solid var(--color-primary-text) !important;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .stButton > button:hover,
+        button[kind="primary"]:hover,
+        button[kind="secondary"]:hover,
+        button[kind="outline"]:hover {
+            filter: brightness(1.1);
             color: var(--color-primary-text) !important;
         }
 
-        /* Negative metrics red */
-        .neg-metric {
-            color: #E02424 !important;
+        /* ===== MAIN CONTENT WRAPPER ===== */
+        .main-content {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding-top: 10px;  /* breathing room under nav */
+        }
+
+        /* ===== CARDS ===== */
+        .hero-card {
+            background: var(--color-primary-bg);
+            border-radius: 16px;
+            padding: 24px 28px;
+            margin-top: 16px;
+            margin-bottom: 16px;
+            border: 1px solid var(--color-secondary-bg);
+        }
+        .hero-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--color-secondary-text) !important;
+        }
+        .hero-subtitle {
+            font-size: 14px;
+            color: var(--color-tertiary-text) !important;
+        }
+        .section-card {
+            background: var(--color-page-bg);
+            border-radius: 16px;
+            padding: 18px 20px;
+            margin-top: 18px;
+            margin-bottom: 18px;
+            border: 1px solid var(--color-primary-bg);
+        }
+        .section-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .section-subtitle {
+            font-size: 13px;
+            color: var(--color-primary-text);
+            margin-bottom: 12px;
+        }
+        
+        /* ===== INDEX CHART CARDS ===== */
+        .index-chart-card {
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            padding: 12px 16px;
+            background: #FAFAFA;
+        }
+        
+        .index-chart-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--color-primary-text);
+        }
+        
+        .index-chart-price {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--color-primary-text);
+        }
+        
+        .index-chart-change {
+            font-weight: 500;
+            font-size: 0.9rem;
+            margin-left: 8px;
+        }
+        
+        .index-chart-change.positive { color: #057A55; }
+        .index-chart-change.negative { color: #E02424; }
+
+        /* ===== METRIC COLORS ===== */
+        .positive-metric { color: #057A55; } /* Green */
+        .negative-metric { color: #E02424; } /* Red */
+
+        /* ===== TICKER TAPE ===== */
+        @keyframes scroll-left {
+            from { transform: translateX(0%); }
+            to { transform: translateX(-50%); }
+        }
+
+        .ticker-tape-container {
+            background: var(--color-primary-bg);
+            color: var(--color-tertiary-text);
+            overflow: hidden;
+            white-space: nowrap;
+            padding: 10px 0;
+            width: 100vw;
+            position: relative;
+            left: 50%;
+            right: 50%;
+            margin-left: -50vw;
+            margin-right: -50vw;
+            border-top: 1px solid var(--color-secondary-bg);
+            border-bottom: 1px solid var(--color-secondary-bg);
+        }
+
+        .ticker-tape-inner {
+            display: inline-block;
+            animation: scroll-left 40s linear infinite;
+        }
+
+        .ticker-item {
+            display: inline-block;
+            padding: 0 25px;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .ticker-symbol {
+            color: var(--color-secondary-text);
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        .ticker-price {
+            color: var(--color-tertiary-text);
+            margin-right: 8px;
+        }
+
+        .ticker-change {
             font-weight: 600;
         }
 
+        .ticker-change.positive {
+            color: #057A55;
+        }
+
+        .ticker-change.negative {
+            color: #E02424;
+        }
+        /* ===== END TICKER TAPE ===== */
+
+        /* ====================================================== */
+        /* == VALUATION PAGE OVERRIDES (labels, captions)       */
+        /* ====================================================== */
+        html body .stApp .main-content [data-testid="stMetric"] div {
+            color: var(--color-primary-text) !important;
+        }
+
+        html body .stApp .main-content [data-testid="stCaption"] {
+            color: var(--color-primary-text) !important;
+        }
+
+        html body .stApp .main-content [data-testid="stRadio"] p {
+            color: var(--color-primary-text) !important;
+            font-weight: 600 !important;
+        }
+
+        html body .stApp .main-content [data-testid="stRadio"] label {
+            color: var(--color-primary-text) !important;
+            font-weight: 500 !important;
+        }
+
+        html body .stApp .main-content .snapshot-title {
+            color: var(--color-primary-text) !important;
+        }
+
         /* ============================================================
-           APPLE-STYLE SEGMENTED CONTROL NAV
+           APPLE-STYLE SEGMENTED CONTROL NAV FOR MAIN TABS
         ============================================================ */
 
-        /* Container around your st.radio nav */
+        /* Outer wrapper you already render around st.radio */
         .nav-tabs-pro {
             display: flex;
             justify-content: center;
-            margin: 1.1rem auto 1.6rem;
+            margin: 0.75rem auto 1.25rem;
         }
 
-        /* Segmented control track */
+        /* Hide the "Main navigation" label inside the radio widget */
+        .nav-tabs-pro [data-testid="stRadio"] > label {
+            display: none !important;
+        }
+
+        /* Segmented-control track */
         .nav-tabs-pro [role="radiogroup"] {
             display: inline-flex !important;
             align-items: center;
             gap: 4px;
             padding: 4px;
-            border-radius: 999px;
-            background: #F3F4F6;
-            box-shadow:
-                0 0 0 1px rgba(15, 23, 42, 0.06),
-                0 4px 10px rgba(15, 23, 42, 0.06);
+            border-radius: 999px;              /* full pill */
+            background: #F3F4F6;               /* light gray track */
+            box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.06),
+                        0 4px 10px rgba(15, 23, 42, 0.06);
         }
 
         /* Hide radio dot */
@@ -1382,62 +1581,57 @@ def inject_global_css():
             visibility: hidden !important;
         }
 
-        /* Hide the input */
+        /* Hide the actual input so text is the clickable hitbox */
         .nav-tabs-pro [role="radiogroup"] input {
             opacity: 0 !important;
             position: absolute !important;
             pointer-events: none !important;
         }
 
-        /* Base pill style */
+        /* Base pill style (unselected tab) */
         .nav-tabs-pro [role="radiogroup"] label {
             cursor: pointer !important;
             border-radius: 999px !important;
-            padding: 8px 18px !important;
+            padding: 6px 16px !important;
             margin: 0 !important;
             border: 1px solid transparent !important;
             background: transparent !important;
-            transition:
-                background 0.15s ease,
-                box-shadow 0.15s ease,
-                border-color 0.15s ease,
-                color 0.15s ease;
+            box-shadow: none !important;
+            transition: background 0.15s ease, 
+                        box-shadow 0.15s ease,
+                        border-color 0.15s ease,
+                        color 0.15s ease;
         }
 
-        /* Label text */
+        /* Text inside each pill */
         .nav-tabs-pro [role="radiogroup"] label span {
-            font-size: 1.05rem;
+            font-size: 0.98rem;
             font-weight: 500;
-            color: #111827 !important;
-            opacity: 0.85;
+            color: #111827 !important;        /* dark slate text */
+            opacity: 0.9;
         }
 
-        /* Hover effect */
+        /* Hover state for any tab */
         .nav-tabs-pro [role="radiogroup"] label:hover {
-            background: rgba(255, 255, 255, 0.92) !important;
+            background: rgba(255, 255, 255, 0.9) !important;
         }
+
         .nav-tabs-pro [role="radiogroup"] label:hover span {
             opacity: 1;
         }
 
-        /* Active tab — Apple style filled pill */
+        /* Active tab (checked input) — filled pill like Apple segmented control */
         .nav-tabs-pro [role="radiogroup"] label:has(input[checked]) {
             background: #FFFFFF !important;
-            border-color: #001f3f !important;
-            box-shadow:
-                0 0 0 1px rgba(0, 31, 63, 0.12),
-                0 6px 14px rgba(15, 23, 42, 0.18);
+            border-color: var(--color-primary-bg) !important;   /* your navy */
+            box-shadow: 0 0 0 1px rgba(0, 31, 63, 0.12),
+                        0 6px 14px rgba(15, 23, 42, 0.18);
         }
 
         .nav-tabs-pro [role="radiogroup"] label:has(input[checked]) span {
-            color: #001f3f !important;
+            color: var(--color-primary-bg) !important;
             opacity: 1 !important;
             font-weight: 600;
-        }
-
-        /* Hide the "Main navigation" helper label */
-        .nav-tabs-pro [data-testid="stRadio"] > label {
-            display: none !important;
         }
 
         </style>
@@ -2315,7 +2509,7 @@ def main():
         initial_sidebar_state="collapsed",
     )
 
-    # Load DM Serif for the title
+    # Load DM Serif Display for the title
     st.markdown(
         """
         <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2325,52 +2519,51 @@ def main():
         unsafe_allow_html=True,
     )
 
+    # Inject all global CSS (including Apple-style segmented nav)
     inject_global_css()
 
-    # --- MODIFIED --- Center the Page Title ---
+    # ---------- PAGE HEADER ----------
     st.markdown(
         """
         <div class="page-header">
             <h1 class="page-title">Equity Research Platform</h1>
-            <p class="page-subtitle">
-                Fricano Capital Research
-            </p>
+            <p class="page-subtitle">Fricano Capital Research</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # --- MODIFIED --- Use st.radio for a sticky tab-like nav ---
+    # ---------- NAVIGATION SETUP ----------
     pages = ["Home", "Screener", "Valuation", "Research", "Theses"]
-    
-    # Set default page if not in session state
+
+    # Initialize session state
     if "active_page" not in st.session_state:
         st.session_state.active_page = "Home"
 
-    # Wrap the radio widget in our custom CSS class
-    st.markdown('<div class="nav-tabs-pro">', unsafe_allow_html=True)
-    
-    # Get the index of the active page for st.radio's `index` param
+    # Determine default index for st.radio
     try:
         default_index = pages.index(st.session_state.active_page)
     except ValueError:
         default_index = 0
 
+    # ---------- APPLE-STYLE SEGMENTED NAV WRAPPER ----------
+    st.markdown('<div class="nav-tabs-pro">', unsafe_allow_html=True)
+
     page = st.radio(
         "Main navigation",
         pages,
         index=default_index,
-        key="nav_radio", # A key is good practice
-        horizontal=True
+        horizontal=True,
+        key="main_nav",
     )
-    
+
     st.markdown('</div>', unsafe_allow_html=True)
+    # ---------- END NAV WRAPPER ----------
 
     # Update session state
     st.session_state.active_page = page
-    
-    # --------- ROUTING ----------
-    # --- MODIFIED --- Use new page names
+
+    # ---------- PAGE ROUTING ----------
     if page == "Home":
         render_dashboard()
     elif page == "Screener":
@@ -2381,6 +2574,7 @@ def main():
         render_research_page()
     elif page == "Theses":
         render_theses_page()
+
 
 if __name__ == "__main__":
     main()

@@ -1053,63 +1053,60 @@ def five_day_price_plot(ticker: str):
     
 # --- NEW FUNCTION (Using Plotly for better visual charts) ---
 # --- Replace this function ---
+# --- NEW FUNCTION (Using Plotly for better visual charts) ---
 def plot_index_sparkline(chart_df: pd.DataFrame, is_positive: bool):
     """
     Creates a Plotly-based sparkline chart (a simplified, good-looking line chart).
     """
     # Use green if the price ended higher than it started, else red
-    line_color = "#057A55" if is_positive else "#E02424" # Green or Red
-    
+    line_color = "#057A55" if is_positive else "#E02424"  # Green or Red
+
     fig = go.Figure()
 
     # Add the line
     fig.add_trace(go.Scatter(
         x=chart_df.index,
-        y=chart_df['Price'], # Assumes the series is named 'Price'
-        mode='lines',
+        y=chart_df["Price"],  # Assumes the series is named 'Price'
+        mode="lines",
         line=dict(color=line_color, width=2.5),
-        hoverinfo='none' # We use the header for info, not the hover
+        hoverinfo="none",  # We use the header for info, not the hover
     ))
-    
+
     # Add a dot for the last point
     fig.add_trace(go.Scatter(
         x=[chart_df.index[-1]],
-        y=[chart_df['Price'].iloc[-1]],
-        mode='markers',
+        y=[chart_df["Price"].iloc[-1]],
+        mode="markers",
         marker=dict(color=line_color, size=8),
-        hoverinfo='none'
+        hoverinfo="none",
     ))
 
     # --- Style the chart to look clean ---
     fig.update_layout(
-        height=120, # Give it a readable height
-        margin=dict(t=0, l=0, r=0, b=0), # No margins
-        xaxis_rangeslider_visible=False, # Hide the range slider
+        height=120,  # Give it a readable height
+        margin=dict(t=0, l=0, r=0, b=0),  # No margins
+        xaxis_rangeslider_visible=False,  # Hide the range slider
         xaxis=dict(
             showticklabels=True,
             showgrid=False,
-            tickformat="%a %d" # e.g., "Mon 12"
+            tickformat="%a %d",  # e.g., "Mon 12"
+            fixedrange=True,     # Disable panning/zoom on X as well
         ),
         yaxis=dict(
             showticklabels=False,
             showgrid=False,
             zeroline=False,
-            fixedrange=True, # User can't pan/zoom Y-axis
-            # --- THIS IS THE FIX ---
-            # The 'autorangeoptions' was moved from a separate
-            # call into this 'yaxis' dictionary where it belongs.
-            autorangeoptions=dict(tight=True)
-            # --- END FIX ---
+            fixedrange=True,  # User can't pan/zoom Y-axis
+            # NOTE: removed 'autorangeoptions' because it's not supported
         ),
-        paper_bgcolor='rgba(0,0,0,0)', # Transparent background
-        plot_bgcolor='#FAFAFA', # Match the card background
+        paper_bgcolor="rgba(0,0,0,0)",  # Transparent background
+        plot_bgcolor="#FAFAFA",         # Match the card background
         showlegend=False,
-        dragmode=False # Disable dragging
+        dragmode=False,  # Disable dragging
     )
-    
-    # The old, incorrect fig.update_yaxes() call has been removed.
-    
+
     return fig
+
 
 # -------------------- LOCAL STORAGE HELPERS --------------------
 NOTES_FILE = "research_notes.json"

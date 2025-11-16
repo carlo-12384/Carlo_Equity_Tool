@@ -2691,15 +2691,16 @@ def main():
         initial_sidebar_state="collapsed",
     )
 
-    # Load DM Serif Display for the title
+        #Loading Google Fonts into block
     st.markdown(
-        """
+    """
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:wght@400&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
         """,
         unsafe_allow_html=True,
     )
+
 
     # Inject all global CSS
     inject_global_css()
@@ -2716,7 +2717,6 @@ def main():
                 <h1 class="page-title">Equity Research Tool</h1>
                 <p class="page-subtitle">Fricano Capital Research</p>
                 <p class="page-mini-desc">
-                    Institutional-style equity analytics with live macro context.
                 </p>
             </div>
         </div>

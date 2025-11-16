@@ -1173,11 +1173,11 @@ def inject_global_css():
         /* ===== COLOR PALETTE ===== */
         :root {
             --color-primary-bg: #001f3f;    /* Dark Navy Blue */
-            --color-secondary-bg: #F5EAAA; /* Khaki */
+            --color-secondary-bg: #F5EAAA;  /* Khaki */
             --color-page-bg: #FFFFFF;       /* White */
             
             --color-primary-text: #001f3f;    /* Dark Navy Blue */
-            --color-secondary-text: #F5EAAA; /* Khaki */
+            --color-secondary-text: #F5EAAA;  /* Khaki */
             --color-tertiary-text: #FFFFFF;   /* White */
         }
         
@@ -1187,18 +1187,34 @@ def inject_global_css():
             color: var(--color-primary-text) !important;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
         }
-        
-        /* This is a default override for the whole app,
-            just in case Streamlit's "body" rule is winning */
+
         body {
             color: var(--color-primary-text) !important;
         }
 
-        header[data-testid="stHeader"] { background: transparent; }
+        /* Kill the default Streamlit header + extra top space */
+        header[data-testid="stHeader"] {
+            background: transparent !important;
+            height: 0 !important;
+            min-height: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+        }
+
         footer { visibility: hidden; }
 
         section[data-testid="stSidebar"] {
             display: none !important;
+        }
+
+        /* Main content padding (pull everything up a bit) */
+        main.block-container {
+            padding-top: 0 !important;
+            margin-top: -20px !important;
+        }
+        .main .block-container {
+            padding-top: 0 !important;
+            margin-top: -20px !important;
         }
 
         h1, h2, h3, h4, h5, h6 {
@@ -1225,11 +1241,6 @@ def inject_global_css():
             filter: brightness(1.1);
             color: var(--color-primary-text) !important;
         }
-        
-        /* Reduce top padding of the main Streamlit block container */
-        .main .block-container {
-            padding-top: 0.5rem !important;
-        }
 
         /* ===== TOP NAV BAR (FIXED) ===== */
         .top-nav-bar {
@@ -1238,10 +1249,11 @@ def inject_global_css():
             top: 0;
             left: 0;
             right: 0;
-            z-index: 999;                 /* sit above everything */
+            z-index: 999;
             padding: 10px 0;
             width: 100%;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.12);  /* subtle shadow */
+            box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+            margin-top: -4px !important;  /* nudge closer to the very top */
         }
 
         .top-nav-inner {
@@ -1251,11 +1263,6 @@ def inject_global_css():
             justify-content: space-between;
             gap: 12px;
         }
-        /* Push main content below fixed nav bar */
-        .main-content {
-            padding-top: 90px;   /* roughly nav height; tweak 80–110px to taste */
-        }
-
 
         .top-nav-container .stButton {
             width: 100%;
@@ -1277,13 +1284,18 @@ def inject_global_css():
             filter: none;
         }
 
+        /* Push main content below fixed nav bar */
+        .main-content {
+            padding-top: 90px;  /* adjust 70–100 if you see overlap */
+        }
 
+        /* Buttons inside the main content */
         .main-content .stButton > button {
             border-radius: 8px !important;
             padding: 0.45rem 1.3rem;
         }
 
-        /* Simple cards */
+        /* ===== CARDS ===== */
         .hero-card {
             background: var(--color-primary-bg);
             border-radius: 16px;
@@ -1302,6 +1314,7 @@ def inject_global_css():
             font-size: 14px;
             color: var(--color-tertiary-text) !important;
         }
+
         .section-card {
             background: var(--color-page-bg);
             border-radius: 16px;
@@ -1311,11 +1324,40 @@ def inject_global_css():
             border: 1px solid var(--color-primary-bg);
         }
 
+        .section-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .section-subtitle {
+            font-size: 13px;
+            color: var(--color-primary-text);
+            margin-bottom: 12px;
+        }
+
+        .kpi-card-new {
+            background: var(--color-primary-bg);
+            border-radius: 16px;
+            padding: 14px 16px;
+            border: 1px solid var(--color-secondary-bg);
+        }
+        .kpi-label-new {
+            font-size: 12px;
+            color: var(--color-secondary-text);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .kpi-value-new {
+            font-size: 22px;
+            font-weight: 600;
+            margin-top: 4px;
+            color: var(--color-tertiary-text);
+        }
+
         /* ===== PAGE HEADER (TITLE + TAGLINE) ===== */
         .page-header {
             text-align: center;
-            margin: 0.25rem auto 0.5rem;
-            padding-top: 0rem;
+            margin: 0.1rem auto 0.5rem;
+            padding-top: 0;
         }
 
         .page-title {
@@ -1330,21 +1372,8 @@ def inject_global_css():
             font-size: 0.95rem;
             color: #4B5563;
         }
-        /* Kill the default Streamlit header space */
-        header[data-testid="stHeader"] {
-            background: transparent;
-            height: 0 !important;
-            min-height: 0 !important;
-            padding: 0 !important;
-        }
 
-        /* Reduce top padding of main content */
-        .main .block-container {
-            padding-top: 0rem !important;
-        }
-
-
-        /* ===== DASHBOARD HEADER (if you use later) ===== */
+        /* ===== DASHBOARD HEADER (optional section header) ===== */
         .dashboard-header {
             display: flex;
             align-items: flex-start;
@@ -1365,7 +1394,7 @@ def inject_global_css():
             font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.14em;
-            color: #6B7280; /* muted gray */
+            color: #6B7280;
         }
 
         .dash-title {
@@ -1376,7 +1405,7 @@ def inject_global_css():
 
         .dash-subtitle {
             font-size: 13px;
-            color: #4B5563; /* slightly darker gray */
+            color: #4B5563;
         }
 
         .dashboard-header-right {
@@ -1401,116 +1430,47 @@ def inject_global_css():
             width: 7px;
             height: 7px;
             border-radius: 999px;
-            background: #10B981; /* green */
-        }
-
-        }
-        .section-title {
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-        .section-subtitle {
-            font-size: 13px;
-            color: var(--color-primary-text);
-            margin-bottom: 12px;
-        }
-        .kpi-card-new {
-            background: var(--color-primary-bg);
-            border-radius: 16px;
-            padding: 14px 16px;
-            border: 1px solid var(--color-secondary-bg);
-        }
-        .kpi-label-new {
-            font-size: 12px;
-            color: var(--color-secondary-text);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-        }
-        .kpi-value-new {
-            font-size: 22px;
-            font-weight: 600;
-            margin-top: 4px;
-            color: var(--color-tertiary-text);
-        }
-        
-        /* Remove Streamlit header completely */
-        header[data-testid="stHeader"] {
-            background: transparent !important;
-            height: 0 !important;
-            min-height: 0 !important;
-            padding: 0 !important;
-        }
-
-        /* Remove default top padding on the body */
-        main.block-container {
-            padding-top: 0 !important;
-            margin-top: -20px !important;  /* pulls content upward */
-        }
-
-        /* OR if you use .main .block-container instead */
-        .main .block-container {
-            padding-top: 0 !important;
-            margin-top: -20px !important;
-        }
-
-        /* Pull the custom nav bar up */
-        .top-nav-bar {
-            margin-top: -10px !important;
-        }
-
-        /* Optional: tighten page header spacing */
-        .page-header {
-            margin-top: 0 !important;
-            padding-top: 0 !important;
+            background: #10B981;
         }
 
         /* ====================================================== */
-        /* == HYPER-SPECIFIC ("NUCLEAR") OVERRIDE FOR VALUATION == */
+        /* == HYPER-SPECIFIC OVERRIDES FOR VALUATION PAGE == */
         /* ====================================================== */
-        
-        /* This selector is so specific it is almost impossible to lose. */
-        
-        /* Targets "Ticker", "Company", "Current Price" labels and values */
         html body .stApp .main-content [data-testid="stMetric"] div {
             color: var(--color-primary-text) !important;
         }
 
-        /* Targets "Approx. market cap..." */
         html body .stApp .main-content [data-testid="stCaption"] {
             color: var(--color-primary-text) !important;
         }
 
-        /* Targets "Scenario" label */
         html body .stApp .main-content [data-testid="stRadio"] p {
             color: var(--color-primary-text) !important;
             font-weight: 600 !important;
         }
-        
-        /* Targets "Bull Case", "Base Case", "Bear Case" labels */
+
         html body .stApp .main-content [data-testid="stRadio"] label {
             color: var(--color-primary-text) !important;
             font-weight: 500 !important;
         }
-        
-        /* Targets the "Company Snapshot" title */
+
         html body .stApp .main-content .snapshot-title {
             color: var(--color-primary-text) !important;
         }
 
-        /* ====================================================== */
-        /* ===== UTILITY: METRIC COLORS ===== */
-        .positive-metric { color: #057A55; } /* Green */
-        .negative-metric { color: #E02424; } /* Red */
-        
-        /* ===== NEW: TICKER TAPE ===== */
+        /* ===== METRIC COLORS ===== */
+        .positive-metric { color: #057A55; }  /* Green */
+        .negative-metric { color: #E02424; }  /* Red */
+
+        /* ===== TICKER TAPE ===== */
         @keyframes scroll-left {
             from { transform: translateX(0%); }
-            to { transform: translateX(-50%); }
+            to   { transform: translateX(-50%); }
         }
 
         .ticker-tape-container {
-            background: var(--color-primary-bg); /* Use app's navy blue */
-            color: var(--color-tertiary-text); /* White */
+            background: var(--color-primary-bg);
+            color: var(--color-tertiary-text);
             overflow: hidden;
             white-space: nowrap;
             padding: 10px 0;
@@ -1526,7 +1486,7 @@ def inject_global_css():
 
         .ticker-tape-inner {
             display: inline-block;
-            animation: scroll-left 40s linear infinite; /* Adjust 40s to be faster/slower */
+            animation: scroll-left 40s linear infinite;
         }
 
         .ticker-item {
@@ -1537,13 +1497,13 @@ def inject_global_css():
         }
 
         .ticker-symbol {
-            color: var(--color-secondary-text); /* Khaki */
+            color: var(--color-secondary-text);
             font-weight: 600;
             margin-right: 8px;
         }
 
         .ticker-price {
-            color: var(--color-tertiary-text); /* White */
+            color: var(--color-tertiary-text);
             margin-right: 8px;
         }
 
@@ -1552,14 +1512,14 @@ def inject_global_css():
         }
 
         .ticker-change.positive {
-            color: #057A55; /* Green */
+            color: #057A55;
         }
 
         .ticker-change.negative {
-            color: #E02424; /* Red */
+            color: #E02424;
         }
         /* ===== END: TICKER TAPE ===== */
-        
+
         </style>
         """,
         unsafe_allow_html=True,

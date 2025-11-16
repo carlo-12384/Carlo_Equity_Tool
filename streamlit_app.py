@@ -44,7 +44,7 @@ def _first_row(df: pd.DataFrame, aliases) -> pd.Series:
 
 def yf_quarterly(symbol: str):
     t = yf.Ticker(symbol)
-    return t.quartertry_income_stmt, t.quarterly_balance_sheet, t.quarterly_cashflow
+    return t.quarterly_income_stmt, t.quarterly_balance_sheet, t.quarterly_cashflow
 
 def ttm_from_rows(df: pd.DataFrame, aliases) -> float:
     try:
@@ -601,7 +601,7 @@ def corr_peers(ticker: str, candidates: list, lookback_days=365, top_k=6):
     cors = []
     for c in candidates:
         try:
-            h = yf.Ticker(c).history(period="1Y", interval="1d")["Close"].pct_change().dropna()
+            h = yf.Ticker(c).history(period="1y", interval="1d")["Close"].pct_change().dropna()
             j = base.index.intersection(h.index)
             if len(j) >= 60:
                 cors.append((c, float(np.corrcoef(base.loc[j], h.loc[j])[0, 1])))
@@ -1987,11 +1987,7 @@ def render_analysis_page():
         """,
         unsafe_allow_html=True,
     )
-    charts_dict = res.get("charts", {})
-    if charts_dict.get("price") is not None:
-        st.pyplot(charts_dict["price"])
-    if charts_dict.get("scatter") is not None:
-        st.pyplot(charts_dict["scatter"])
+    
     st.markdown("</div>", unsafe_allow_html=True)
 
 # ---------- VALUATION PAGE ----------

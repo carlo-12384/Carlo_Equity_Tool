@@ -1549,16 +1549,43 @@ def inject_global_css():
         html body .stApp .main-content .snapshot-title {
             color: var(--color-primary-text) !important;
         }
+        
+
+        /* ============================================================
+           ==  !!! --- ULTIMATE 100% FIX FOR TABS --- !!!
+           ============================================================ */
+        
+        /* This targets the stable Streamlit "test ID" for each tab button.
+           It is the most robust way to override the style.
+        */
+
+        /* UNSELECTED tab text */
+        button[data-testid="stTab"] {
+            color: #4B5563 !important; /* A visible dark gray */
+            font-weight: 600 !important;
+            opacity: 0.7 !important;
+        }
+
+        /* SELECTED tab text */
+        button[data-testid="stTab"][aria-selected="true"] {
+            color: var(--color-primary-text) !important; /* Your navy blue */
+            opacity: 1 !important;
+        }
+
+        /* The underline bar */
+        div[data-baseweb="tab-highlight"] {
+            /* Make the line match your selected text color */
+            background-color: var(--color-primary-text) !important; 
+        }
+        
+        /* --- END ULTIMATE FIX --- */
+        
 
         /* ============================================================
            ==  [DELETED] APPLE-STYLE SEGMENTED CONTROL CSS         ==
            ============================================================ 
-           
-           The entire block of CSS that used to be here (starting with
-           .nav-tabs-pro) has been removed. It was conflicting with
-           the new st.tabs component. By removing it, the default,
-           visible st.tabs styling will apply.
-           
+           All the CSS starting with '.nav-tabs-pro' has been
+           permanently removed as it was causing the problem.
         */
 
         </style>

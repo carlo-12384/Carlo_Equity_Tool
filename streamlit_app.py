@@ -2298,5 +2298,16 @@ def main():
     )
 
     # --------- ROUTING ----------
-    page = st.sessio
-
+    page = st.session_state["active_page"]
+    if page == "Dashboard":
+        render_dashboard()
+    elif page == "Analysis":
+        render_analysis_page()
+    elif page == "Valuation":
+        render_valuation_page()
+    elif page == "Research":
+        render_research_page()
+    elif page == "Theses":
+        render_theses_page()
+if __name__ == "__main__":
+    main()

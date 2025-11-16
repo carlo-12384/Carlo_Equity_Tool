@@ -1166,12 +1166,6 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
 # ======================================================================
 # GLOBAL STYLING
 # ======================================================================
-# ======================================================================
-# GLOBAL STYLING
-# ======================================================================
-# ======================================================================
-# GLOBAL STYLING
-# ======================================================================
 def inject_global_css():
     st.markdown(
         """
@@ -1313,7 +1307,7 @@ def inject_global_css():
             font-size: 14px;
             color: var(--color-tertiary-text) !important;
         }
-                .section-card {
+        .section-card {
             background: var(--color-page-bg);
             border-radius: 16px;
             padding: 18px 20px;
@@ -1326,7 +1320,7 @@ def inject_global_css():
         .page-header {
             text-align: center;
             margin: 0.25rem auto 0.5rem;
-            padding-top: 0.1rem;
+            padding-top: 0rem;
         }
 
         .page-title {
@@ -1351,17 +1345,16 @@ def inject_global_css():
 
         /* Reduce top padding of main content */
         .main .block-container {
-            padding-top: 0.25rem !important;
+            padding-top: 0rem !important;
         }
 
 
         /* ===== DASHBOARD HEADER (if you use later) ===== */
         .dashboard-header {
-
             display: flex;
             align-items: flex-start;
             justify-content: space-between;
-            margin-top: 12px;
+            margin-top: 5px;
             margin-bottom: 10px;
             padding: 6px 4px 4px 4px;
             border-bottom: 1px solid var(--color-primary-bg);

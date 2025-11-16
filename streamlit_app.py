@@ -1286,7 +1286,7 @@ def inject_global_css():
 
         /* Push main content below fixed nav bar */
         .main-content {
-            padding-top: 70px;  /* adjust 70–100 if you see overlap */
+            padding-top: 10px;  /* adjust 70–100 if you see overlap */
         }
 
         /* Buttons inside the main content */

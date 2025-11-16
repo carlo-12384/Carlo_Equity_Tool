@@ -402,22 +402,46 @@ def get_sector_performance():
         return {}
 
 # --- NEW FUNCTION ---
+# --- MODIFIED FUNCTION ---
 def plot_sector_heatmap(sector_data: dict):
     """
     Creates a Plotly Treemap (heatmap) of sector performance.
     """
+    if not sector_data: # Safety check for empty data
+        fig = go.Figure()
+        fig.update_layout(title_text="Sector Performance (Data Unavailable)", title_x=0.5)
+        return fig
+        
     labels = list(sector_data.keys())
-    values = [abs(v) for v in sector_data.values()] # Use absolute value for size
-    colors = ['#E02424' if v < 0 else '#057A55' for v in sector_data.values()] # Red/Green
+    raw_values = list(sector_data.values()) # e.g., [0.5, -0.2, 0.0]
+
+    # --- FIX ---
+    # Treemap 'values' (for area) must be positive.
+    # We use the absolute value of performance for sizing.
+    abs_values = [abs(v) for v in raw_values]
     
-    # Create hover text
-    hover_text = [f"{v:+.2f}%" for v in sector_data.values()]
+    # If the sum of all abs_values is 0, it means all sectors are 0.0%
+    # This will cause a ValueError. We must assign a default, equal size.
+    if sum(abs_values) == 0:
+        # Set all values to 1.0 so they are drawn as equal-sized blocks.
+        values = [1.0] * len(labels)
+        # Set all colors to a neutral gray since change is 0.
+        colors = ['#6B7280'] * len(labels)
+    else:
+        # Use the absolute performance for size
+        values = abs_values
+        # Use the original performance sign for color
+        colors = ['#E02424' if v < 0 else '#057A55' for v in raw_values]
+    # --- END FIX ---
+    
+    # Create hover text using the original performance data
+    hover_text = [f"{v:+.2f}%" for v in raw_values]
 
     fig = go.Figure(go.Treemap(
         labels = labels,
         parents = ["Sectors"] * len(labels), # All have one parent
-        values = values,
-        marker_colors = colors,
+        values = values,                     # Use our new positive values
+        marker_colors = colors,              # Use our new color list
         texttemplate = "<b>%{label}</b><br>%{customdata}",
         customdata = hover_text,
         hovertemplate = "<b>%{label}</b><br>Change: %{customdata}<extra></extra>",

@@ -1707,42 +1707,41 @@ def render_dashboard():
     # --- Live Index Data (for summary + cards) ---
     index_data = get_live_index_data()
 
-    # --- NEW: Top S&P 500 Movers Ticker Tape (replaces index tape) ---
+       # --- TOP BAR: S&P 500 Top Gainers & Losers Ticker Tape ---
     top_gainers, top_losers = get_top_movers_sp500()
 
     if top_gainers or top_losers:
         item_html_list = []
 
-        if top_gainers:
-            item_html_list.append('<span class="ticker-section-label">TOP GAINERS</span>')
-            for item in top_gainers:
-                change_class = "positive"
-                change_sign = "+" if item["change"] >= 0 else ""
-                item_html_list.append(
-                    f'<div class="ticker-item">'
-                    f'  <span class="ticker-symbol">{item["symbol"]}</span>'
-                    f'  <span class="ticker-price">${item["price"]:,.2f}</span>'
-                    f'  <span class="ticker-change {change_class}">'
-                    f'    {change_sign}{item["change"]:,.2f} ({change_sign}{item["pct_change"]:,.2f}%)'
-                    f'  </span>'
-                    f'</div>'
-                )
+        # First: top gainers (green)
+        for item in top_gainers:
+            change_class = "positive"   # uses .ticker-change.positive { color: #057A55; }
+            change_sign = "+" if item["change"] >= 0 else ""
+            item_html_list.append(
+                f'<div class="ticker-item">'
+                f'  <span class="ticker-symbol">{item["symbol"]}</span>'
+                f'  <span class="ticker-price">${item["price"]:,.2f}</span>'
+                f'  <span class="ticker-change {change_class}">'
+                f'    {change_sign}{item["change"]:,.2f} ({change_sign}{item["pct_change"]:,.2f}%)'
+                f'  </span>'
+                f'</div>'
+            )
 
-        if top_losers:
-            item_html_list.append('<span class="ticker-section-label">TOP LOSERS</span>')
-            for item in top_losers:
-                change_class = "negative"
-                change_sign = "+" if item["change"] >= 0 else ""
-                item_html_list.append(
-                    f'<div class="ticker-item">'
-                    f'  <span class="ticker-symbol">{item["symbol"]}</span>'
-                    f'  <span class="ticker-price">${item["price"]:,.2f}</span>'
-                    f'  <span class="ticker-change {change_class}">'
-                    f'    {change_sign}{item["change"]:,.2f} ({change_sign}{item["pct_change"]:,.2f}%)'
-                    f'  </span>'
-                    f'</div>'
-                )
+        # Then: top losers (red)
+        for item in top_losers:
+            change_class = "negative"   # uses .ticker-change.negative { color: #E02424; }
+            change_sign = "+" if item["change"] >= 0 else ""
+            item_html_list.append(
+                f'<div class="ticker-item">'
+                f'  <span class="ticker-symbol">{item["symbol"]}</span>'
+                f'  <span class="ticker-price">${item["price"]:,.2f}</span>'
+                f'  <span class="ticker-change {change_class}">'
+                f'    {change_sign}{item["change"]:,.2f} ({change_sign}{item["pct_change"]:,.2f}%)'
+                f'  </span>'
+                f'</div>'
+            )
 
+        # Duplicate once to create a seamless infinite scroll
         all_items_html = "".join(item_html_list)
         full_ticker_html = f"""
         <div class="ticker-tape-container">
@@ -1752,6 +1751,7 @@ def render_dashboard():
         </div>
         """
         st.markdown(full_ticker_html, unsafe_allow_html=True)
+
 
     # ============================
     # --- ROW 0: Index Charts

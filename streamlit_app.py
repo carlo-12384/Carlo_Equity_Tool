@@ -1549,9 +1549,11 @@ def inject_global_css():
 
         /* === START: COMPLETE TICKER TAPE CSS === */
       
+        /* === START: COMPLETE TICKER TAPE CSS (Simple) === */
+      
         @keyframes scroll-left {
             from { transform: translateX(0%); }
-            /* This scrolls 50% of the wrapper's width, which is 1 full copy */
+            /* This scrolls 50% of the element's width, which is 1 full copy */
             to { transform: translateX(-50%); }
         }
 
@@ -1570,29 +1572,24 @@ def inject_global_css():
             border-bottom: 1px solid var(--color-secondary-bg);
         }
       
-        /* THIS WRAPPER IS THE "TRACK" THAT MOVES */
-        .ticker-tape-wrapper {
-            display: flex; /* Lines up the two inner-divs */
-            width: max-content; /* Makes wrapper as wide as 2x content */
+        /* THIS IS THE ONLY DIV THAT MOVES */
+        .ticker-tape-inner {
+            /* This makes the div as wide as its 2x content */
+            width: max-content; 
+          
+            /* This applies the animation */
             animation: scroll-left 40s linear infinite;
         }
 
-        /* THIS HOLDS THE ACTUAL ITEMS */
-        .ticker-tape-inner {
-            display: flex; /* Lines up items (SPY, 10YR) inside */
-            align-items: center; /* Vertically centers items */
-            width: max-content; /* Makes div as wide as its content */
-        }
-
-        /* [FIX] THIS ADDS THE SPACING BACK */
+        /* This adds spacing to the items */
         .ticker-item {
             display: inline-block;
-            padding: 0 25px; /* <-- ADDS SPACING BETWEEN ITEMS */
+            padding: 0 25px; 
             font-size: 16px;
             font-weight: 500;
         }
       
-        /* [FIX] THIS STYLES THE "MACRO DATA" LABEL */
+        /* This styles the "MACRO DATA" label */
         .ticker-section-label {
             display: inline-block;
             padding: 0 25px;
@@ -1622,6 +1619,7 @@ def inject_global_css():
         .ticker-change.negative {
             color: #F87171; /* Brighter Red */
         }
+      
       
         /* === END: COMPLETE TICKER TAPE CSS === */
 
@@ -1696,16 +1694,11 @@ def render_dashboard():
 
         # Create one copy of the items
         all_items_html = "".join(item_html_list)
-        # We will render this copy twice, in two separate divs
+        # We will render this copy twice, back-to-back, inside ONE div
         full_ticker_html = f"""
         <div class="ticker-tape-container">
-            <div class="ticker-tape-wrapper">
-                <div class="ticker-tape-inner">
-                    {all_items_html}
-                </div>
-                <div class="ticker-tape-inner" aria-hidden="true">
-                    {all_items_html}
-                </div>
+            <div class="ticker-tape-inner">
+                {all_items_html}{all_items_html}
             </div>
         </div>
         """

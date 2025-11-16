@@ -1439,7 +1439,7 @@ def inject_global_css():
 def render_dashboard():
     inject_global_css()
 
-    # --- Live Index Ticker (kept) ---
+    # --- Live Index Ticker ---
     index_data = get_live_index_data()
     if index_data:
         item_html_list = []
@@ -1483,18 +1483,27 @@ def render_dashboard():
     st.write("")
 
     # ============================
-    # AI MARKET SUMMARY (DETAILED)
+    # ROW 1: AI MARKET SUMMARY (LEFT HALF)
     # ============================
-    st.markdown(
-        "<div class='section-card'><div class='section-title'>Market Summary (AI-Generated)</div>",
-        unsafe_allow_html=True,
-    )
-    summary_text = generate_market_summary(index_data)
-    st.markdown(summary_text)
-    st.markdown("</div>", unsafe_allow_html=True)
+    summary_left, summary_right = st.columns([1.2, 1])  # ~55% / 45%
+
+    with summary_left:
+        st.markdown(
+            "<div class='section-card'><div class='section-title'>Market Summary (AI-Generated)</div>",
+            unsafe_allow_html=True,
+        )
+        summary_text = generate_market_summary(index_data)
+        st.markdown(summary_text)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with summary_right:
+        # keep empty for clean whitespace (or add future widgets)
+        st.write("")
+
+    st.write("")
 
     # ============================
-    # TWO-COLUMN LAYOUT
+    # ROW 2: TWO-COLUMN LAYOUT
     # ============================
     left, right = st.columns([1.4, 1])
 
@@ -1507,7 +1516,11 @@ def render_dashboard():
         news_items = get_market_news()
         if news_items:
             for n in news_items:
-                ts_str = n["time"].strftime("%Y-%m-%d %H:%M") if isinstance(n["time"], pd.Timestamp) else ""
+                ts_str = (
+                    n["time"].strftime("%Y-%m-%d %H:%M")
+                    if isinstance(n["time"], pd.Timestamp)
+                    else ""
+                )
                 meta = " — " + n["publisher"] if n["publisher"] else ""
                 if ts_str:
                     meta += f" • {ts_str}"

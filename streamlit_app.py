@@ -1173,11 +1173,11 @@ def inject_global_css():
         /* ===== COLOR PALETTE ===== */
         :root {
             --color-primary-bg: #001f3f;    /* Dark Navy Blue */
-            --color-secondary-bg: #F5EAAA;  /* Khaki */
-            --color-page-bg: #FFFFFF;       /* White */
+            --color-secondary-bg: #F5EAAA; /* Khaki */
+            --color-page-bg: #FFFFFF;      /* White */
             
             --color-primary-text: #001f3f;    /* Dark Navy Blue */
-            --color-secondary-text: #F5EAAA;  /* Khaki */
+            --color-secondary-text: #F5EAAA; /* Khaki */
             --color-tertiary-text: #FFFFFF;   /* White */
         }
         
@@ -1186,42 +1186,33 @@ def inject_global_css():
             background: var(--color-page-bg) !important;
             color: var(--color-primary-text) !important;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            margin: 0 !important;
+            padding: 0 !important;
         }
 
-        body {
-            color: var(--color-primary-text) !important;
-        }
-
-        /* Kill the default Streamlit header + extra top space */
+        /* Remove Streamlit header (the white bar at the very top) */
         header[data-testid="stHeader"] {
             background: transparent !important;
             height: 0 !important;
             min-height: 0 !important;
             padding: 0 !important;
-            box-shadow: none !important;
         }
 
-        footer { visibility: hidden; }
+        /* ===== NUCLEAR TOP-SPACING FIX ===== */
+        /* This is the key part that actually pulls your content up. */
 
-        section[data-testid="stSidebar"] {
-            display: none !important;
+        /* Kill extra padding on the main block container */
+        div.block-container {
+            padding-top: 0rem !important;
+            margin-top: -40px !important;   /* tweak -20 to -60 if you want it higher/lower */
         }
 
-        /* Main content padding (pull everything up a bit) */
-        main.block-container {
+        /* If Streamlit wraps it differently, this also helps: */
+        div[data-testid="stAppViewContainer"] {
             padding-top: 0 !important;
-            margin-top: -20px !important;
-        }
-        .main .block-container {
-            padding-top: 0 !important;
-            margin-top: -20px !important;
         }
 
-        h1, h2, h3, h4, h5, h6 {
-            color: var(--color-primary-text) !important;
-        }
-
-        /* ===== GLOBAL BUTTON RESET ===== */
+        /* ===== BUTTONS ===== */
         .stButton > button,
         button[kind="primary"],
         button[kind="secondary"],
@@ -1242,18 +1233,11 @@ def inject_global_css():
             color: var(--color-primary-text) !important;
         }
 
-        /* ===== TOP NAV BAR (FIXED) ===== */
+        /* ===== TOP NAV BAR (not fixed; just tight to top) ===== */
         .top-nav-bar {
             background: var(--color-primary-bg);
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 999;
             padding: 10px 0;
             width: 100%;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.12);
-            margin-top: -4px !important;  /* nudge closer to the very top */
         }
 
         .top-nav-inner {
@@ -1284,15 +1268,11 @@ def inject_global_css():
             filter: none;
         }
 
-        /* Push main content below fixed nav bar */
+        /* Main content wrapper (you already have this div in main()) */
         .main-content {
-            padding-top: 10px;  /* adjust 70–100 if you see overlap */
-        }
-
-        /* Buttons inside the main content */
-        .main-content .stButton > button {
-            border-radius: 8px !important;
-            padding: 0.45rem 1.3rem;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding-top: 10px;  /* small breathing room under nav */
         }
 
         /* ===== CARDS ===== */
@@ -1314,7 +1294,6 @@ def inject_global_css():
             font-size: 14px;
             color: var(--color-tertiary-text) !important;
         }
-
         .section-card {
             background: var(--color-page-bg);
             border-radius: 16px;
@@ -1323,7 +1302,6 @@ def inject_global_css():
             margin-bottom: 18px;
             border: 1px solid var(--color-primary-bg);
         }
-
         .section-title {
             font-weight: 600;
             margin-bottom: 4px;
@@ -1334,138 +1312,14 @@ def inject_global_css():
             margin-bottom: 12px;
         }
 
-        .kpi-card-new {
-            background: var(--color-primary-bg);
-            border-radius: 16px;
-            padding: 14px 16px;
-            border: 1px solid var(--color-secondary-bg);
-        }
-        .kpi-label-new {
-            font-size: 12px;
-            color: var(--color-secondary-text);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-        }
-        .kpi-value-new {
-            font-size: 22px;
-            font-weight: 600;
-            margin-top: 4px;
-            color: var(--color-tertiary-text);
-        }
-
-        /* ===== PAGE HEADER (TITLE + TAGLINE) ===== */
-        .page-header {
-            text-align: center;
-            margin: 0.1rem auto 0.5rem;
-            padding-top: 0;
-        }
-
-        .page-title {
-            font-family: "DM Serif Display", serif;
-            font-size: 2.6rem;
-            font-weight: 400;
-            margin: 0;
-            color: var(--color-primary-text);
-        }
-        .page-subtitle {
-            margin-top: 0.25rem;
-            font-size: 0.95rem;
-            color: #4B5563;
-        }
-
-        /* ===== DASHBOARD HEADER (optional section header) ===== */
-        .dashboard-header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            margin-top: 5px;
-            margin-bottom: 10px;
-            padding: 6px 4px 4px 4px;
-            border-bottom: 1px solid var(--color-primary-bg);
-        }
-
-        .dashboard-header-left {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-
-        .dash-kicker {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.14em;
-            color: #6B7280;
-        }
-
-        .dash-title {
-            font-size: 22px;
-            font-weight: 600;
-            color: var(--color-primary-text);
-        }
-
-        .dash-subtitle {
-            font-size: 13px;
-            color: #4B5563;
-        }
-
-        .dashboard-header-right {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .dash-pill {
-            font-size: 11px;
-            padding: 4px 10px;
-            border-radius: 999px;
-            border: 1px solid #D1D5DB;
-            background: #F9FAFB;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            color: #374151;
-        }
-
-        .dash-pill-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 999px;
-            background: #10B981;
-        }
-
-        /* ====================================================== */
-        /* == HYPER-SPECIFIC OVERRIDES FOR VALUATION PAGE == */
-        /* ====================================================== */
-        html body .stApp .main-content [data-testid="stMetric"] div {
-            color: var(--color-primary-text) !important;
-        }
-
-        html body .stApp .main-content [data-testid="stCaption"] {
-            color: var(--color-primary-text) !important;
-        }
-
-        html body .stApp .main-content [data-testid="stRadio"] p {
-            color: var(--color-primary-text) !important;
-            font-weight: 600 !important;
-        }
-
-        html body .stApp .main-content [data-testid="stRadio"] label {
-            color: var(--color-primary-text) !important;
-            font-weight: 500 !important;
-        }
-
-        html body .stApp .main-content .snapshot-title {
-            color: var(--color-primary-text) !important;
-        }
-
         /* ===== METRIC COLORS ===== */
-        .positive-metric { color: #057A55; }  /* Green */
-        .negative-metric { color: #E02424; }  /* Red */
+        .positive-metric { color: #057A55; } /* Green */
+        .negative-metric { color: #E02424; } /* Red */
 
         /* ===== TICKER TAPE ===== */
         @keyframes scroll-left {
             from { transform: translateX(0%); }
-            to   { transform: translateX(-50%); }
+            to { transform: translateX(-50%); }
         }
 
         .ticker-tape-container {
@@ -1518,18 +1372,12 @@ def inject_global_css():
         .ticker-change.negative {
             color: #E02424;
         }
-        /* ===== END: TICKER TAPE ===== */
-        
-        /* HARD OVERRIDE: pull all app content closer to the top */
-        html body .stApp main div.block-container {
-            padding-top: 0 !important;
-            margin-top: -70px !important;   /* try -70; adjust to -60 or -80 if needed */
-        }
-
+        /* ===== END TICKER TAPE ===== */
         </style>
         """,
         unsafe_allow_html=True,
     )
+
 
 def render_dashboard():
     inject_global_css()

@@ -454,7 +454,6 @@ def plot_sector_heatmap(sector_data: dict):
     )
     return fig
 
-
 # -------------------- FINNHUB (FREE) --------------------
 def safe_finnhub_get(path, **params):
     try:

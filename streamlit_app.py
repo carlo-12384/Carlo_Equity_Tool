@@ -415,6 +415,77 @@ def get_global_macro_data():
         )
 
     return data
+    
+@st.cache_data(ttl=60)  # Refresh every 60s
+def get_dashboard_kpis():
+    """
+    Macro KPIs for the header bar.
+    Uses assets that are NOT already on the page:
+      - VIX (volatility)
+      - US Dollar Index (UUP as proxy)
+      - High Yield Credit (HYG)
+      - Investment Grade Credit (LQD)
+    """
+    kpi_assets = {
+        "^VIX": "Volatility (VIX)",
+        "UUP":  "US Dollar (UUP)",
+        "HYG":  "High Yield Credit",
+        "LQD":  "IG Credit",
+    }
+
+    out = []
+    for ticker, label in kpi_assets.items():
+        last_price = None
+        prev_close = None
+
+        try:
+            t = yf.Ticker(ticker)
+            hist = t.history(period="2d", interval="1d")
+            if hist is not None and not hist.empty and len(hist) >= 2:
+                prev_close = float(hist["Close"].iloc[0])
+                last_price = float(hist["Close"].iloc[-1])
+            else:
+                fast = t.fast_info or {}
+                last_price = fast.get("last_price") or fast.get("lastPrice")
+                prev_close = fast.get("previous_close") or fast.get("previousClose")
+                if last_price is not None:
+                    last_price = float(last_price)
+                if prev_close is not None:
+                    prev_close = float(prev_close)
+        except Exception as e:
+            logging.warning(f"Failed to get KPI data for {ticker}: {e}")
+
+        if last_price is None and prev_close is None:
+            value_str = "N/A"
+            change_str = "+0.00 (0.00%)"
+            change_val = 0.0
+        else:
+            if last_price is None:
+                last_price = prev_close
+            if prev_close is None or prev_close == 0:
+                prev_close = last_price
+
+            try:
+                change = last_price - prev_close
+                pct_change = (change / prev_close) * 100 if prev_close else 0.0
+            except Exception:
+                change = 0.0
+                pct_change = 0.0
+
+            value_str = f"{last_price:,.2f}"
+            change_str = f"{change:+.2f} ({pct_change:+.2f}%)"
+            change_val = change
+
+        out.append(
+            {
+                "label": label,
+                "value_str": value_str,
+                "change_str": change_str,
+                "change_val": change_val,
+            }
+        )
+
+    return out
 
     
 @st.cache_data(ttl=300)
@@ -1446,26 +1517,77 @@ def inject_global_css():
             color: var(--color-primary-text) !important;
         }
         
-        /* ===== PAGE HEADER ===== */
+        /* ===== PAGE HEADER / HERO ===== */
+        .header-hero {
+            /* full-width gradient bar */
+            width: 100vw;
+            position: relative;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 32px 0 26px 0;
+            background: linear-gradient(90deg, #00152E 0%, #003566 50%, #00152E 100%);
+            border-bottom: 2px solid #001f3f;
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.15);
+        }
         .page-header {
-            text-align: center;
-            padding: 1rem 0 2rem 0;
+            max-width: 1100px;
             margin: 0 auto;
-            max-width: 900px;
+            text-align: center;
         }
         .page-title {
             font-family: 'DM Serif Display', serif;
-            font-size: 3.25rem;
-            font-weight: 400;
-            color: var(--color-primary-text) !important;
-            margin-bottom: 0.25rem;
+            font-size: 3rem;
+            font-weight: 500;
+            color: var(--color-tertiary-text) !important; /* white */
+            margin-bottom: 0.2rem;
+            letter-spacing: -0.03em;
         }
         .page-subtitle {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 500;
-            color: #4B5563;
+            color: rgba(229, 231, 235, 0.9);
             margin: 0;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
         }
+        .page-mini-desc {
+            font-size: 0.9rem;
+            color: rgba(229, 231, 235, 0.9);
+            margin-top: 0.4rem;
+        }
+
+        /* ===== HEADER KPI ROW ===== */
+        .header-kpi-container {
+            max-width: 1100px;
+            margin: 10px auto 24px auto;
+        }
+        .header-kpi-card {
+            background: #FFFFFF;
+            border-radius: 12px;
+            padding: 10px 14px;
+            border: 1px solid #E5E7EB;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.04);
+        }
+        .header-kpi-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #6B7280;
+            margin-bottom: 2px;
+        }
+        .header-kpi-value {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #001f3f;
+        }
+        .header-kpi-change {
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-top: 2px;
+        }
+        .header-kpi-change.positive { color: #057A55; }
+        .header-kpi-change.negative { color: #E02424; }
+
 
         /* ===== GLOBAL BUTTON RESET ===== */
         .stButton > button,
@@ -2586,16 +2708,44 @@ def main():
     st_autorefresh(interval=60_000, key="auto_refresh_live_data")
 
 
-    # ---------- PAGE HEADER ----------
+        # ---------- PAGE HEADER / HERO ----------
     st.markdown(
         """
-        <div class="page-header">
-            <h1 class="page-title">Equity Research Tool</h1>
-            <p class="page-subtitle">Fricano Capital Research</p>
+        <div class="header-hero">
+            <div class="page-header">
+                <h1 class="page-title">Equity Research Tool</h1>
+                <p class="page-subtitle">Fricano Capital Research</p>
+                <p class="page-mini-desc">
+                    Institutional-style equity analytics with live macro context.
+                </p>
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
+
+    # ---------- HEADER KPI ROW ----------
+    kpi_data = get_dashboard_kpis()
+    if kpi_data:
+        st.markdown("<div class='header-kpi-container'>", unsafe_allow_html=True)
+        cols = st.columns(len(kpi_data))
+        for col, item in zip(cols, kpi_data):
+            with col:
+                change_class = "positive" if item["change_val"] >= 0 else "negative"
+                st.markdown(
+                    f"""
+                    <div class="header-kpi-card">
+                        <div class="header-kpi-label">{item['label']}</div>
+                        <div class="header-kpi-value">{item['value_str']}</div>
+                        <div class="header-kpi-change {change_class}">
+                            {item['change_str']}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+        st.markdown("</div>", unsafe_allow_html=True)
+
 
     # --- !!! ---
     # --- FIX 1: Replaced st.radio and custom CSS with st.tabs ---

@@ -2606,7 +2606,7 @@ def main():
     st.markdown(
         """
         <div class="page-header">
-            <h1 class="page-title">Equity Research Platform</h1>
+            <h1 class="page-title">Equity Research Tool</h1>
             <p class="page-subtitle">Fricano Capital Research</p>
         </div>
         """,

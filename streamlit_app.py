@@ -343,12 +343,14 @@ def get_live_index_data():
 @st.cache_data(ttl=300)
 def get_intraday_index_charts_data():
     """
-    Fetches 1-day intraday data for the 4 main indices for charting.
+    Fetches 5-day daily data for the 4 main indices for charting.
     """
     tickers = ['^GSPC', '^IXIC', '^DJI', '^RUT']
     try:
-        # Fetch 1-day data at 15-minute intervals
-        data = yf.download(tickers, period="1d", interval="15m")
+        # --- FIX: Changed period to "5d" (5 days) and interval to "1d" (1 day) ---
+        data = yf.download(tickers, period="5d", interval="1d")
+        # --- END FIX ---
+        
         if data.empty:
             return None
         
@@ -356,10 +358,11 @@ def get_intraday_index_charts_data():
         chart_data = {}
         for ticker in tickers:
             if ('Close', ticker) in data.columns:
+                # This will now get the 'Close' prices for the last 5 days
                 chart_data[ticker] = data[('Close', ticker)].dropna()
         return chart_data
     except Exception as e:
-        logging.warning(f"Failed to get intraday chart data: {e}")
+        logging.warning(f"Failed to get chart data: {e}")
         return None
 
 # --- NEW FUNCTION ---

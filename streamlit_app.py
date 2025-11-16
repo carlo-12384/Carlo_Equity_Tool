@@ -44,7 +44,7 @@ def _first_row(df: pd.DataFrame, aliases) -> pd.Series:
 
 def yf_quarterly(symbol: str):
     t = yf.Ticker(symbol)
-    return t.quarterly_income_stmt, t.quarterly_balance_sheet, t.quarterly_cashflow
+    return t.quartertry_income_stmt, t.quarterly_balance_sheet, t.quarterly_cashflow
 
 def ttm_from_rows(df: pd.DataFrame, aliases) -> float:
     try:
@@ -1523,7 +1523,7 @@ def inject_global_css():
         /* ===== END TICKER TAPE ===== */
 
         /* ====================================================== */
-        /* == VALUATION PAGE OVERRIDES (labels, captions)       */
+        /* == VALUATION PAGE OVERRIDES (labels, captions)      */
         /* ====================================================== */
         html body .stApp .main-content [data-testid="stMetric"] div {
             color: var(--color-primary-text) !important;
@@ -1545,93 +1545,6 @@ def inject_global_css():
 
         html body .stApp .main-content .snapshot-title {
             color: var(--color-primary-text) !important;
-        }
-
-        /* ============================================================
-           APPLE-STYLE SEGMENTED CONTROL NAV FOR MAIN TABS
-        ============================================================ */
-
-        /* Outer wrapper you already render around st.radio */
-        .nav-tabs-pro {
-            display: flex;
-            justify-content: center;
-            margin: 0.75rem auto 1.25rem;
-        }
-
-        /* Hide the "Main navigation" label inside the radio widget */
-        .nav-tabs-pro [data-testid="stRadio"] > label {
-            display: none !important;
-        }
-
-        /* Segmented-control track */
-        .nav-tabs-pro [role="radiogroup"] {
-            display: inline-flex !important;
-            align-items: center;
-            gap: 4px;
-            padding: 4px;
-            border-radius: 999px;              /* full pill */
-            background: #F3F4F6;               /* light gray track */
-            box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.06),
-                        0 4px 10px rgba(15, 23, 42, 0.06);
-        }
-
-        /* Hide radio dot */
-        .nav-tabs-pro [role="radiogroup"] label > div:first-child {
-            display: none !important;
-            visibility: hidden !important;
-        }
-
-        /* Hide the actual input so text is the clickable hitbox */
-        .nav-tabs-pro [role="radiogroup"] input {
-            opacity: 0 !important;
-            position: absolute !important;
-            pointer-events: none !important;
-        }
-
-        /* Base pill style (unselected tab) */
-        .nav-tabs-pro [role="radiogroup"] label {
-            cursor: pointer !important;
-            border-radius: 999px !important;
-            padding: 6px 16px !important;
-            margin: 0 !important;
-            border: 1px solid transparent !important;
-            background: transparent !important;
-            box-shadow: none !important;
-            transition: background 0.15s ease, 
-                        box-shadow 0.15s ease,
-                        border-color 0.15s ease,
-                        color 0.15s ease;
-        }
-
-        /* Text inside each pill */
-        .nav-tabs-pro [role="radiogroup"] label span {
-            font-size: 0.98rem;
-            font-weight: 500;
-            color: #111827 !important;        /* dark slate text */
-            opacity: 0.9;
-        }
-
-        /* Hover state for any tab */
-        .nav-tabs-pro [role="radiogroup"] label:hover {
-            background: rgba(255, 255, 255, 0.9) !important;
-        }
-
-        .nav-tabs-pro [role="radiogroup"] label:hover span {
-            opacity: 1;
-        }
-
-        /* Active tab (checked input) — filled pill like Apple segmented control */
-        .nav-tabs-pro [role="radiogroup"] label:has(input[checked]) {
-            background: #FFFFFF !important;
-            border-color: var(--color-primary-bg) !important;   /* your navy */
-            box-shadow: 0 0 0 1px rgba(0, 31, 63, 0.12),
-                        0 6px 14px rgba(15, 23, 42, 0.18);
-        }
-
-        .nav-tabs-pro [role="radiogroup"] label:has(input[checked]) span {
-            color: var(--color-primary-bg) !important;
-            opacity: 1 !important;
-            font-weight: 600;
         }
 
         </style>
@@ -1723,7 +1636,10 @@ def render_dashboard():
                 chart_df = chart_df.rename("Price")
                 # --- END FIX ---
                 
-                st.line_chart(chart_df, height=100)
+                # --- !!! ---
+                # --- FIX: Removed height=100 to make chart auto-size and be readable ---
+                st.line_chart(chart_df)
+                # --- !!! ---
             else:
                 st.caption("Chart data unavailable.")
                 
@@ -2519,7 +2435,7 @@ def main():
         unsafe_allow_html=True,
     )
 
-    # Inject all global CSS (including Apple-style segmented nav)
+    # Inject all global CSS
     inject_global_css()
 
     # ---------- PAGE HEADER ----------
@@ -2533,47 +2449,29 @@ def main():
         unsafe_allow_html=True,
     )
 
-    # ---------- NAVIGATION SETUP ----------
-    pages = ["Home", "Screener", "Valuation", "Research", "Theses"]
-
-    # Initialize session state
-    if "active_page" not in st.session_state:
-        st.session_state.active_page = "Home"
-
-    # Determine default index for st.radio
-    try:
-        default_index = pages.index(st.session_state.active_page)
-    except ValueError:
-        default_index = 0
-
-    # ---------- APPLE-STYLE SEGMENTED NAV WRAPPER ----------
-    st.markdown('<div class="nav-tabs-pro">', unsafe_allow_html=True)
-
-    page = st.radio(
-        "Main navigation",
-        pages,
-        index=default_index,
-        horizontal=True,
-        key="main_nav",
+    # --- !!! ---
+    # --- FIX 1: Replaced st.radio and custom CSS with st.tabs ---
+    # This provides the [ Home ] [ Screener ] ... layout natively
+    
+    tab_home, tab_screener, tab_val, tab_research, tab_theses = st.tabs(
+        ["Home", "Screener", "Valuation", "Research", "Theses"]
     )
 
-    st.markdown('</div>', unsafe_allow_html=True)
-    # ---------- END NAV WRAPPER ----------
-
-    # Update session state
-    st.session_state.active_page = page
-
-    # ---------- PAGE ROUTING ----------
-    if page == "Home":
+    with tab_home:
         render_dashboard()
-    elif page == "Screener":
+        
+    with tab_screener:
         render_analysis_page()
-    elif page == "Valuation":
+        
+    with tab_val:
         render_valuation_page()
-    elif page == "Research":
+        
+    with tab_research:
         render_research_page()
-    elif page == "Theses":
+        
+    with tab_theses:
         render_theses_page()
+    # --- END FIX 1 ---
 
 
 if __name__ == "__main__":

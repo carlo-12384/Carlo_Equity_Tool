@@ -382,43 +382,58 @@ def get_global_macro_data():
         except Exception as e:
             logging.warning(f"Failed to get macro data for {ticker}: {e}")
     return data
-
-
-# --- Replace this function ---
+    
 @st.cache_data(ttl=300)
-def get_intraday_index_charts_data():
+def get_index_key_metrics(ticker: str) -> List[Dict[str, str]]:
     """
-    Fetches 5-day daily OHLC data for the 4 main indices for charting.
+    Fetches key metrics for a given index ticker.
     """
-    tickers = ['^GSPC', '^IXIC', '^DJI', '^RUT']
     try:
-        # --- FIX: Switched to 5d/1d for reliability vs 1d/15m ---
-        data = yf.download(tickers, period="5d", interval="1d")
+        t = yf.Ticker(ticker)
+        info = t.info
         
-        if data.empty:
-            return None
+        metrics = []
         
-        chart_data = {}
-        for ticker in tickers:
-            # --- FIX: Select all OHLC columns for this ticker ---
-            # Use .loc and slicers for multi-index selection
-            try:
-                ohlc_df = data.loc[:, (slice(None), ticker)]
-                
-                if not ohlc_df.empty:
-                    ohlc_df.columns = ohlc_df.columns.droplevel(1) # Remove 'ticker' from multi-index
-                    ohlc_df = ohlc_df[['Open', 'High', 'Low', 'Close']].dropna()
-                    if not ohlc_df.empty:
-                        chart_data[ticker] = ohlc_df
-            except KeyError:
-                # This happens if yf.download only returns one ticker's data
-                logging.warning(f"Could not extract multi-index for {ticker}")
-                continue
+        # 1. Day's Range
+        day_low = info.get('dayLow')
+        day_high = info.get('dayHigh')
+        if day_low and day_high:
+            metrics.append({
+                'label': "Day's Range",
+                'value': f"{day_low:,.2f} - {day_high:,.2f}"
+            })
+            
+        # 2. 52-Week Range
+        low_52 = info.get('fiftyTwoWeekLow')
+        high_52 = info.get('fiftyTwoWeekHigh')
+        if low_52 and high_52:
+            metrics.append({
+                'label': '52-Wk Range',
+                'value': f"{low_52:,.2f} - {high_52:,.2f}"
+            })
 
-        return chart_data
+        # 3. Previous Close
+        prev_close = info.get('previousClose')
+        if prev_close:
+            metrics.append({
+                'label': 'Prev. Close',
+                'value': f"{prev_close:,.2f}"
+            })
+
+        # 4. Volume
+        vol = info.get('averageVolume')
+        if vol:
+            metrics.append({
+                'label': 'Avg. Volume',
+                'value': f"{vol:,.0f}"
+            })
+            
+        return metrics
+        
     except Exception as e:
-        logging.warning(f"Failed to get 5d chart data: {e}")
-        return None
+        logging.warning(f"Failed to get key metrics for {ticker}: {e}")
+        return []
+
 
 # --- NEW FUNCTION ---
 @st.cache_data(ttl=300)
@@ -1099,74 +1114,6 @@ def five_day_price_plot(ticker: str):
     except Exception:
         plt_fig = None
     return plt_fig
-    
-# --- NEW FUNCTION (Using Plotly for better visual charts) ---
-def plot_index_candlestick(chart_df: pd.DataFrame, is_positive: bool):
-    """
-    Finviz-style intraday sparkline:
-      - Smooth line of Close prices
-      - Subtle fill under the line
-      - No axes, grid, or legend
-    """
-    if chart_df is None or chart_df.empty:
-        return go.Figure()
-
-    color = "#057A55" if is_positive else "#E02424"
-    fill_color = "rgba(5, 122, 85, 0.15)" if is_positive else "rgba(224, 36, 36, 0.18)"
-
-    closes = chart_df["Close"].astype(float)
-
-    fig = go.Figure()
-
-    # Main line + area fill
-    fig.add_trace(
-        go.Scatter(
-            x=chart_df.index,
-            y=closes,
-            mode="lines",
-            line=dict(width=2, color=color),
-            fill="tozeroy",
-            fillcolor=fill_color,
-            hoverinfo="skip",
-            showlegend=False,
-        )
-    )
-
-    # Dot at the last price
-    fig.add_trace(
-        go.Scatter(
-            x=[chart_df.index[-1]],
-            y=[closes.iloc[-1]],
-            mode="markers",
-            marker=dict(size=6, color=color),
-            hoverinfo="skip",
-            showlegend=False,
-        )
-    )
-
-    fig.update_layout(
-        height=120,
-        margin=dict(t=4, l=0, r=0, b=0),
-        xaxis=dict(
-            showticklabels=False,
-            showgrid=False,
-            zeroline=False,
-            fixedrange=True,
-        ),
-        yaxis=dict(
-            showticklabels=False,
-            showgrid=False,
-            zeroline=False,
-            fixedrange=True,
-        ),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        showlegend=False,
-        dragmode=False,
-    )
-
-    return fig
-
 
 
 # -------------------- LOCAL STORAGE HELPERS --------------------
@@ -1574,6 +1521,28 @@ def inject_global_css():
         .index-chart-change.positive { color: #057A55; }
         .index-chart-change.negative { color: #E02424; }
 
+        /* --- NEW METRIC LIST --- */
+        .index-metric-list {
+            margin-top: 12px;
+            padding-top: 8px;
+            border-top: 1px solid #EEEEEE;
+        }
+        .index-metric-row {
+            font-size: 0.85rem;
+            color: var(--color-primary-text) !important;
+            margin-bottom: 4px;
+            overflow: hidden; /* Clear floats */
+        }
+        .index-metric-label {
+            float: left;
+            font-weight: 500;
+            color: #4B5563; /* Gray */
+        }
+        .index-metric-value {
+            float: right;
+            font-weight: 600;
+        }
+
         /* ===== METRIC COLORS ===== */
         .positive-metric { color: #057A55; } /* Green */
         .negative-metric { color: #E02424; } /* Red */
@@ -1686,26 +1655,14 @@ def render_dashboard():
     index_data = get_live_index_data()
     macro_data = get_global_macro_data()
 
-    # --- TOP BAR: Indices + Macro Ticker Tape ---
-    ticker_items = []
-    
-    # First, format the index data for the bar
-    for item in index_data:
-        ticker_items.append({
-            'symbol': item['symbol'],
-            'price_str': f"${item['price']:,.2f}",
-            'change_str': f"{item['change']:+.2f} ({item['pct_change']:+.2f}%)",
-            'change_val': item['change']
-        })
-    
-    # Add the macro data (which is already formatted)
-    ticker_items.extend(macro_data)
+    # --- TOP BAR: Macro-Only Ticker Tape ---
+    ticker_items = macro_data # <-- FIX: Only use macro data
     
     if ticker_items:
         item_html_list = []
 
         # Add a static label
-        item_html_list.append('<div class="ticker-section-label">MARKET MOVERS</div>')
+        item_html_list.append('<div class="ticker-section-label">MACRO DATA</div>') # <-- Changed label
 
         for item in ticker_items:
             change_class = "positive" if item["change_val"] >= 0 else "negative"
@@ -1732,11 +1689,10 @@ def render_dashboard():
 
 
     # ============================
-    # --- ROW 0: Index Charts
+    # --- ROW 0: Index Metrics (Replaced Charts)
     # ============================
     st.markdown("### Market Snapshot")
     chart_cols = st.columns(4)
-    chart_data = get_intraday_index_charts_data() # Get 5d/1d OHLC data
     
     index_map = {
         'Dow Jones': ('^DJI', chart_cols[0]),
@@ -1747,7 +1703,6 @@ def render_dashboard():
     
     for display_name, (ticker, col) in index_map.items():
         with col:
-            # --- CSS class is now light themed (due to CSS fix) ---
             st.markdown(f"<div class='index-chart-card'>", unsafe_allow_html=True) 
             
             # Use the 'index_data' we already fetched
@@ -1757,7 +1712,6 @@ def render_dashboard():
                 change_class = "positive" if summary['change'] >= 0 else "negative"
                 change_sign = "+" if summary['change'] >= 0 else ""
                 
-                # --- Text is now DARK-colored due to CSS fix ---
                 st.markdown(f"<div class='index-chart-title'>{display_name}</div>", unsafe_allow_html=True)
                 st.markdown(
                     f"<span class='index-chart-price'>${summary['price']:,.2f}</span>"
@@ -1771,23 +1725,22 @@ def render_dashboard():
                 st.markdown("<span class='index-chart-price'>N/A</span>", unsafe_allow_html=True)
                 
             
-            # --- THIS IS THE CHART FIX ---
-            
-            # Plot the chart
-            if chart_data and ticker in chart_data and not chart_data[ticker].empty:
-                chart_df = chart_data[ticker]
-                
-                # We need to know if the trend is positive
-                is_positive = chart_df['Close'].iloc[-1] >= chart_df['Open'].iloc[0]
-
-                # --- Call the NEW candlestick function ---
-                fig = plot_index_candlestick(chart_df, is_positive)
-                
-                # Render the Plotly figure
-                st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-                
+            # --- [FIX: Replaced Graph with Key Metrics] ---
+            key_metrics = get_index_key_metrics(ticker)
+            if key_metrics:
+                st.markdown("<div class='index-metric-list'>", unsafe_allow_html=True)
+                for metric in key_metrics:
+                    st.markdown(
+                        f"<div class='index-metric-row'>"
+                        f"  <span class='index-metric-label'>{metric['label']}</span>"
+                        f"  <span class='index-metric-value'>{metric['value']}</span>"
+                        f"</div>",
+                        unsafe_allow_html=True
+                    )
+                st.markdown("</div>", unsafe_allow_html=True)
             else:
-                st.caption("Chart data unavailable.")
+                st.caption("Key metrics unavailable.")
+            # --- [END OF FIX] ---
                 
             st.markdown("</div>", unsafe_allow_html=True)
 

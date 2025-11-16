@@ -1297,6 +1297,9 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
 # ======================================================================
 # GLOBAL STYLING
 # ======================================================================
+# ======================================================================
+# GLOBAL STYLING
+# ======================================================================
 def inject_global_css():
     st.markdown(
         """
@@ -1546,6 +1549,17 @@ def inject_global_css():
         html body .stApp .main-content .snapshot-title {
             color: var(--color-primary-text) !important;
         }
+
+        /* ============================================================
+           ==  [DELETED] APPLE-STYLE SEGMENTED CONTROL CSS         ==
+           ============================================================ 
+           
+           The entire block of CSS that used to be here (starting with
+           .nav-tabs-pro) has been removed. It was conflicting with
+           the new st.tabs component. By removing it, the default,
+           visible st.tabs styling will apply.
+           
+        */
 
         </style>
         """,

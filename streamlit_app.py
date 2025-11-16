@@ -487,6 +487,46 @@ def get_dashboard_kpis():
 
     return out
 
+def render_global_header_and_kpis():
+    # --- BLUE HERO TITLE ---
+    st.markdown(
+        """
+        <div class="header-hero">
+            <div class="page-header">
+                <h1 class="page-title">Equity Research Tool</h1>
+                <p class="page-subtitle">Fricano Capital Research</p>
+                <p class="page-mini-desc">
+                    Institutional-style equity analytics with live macro context.
+                </p>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # --- KPI STRIP UNDER TITLE ---
+    kpi_data = get_dashboard_kpis()
+    if kpi_data:
+        st.markdown("<div class='header-kpi-container'>", unsafe_allow_html=True)
+        cols = st.columns(len(kpi_data))
+        for col, item in zip(cols, kpi_data):
+            with col:
+                change_class = "positive" if item["change_val"] >= 0 else "negative"
+                st.markdown(
+                    f"""
+                    <div class="header-kpi-card">
+                        <div class="header-kpi-label">{item['label']}</div>
+                        <div class="header-kpi-value">{item['value_str']}</div>
+                        <div class="header-kpi-change {change_class}">
+                            {item['change_str']}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+
     
 @st.cache_data(ttl=300)
 def get_index_key_metrics(ticker: str) -> List[Dict[str, str]]:
@@ -2691,9 +2731,9 @@ def main():
         initial_sidebar_state="collapsed",
     )
 
-        #Loading Google Fonts into block
+    # Load fonts (your Cinzel + DM Sans block)
     st.markdown(
-    """
+        """
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
@@ -2701,75 +2741,37 @@ def main():
         unsafe_allow_html=True,
     )
 
-
-    # Inject all global CSS
+    # Global styles
     inject_global_css()
 
-    # Auto-refresh the app every 60 seconds to pull fresh data
-    st_autorefresh(interval=60_000, key="auto_refresh_live_data")
+    # (Optional) your st_autorefresh call can stay here if you added it
+    # st_autorefresh(interval=60_000, key="auto_refresh_live_data")
 
-
-        # ---------- PAGE HEADER / HERO ----------
-    st.markdown(
-        """
-        <div class="header-hero">
-            <div class="page-header">
-                <h1 class="page-title">Equity Research Tool</h1>
-                <p class="page-subtitle">Fricano Capital Research</p>
-                <p class="page-mini-desc">
-                </p>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # ---------- HEADER KPI ROW ----------
-    kpi_data = get_dashboard_kpis()
-    if kpi_data:
-        st.markdown("<div class='header-kpi-container'>", unsafe_allow_html=True)
-        cols = st.columns(len(kpi_data))
-        for col, item in zip(cols, kpi_data):
-            with col:
-                change_class = "positive" if item["change_val"] >= 0 else "negative"
-                st.markdown(
-                    f"""
-                    <div class="header-kpi-card">
-                        <div class="header-kpi-label">{item['label']}</div>
-                        <div class="header-kpi-value">{item['value_str']}</div>
-                        <div class="header-kpi-change {change_class}">
-                            {item['change_str']}
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-        st.markdown("</div>", unsafe_allow_html=True)
-
-
-    # --- !!! ---
-    # --- FIX 1: Replaced st.radio and custom CSS with st.tabs ---
-    # This provides the [ Home ] [ Screener ] ... layout natively
-    
+    # ---------- NAV TABS AT TOP-LEFT ----------
     tab_home, tab_screener, tab_val, tab_research, tab_theses = st.tabs(
         ["Home", "Screener", "Valuation", "Research", "Theses"]
     )
 
+    # Each tab renders the shared header + its own page content
     with tab_home:
+        render_global_header_and_kpis()
         render_dashboard()
-        
+
     with tab_screener:
+        render_global_header_and_kpis()
         render_analysis_page()
-        
+
     with tab_val:
+        render_global_header_and_kpis()
         render_valuation_page()
-        
+
     with tab_research:
+        render_global_header_and_kpis()
         render_research_page()
-        
+
     with tab_theses:
+        render_global_header_and_kpis()
         render_theses_page()
-    # --- END FIX 1 ---
 
 
 if __name__ == "__main__":

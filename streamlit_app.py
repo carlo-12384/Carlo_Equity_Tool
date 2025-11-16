@@ -138,6 +138,48 @@ def get_price_and_shares(symbol: str):
             pass
     return price, shares
 
+# --- NEW FUNCTION ---
+@st.cache_data(ttl=300) # Cache for 5 minutes
+def get_live_index_data():
+    """
+    Fetches live price data and daily change for major indices.
+    """
+    indices = {
+        '^GSPC': 'S&P 500',
+        '^IXIC': 'NASDAQ',
+        '^DJI': 'Dow Jones',
+        'CL=F': 'Crude Oil',
+        'GC=F': 'Gold',
+        'EURUSD=X': 'EUR/USD'
+    }
+    data = []
+    for ticker, name in indices.items():
+        try:
+            hist = yf.Ticker(ticker).history(period="2d", interval="1d")
+            if hist.empty or len(hist) < 2:
+                # Try fast_info as a fallback
+                fast = yf.Ticker(ticker).fast_info
+                last_price = fast.get("last_price")
+                prev_close = fast.get("previous_close")
+                if not last_price or not prev_close:
+                    continue
+            else:
+                prev_close = hist['Close'].iloc[0]
+                last_price = hist['Close'].iloc[-1]
+            
+            change = last_price - prev_close
+            pct_change = (change / prev_close) * 100
+            
+            data.append({
+                'symbol': name,
+                'price': last_price,
+                'change': change,
+                'pct_change': pct_change
+            })
+        except Exception as e:
+            logging.warning(f"Failed to get live index data for {ticker}: {e}")
+    return data
+
 # -------------------- FINNHUB (FREE) --------------------
 def safe_finnhub_get(path, **params):
     try:
@@ -888,7 +930,7 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
         if not np.isfinite(ebitda_ttm):
             ebit_ttm = ttm_from_rows(t_is, ["Ebit","EBIT","Operating Income"])
             dep_ttm = ttm_from_rows(yf.Ticker(ticker).quarterly_cashflow,
-                                     ["Depreciation","Depreciation And Amortization"])
+                                    ["Depreciation","Depreciation And Amortization"])
             if np.isfinite(ebit_ttm) and np.isfinite(dep_ttm):
                 ebitda_ttm = ebit_ttm + dep_ttm
 
@@ -977,13 +1019,13 @@ def inject_global_css():
         <style>
         /* ===== COLOR PALETTE ===== */
         :root {
-            --color-primary-bg: #001f3f;   /* Dark Navy Blue */
+            --color-primary-bg: #001f3f;    /* Dark Navy Blue */
             --color-secondary-bg: #F5EAAA; /* Khaki */
-            --color-page-bg: #FFFFFF;      /* White */
+            --color-page-bg: #FFFFFF;       /* White */
             
-            --color-primary-text: #001f3f;   /* Dark Navy Blue */
+            --color-primary-text: #001f3f;    /* Dark Navy Blue */
             --color-secondary-text: #F5EAAA; /* Khaki */
-            --color-tertiary-text: #FFFFFF;  /* White */
+            --color-tertiary-text: #FFFFFF;   /* White */
         }
         
         /* ===== GLOBAL LAYOUT ===== */
@@ -994,7 +1036,7 @@ def inject_global_css():
         }
         
         /* This is a default override for the whole app,
-           just in case Streamlit's "body" rule is winning */
+            just in case Streamlit's "body" rule is winning */
         body {
             color: var(--color-primary-text) !important;
         }
@@ -1166,6 +1208,64 @@ def inject_global_css():
         .positive-metric { color: #057A55; } /* Green */
         .negative-metric { color: #E02424; } /* Red */
         
+        /* ===== NEW: TICKER TAPE ===== */
+        @keyframes scroll-left {
+            from { transform: translateX(0%); }
+            to { transform: translateX(-50%); }
+        }
+
+        .ticker-tape-container {
+            background: var(--color-primary-bg); /* Use app's navy blue */
+            color: var(--color-tertiary-text); /* White */
+            overflow: hidden;
+            white-space: nowrap;
+            padding: 10px 0;
+            width: 100vw;
+            position: relative;
+            left: 50%;
+            right: 50%;
+            margin-left: -50vw;
+            margin-right: -50vw;
+            border-top: 1px solid var(--color-secondary-bg);
+            border-bottom: 1px solid var(--color-secondary-bg);
+        }
+
+        .ticker-tape-inner {
+            display: inline-block;
+            animation: scroll-left 40s linear infinite; /* Adjust 40s to be faster/slower */
+        }
+
+        .ticker-item {
+            display: inline-block;
+            padding: 0 25px;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .ticker-symbol {
+            color: var(--color-secondary-text); /* Khaki */
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        .ticker-price {
+            color: var(--color-tertiary-text); /* White */
+            margin-right: 8px;
+        }
+
+        .ticker-change {
+            font-weight: 600;
+        }
+
+        .ticker-change.positive {
+            color: #057A55; /* Green */
+        }
+
+        .ticker-change.negative {
+            color: #E02424; /* Red */
+        }
+        /* ===== END: TICKER TAPE ===== */
+        
         </style>
         """,
         unsafe_allow_html=True,
@@ -1178,6 +1278,37 @@ def inject_global_css():
 # PAGE RENDER FUNCTIONS
 # ======================================================================
 def render_dashboard():
+    
+    # --- NEW: Live Index Ticker ---
+    index_data = get_live_index_data()
+    if index_data:
+        item_html_list = []
+        for item in index_data:
+            change_class = "positive" if item['change'] >= 0 else "negative"
+            change_sign = "+" if item['change'] >= 0 else ""
+            item_html = (
+                f'<div class="ticker-item">'
+                f'  <span class="ticker-symbol">{item["symbol"]}</span>'
+                f'  <span class="ticker-price">${item["price"]:,.2f}</span>'
+                f'  <span class="ticker-change {change_class}">'
+                f'    {change_sign}{item["change"]:,.2f} ({change_sign}{item["pct_change"]:,.2f}%)'
+                f'  </span>'
+                f'</div>'
+            )
+            item_html_list.append(item_html)
+        
+        all_items_html = "".join(item_html_list)
+        # Duplicate the items for a seamless scroll
+        full_ticker_html = f"""
+        <div class="ticker-tape-container">
+            <div class="ticker-tape-inner">
+                {all_items_html}{all_items_html}
+            </div>
+        </div>
+        """
+        st.markdown(full_ticker_html, unsafe_allow_html=True)
+    # --- END: Live Index Ticker ---
+    
     st.markdown(
         """
         <div class="hero-card">
@@ -1192,45 +1323,10 @@ def render_dashboard():
 
     st.write("")
     
-    # --- THIS IS THE FIX ---
-    # We removed the col_search and col_btn columns
-    # and just stacked the elements.
+    # --- REMOVED Ticker Input and Analyze Button ---
+    # The st.text_input and st.button("Analyze") were here.
+    # The `if analyze_clicked and ticker:` block was also removed.
     
-    ticker = st.text_input(
-        "Search ticker symbol (e.g., AAPL, MSFT).",
-        key="ticker_input",
-        label_visibility="collapsed",
-        placeholder="ENTER TICKER SYMBOL TO ANALYZE (E.G., AAPL)",
-    ).upper()
-
-    st.write("") # Adds a little space
-    analyze_clicked = st.button("Analyze", use_container_width=True)
-    
-    # --- END OF FIX ---
-
-
-    max_peers = 6
-
-    if analyze_clicked and ticker:
-        with st.spinner(f"Analyzing {ticker.upper()}..."):
-            try:
-                results = run_equity_analysis(ticker, max_peers=max_peers)
-                st.session_state.last_results = results
-                st.session_state.recent_tickers.insert(
-                    0,
-                    {"ticker": results["ticker"], "time": datetime.now().strftime("%Y-%m-%d %H:%M")},
-                )
-                st.session_state.recent_tickers = st.session_state.recent_tickers[:12]
-                st.success(f"Analysis updated for {results['ticker']}")
-                st.session_state.valuation_ticker_input = results["ticker"]
-            except Exception as e:
-                st.session_state.last_results = None
-                logging.error(f"Error during analysis for {ticker}: {e}", exc_info=True)
-                st.error(
-                    f"Analysis failed for {ticker.upper()}. "
-                    f"The ticker might be invalid, delisted, or have no data. Error: {e}"
-                )
-
     st.write("")
     
     companies_tracked = len({x["ticker"] for x in st.session_state.recent_tickers}) or 0
@@ -1285,8 +1381,9 @@ def render_dashboard():
     qa_col1, qa_col2, qa_col3 = st.columns(3)
 
     with qa_col1:
+        # This button now requires you to enter a ticker on the Valuation page
         if st.button("Start New Analysis", use_container_width=True):
-            st.session_state.top_nav_page = "Analysis"
+            st.session_state.top_nav_page = "Valuation" 
             st.rerun()
     with qa_col2:
         if st.button("Draft Thesis", use_container_width=True):
@@ -1311,10 +1408,48 @@ def render_analysis_page():
         """,
         unsafe_allow_html=True,
     )
+    
+    # --- MODIFICATION ---
+    # We must now add a way to trigger analysis from this page,
+    # since it was removed from the Dashboard.
+    
+    default_ticker = ""
+    if st.session_state.get("last_results"):
+        default_ticker = st.session_state.last_results.get("ticker", "")
+        
+    ticker = st.text_input(
+        "Enter ticker to analyze (e.g., AAPL, MSFT)",
+        value=default_ticker,
+        key="analysis_page_ticker",
+        placeholder="ENTER TICKER SYMBOL TO ANALYZE (E.G., AAPL)",
+    ).upper()
+
+    analyze_clicked = st.button("Analyze", use_container_width=True, key="analysis_page_button")
+    
+    if analyze_clicked and ticker:
+        with st.spinner(f"Analyzing {ticker.upper()}..."):
+            try:
+                max_peers = 6
+                results = run_equity_analysis(ticker, max_peers=max_peers)
+                st.session_state.last_results = results
+                st.session_state.recent_tickers.insert(
+                    0,
+                    {"ticker": results["ticker"], "time": datetime.now().strftime("%Y-%m-%d %H:%M")},
+                )
+                st.session_state.recent_tickers = st.session_state.recent_tickers[:12]
+                st.success(f"Analysis updated for {results['ticker']}")
+                st.session_state.valuation_ticker_input = results["ticker"]
+            except Exception as e:
+                st.session_state.last_results = None
+                logging.error(f"Error during analysis for {ticker}: {e}", exc_info=True)
+                st.error(
+                    f"Analysis failed for {ticker.upper()}. "
+                    f"The ticker might be invalid, delisted, or have no data. Error: {e}"
+                )
 
     res = st.session_state.get("last_results")
     if not res:
-        st.info("Run an analysis from the Dashboard first.")
+        st.info("Enter a ticker and click 'Analyze' to see results.")
         return
 
     st.markdown(
@@ -1483,6 +1618,19 @@ def render_valuation_page():
                 st.session_state.valuation_metrics = metrics
                 st.session_state.valuation_price = price
                 st.success(f"Loaded metrics for {tkr}")
+                
+                # --- NEW: Trigger analysis run ---
+                # Also run a full analysis and save it
+                max_peers = 6
+                results = run_equity_analysis(tkr, max_peers=max_peers)
+                st.session_state.last_results = results
+                st.session_state.recent_tickers.insert(
+                    0,
+                    {"ticker": results["ticker"], "time": datetime.now().strftime("%Y-%m-%d %H:%M")},
+                )
+                st.session_state.recent_tickers = st.session_state.recent_tickers[:12]
+                st.success(f"Full analysis report updated for {tkr}")
+                
             except Exception as e:
                 logging.error(f"Failed to load metrics for {selected_ticker}: {e}")
                 st.error(f"Could not load data for {selected_ticker.upper()}.")

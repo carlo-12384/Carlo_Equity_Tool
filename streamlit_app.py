@@ -339,107 +339,86 @@ def get_live_index_data():
             logging.warning(f"Failed to get live index data for {ticker}: {e}")
     return data
     
-@st.cache_data(ttl=300)
-def get_top_movers_sp500(n_gainers: int = 6, n_losers: int = 6):
-    """
-    Approximate daily top gainers/losers using S&P 500 constituents.
-    Uses 2 days of daily data and ranks by % change.
-    """
-    try:
-        sp500 = yf.tickers_sp500()
-        # yfinance sometimes returns DataFrame, sometimes list
-        if isinstance(sp500, pd.DataFrame):
-            tickers = sp500["Symbol"].dropna().astype(str).tolist()
-        elif isinstance(sp500, (list, tuple)):
-            tickers = list(sp500)
-        else:
-            tickers = list(sp500.keys())
+# --- Retrieving Macro Data ---
+@st.cache_data(ttl=300) # Cache for 5 minutes
+def get_global_macro_data():
+    """
+    Fetches live price data and daily change for key macro assets.
+    """
+    assets = {
+        '^TNX': '10-Yr Yield',
+        'CL=F': 'Crude Oil',
+        'GC=F': 'Gold',
+        'AGG': 'US Bonds (AGG)'
+    }
+    data = []
+    for ticker, name in assets.items():
+        try:
+            hist = yf.Ticker(ticker).history(period="2d", interval="1d")
+            if hist.empty or len(hist) < 2:
+                fast = yf.Ticker(ticker).fast_info
+                last_price = fast.get("last_price")
+                prev_close = fast.get("previous_close")
+                if not last_price or not prev_close:
+                    continue
+            else:
+                prev_close = hist['Close'].iloc[0]
+                last_price = hist['Close'].iloc[-1]
+            
+            change = last_price - prev_close
+            pct_change = (change / prev_close) * 100
+            
+            # Special formatting for yield
+            unit = "%" if ticker == '^TNX' else "$"
+            price_format = f"{last_price:,.2f}{unit}"
+            change_format = f"{change:+.2f} ({pct_change:+.2f}%)"
 
-        # Safety: don't hammer the API – cap number of tickers
-        tickers = tickers[:350]
-
-        if not tickers:
-            return [], []
-
-        data = yf.download(
-            tickers,
-            period="2d",
-            interval="1d",
-            group_by="ticker",
-            auto_adjust=False,
-            progress=False,
-            threads=True,
-        )
-
-        movers = []
-        for t in tickers:
-            try:
-                df = data[t]
-                closes = df["Close"].dropna()
-                if len(closes) < 2:
-                    continue
-                prev, last = float(closes.iloc[-2]), float(closes.iloc[-1])
-                if prev <= 0:
-                    continue
-                change = last - prev
-                pct = (last / prev - 1.0) * 100.0
-                movers.append(
-                    {
-                        "symbol": t.upper(),
-                        "price": last,
-                        "change": change,
-                        "pct_change": pct,
-                    }
-                )
-            except Exception:
-                continue
-
-        movers = [m for m in movers if np.isfinite(m["pct_change"])]
-
-        if not movers:
-            return [], []
-
-        movers_sorted = sorted(movers, key=lambda x: x["pct_change"], reverse=True)
-        top_gainers = movers_sorted[:n_gainers]
-        top_losers = sorted(movers, key=lambda x: x["pct_change"])[:n_losers]
-
-        return top_gainers, top_losers
-    except Exception as e:
-        logging.warning(f"Failed to compute top movers: {e}")
-        return [], []
+            data.append({
+                'symbol': name,
+                'price_str': price_format,
+                'change_str': change_format,
+                'change_val': change
+            })
+        except Exception as e:
+            logging.warning(f"Failed to get macro data for {ticker}: {e}")
+    return data
 
 
 # --- Replace this function ---
 @st.cache_data(ttl=300)
 def get_intraday_index_charts_data():
-    """
-    Fetches 1-day intraday OHLC data for the 4 main indices for charting.
-    """
-    tickers = ['^GSPC', '^IXIC', '^DJI', '^RUT']
-    try:
-        # --- FIX: Changed period to "1d" and interval to "15m" ---
-        data = yf.download(tickers, period="1d", interval="15m")
-        
-        if data.empty:
-            return None
-        
-        chart_data = {}
-        for ticker in tickers:
-            # --- FIX: Select all OHLC columns for this ticker ---
-            ohlc_df = data.loc[:, (slice(None), ticker)]
-            
-            # Check if we have data for this ticker
-            if not ohlc_df.empty:
-                # Clean up column names
-                ohlc_df.columns = ohlc_df.columns.droplevel(1) # Remove 'ticker' from multi-index
-                ohlc_df = ohlc_df[['Open', 'High', 'Low', 'Close']].dropna()
-                if not ohlc_df.empty:
-                    chart_data[ticker] = ohlc_df
+    """
+    Fetches 5-day daily OHLC data for the 4 main indices for charting.
+    """
+    tickers = ['^GSPC', '^IXIC', '^DJI', '^RUT']
+    try:
+        # --- FIX: Switched to 5d/1d for reliability vs 1d/15m ---
+        data = yf.download(tickers, period="5d", interval="1d")
+        
+        if data.empty:
+            return None
+        
+        chart_data = {}
+        for ticker in tickers:
+            # --- FIX: Select all OHLC columns for this ticker ---
+            # Use .loc and slicers for multi-index selection
+            try:
+                ohlc_df = data.loc[:, (slice(None), ticker)]
+                
+                if not ohlc_df.empty:
+                    ohlc_df.columns = ohlc_df.columns.droplevel(1) # Remove 'ticker' from multi-index
+                    ohlc_df = ohlc_df[['Open', 'High', 'Low', 'Close']].dropna()
+                    if not ohlc_df.empty:
+                        chart_data[ticker] = ohlc_df
+            except KeyError:
+                # This happens if yf.download only returns one ticker's data
+                logging.warning(f"Could not extract multi-index for {ticker}")
+                continue
 
-        return chart_data
-    except Exception as e:
-        logging.warning(f"Failed to get intraday OHLC chart data: {e}")
-        return None
+        return chart_data
+    except Exception as e:
+        logging.warning(f"Failed to get 5d chart data: {e}")
+        return None
 
 # --- NEW FUNCTION ---
 @st.cache_data(ttl=300)
@@ -1575,16 +1554,16 @@ def inject_global_css():
         }
         
         .index-chart-title {
-            font-weight: 600;
-            font-size: 1.1rem;
-            color: var(--color-dark-card-text); /* Light text */
-        }
-        
-        .index-chart-price {
-            font-weight: 600;
-            font-size: 1rem;
-            color: var(--color-dark-card-text); /* Light text */
-        }
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--color-primary-text) !important; /* DARK text */
+        }
+        
+        .index-chart-price {
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--color-primary-text) !important; /* DARK text */
+        }
         /* --- END FIX --- */
         
         .index-chart-change {
@@ -1699,44 +1678,43 @@ def inject_global_css():
     )
 
 
-# --- Replace this function ---
-# --- Replace this function ---
+# --- Wall Street esque Price Bar ---
 def render_dashboard():
     inject_global_css() 
 
-    # --- Live Index Data (for summary + cards) ---
+    # --- Get data for Ticker Tape AND Index Cards ---
     index_data = get_live_index_data()
+    macro_data = get_global_macro_data()
 
-       # --- TOP BAR: S&P 500 Top Gainers & Losers Ticker Tape ---
-    top_gainers, top_losers = get_top_movers_sp500()
-
-    if top_gainers or top_losers:
+    # --- TOP BAR: Indices + Macro Ticker Tape ---
+    ticker_items = []
+    
+    # First, format the index data for the bar
+    for item in index_data:
+        ticker_items.append({
+            'symbol': item['symbol'],
+            'price_str': f"${item['price']:,.2f}",
+            'change_str': f"{item['change']:+.2f} ({item['pct_change']:+.2f}%)",
+            'change_val': item['change']
+        })
+    
+    # Add the macro data (which is already formatted)
+    ticker_items.extend(macro_data)
+    
+    if ticker_items:
         item_html_list = []
 
-        # First: top gainers (green)
-        for item in top_gainers:
-            change_class = "positive"   # uses .ticker-change.positive { color: #057A55; }
-            change_sign = "+" if item["change"] >= 0 else ""
-            item_html_list.append(
-                f'<div class="ticker-item">'
-                f'  <span class="ticker-symbol">{item["symbol"]}</span>'
-                f'  <span class="ticker-price">${item["price"]:,.2f}</span>'
-                f'  <span class="ticker-change {change_class}">'
-                f'    {change_sign}{item["change"]:,.2f} ({change_sign}{item["pct_change"]:,.2f}%)'
-                f'  </span>'
-                f'</div>'
-            )
+        # Add a static label
+        item_html_list.append('<div class="ticker-section-label">MARKET MOVERS</div>')
 
-        # Then: top losers (red)
-        for item in top_losers:
-            change_class = "negative"   # uses .ticker-change.negative { color: #E02424; }
-            change_sign = "+" if item["change"] >= 0 else ""
+        for item in ticker_items:
+            change_class = "positive" if item["change_val"] >= 0 else "negative"
             item_html_list.append(
                 f'<div class="ticker-item">'
                 f'  <span class="ticker-symbol">{item["symbol"]}</span>'
-                f'  <span class="ticker-price">${item["price"]:,.2f}</span>'
+                f'  <span class="ticker-price">{item["price_str"]}</span>'
                 f'  <span class="ticker-change {change_class}">'
-                f'    {change_sign}{item["change"]:,.2f} ({change_sign}{item["pct_change"]:,.2f}%)'
+                f'    {item["change_str"]}'
                 f'  </span>'
                 f'</div>'
             )
@@ -1758,7 +1736,7 @@ def render_dashboard():
     # ============================
     st.markdown("### Market Snapshot")
     chart_cols = st.columns(4)
-    chart_data = get_intraday_index_charts_data() # Get 1d/15m OHLC data
+    chart_data = get_intraday_index_charts_data() # Get 5d/1d OHLC data
     
     index_map = {
         'Dow Jones': ('^DJI', chart_cols[0]),
@@ -1769,16 +1747,17 @@ def render_dashboard():
     
     for display_name, (ticker, col) in index_map.items():
         with col:
-            # --- CSS class is now dark themed ---
+            # --- CSS class is now light themed (due to CSS fix) ---
             st.markdown(f"<div class='index-chart-card'>", unsafe_allow_html=True) 
             
+            # Use the 'index_data' we already fetched
             summary = next((item for item in index_data if item["symbol"] == display_name), None)
             
             if summary:
                 change_class = "positive" if summary['change'] >= 0 else "negative"
                 change_sign = "+" if summary['change'] >= 0 else ""
                 
-                # --- Text is now light-colored due to CSS ---
+                # --- Text is now DARK-colored due to CSS fix ---
                 st.markdown(f"<div class='index-chart-title'>{display_name}</div>", unsafe_allow_html=True)
                 st.markdown(
                     f"<span class='index-chart-price'>${summary['price']:,.2f}</span>"
@@ -1792,9 +1771,7 @@ def render_dashboard():
                 st.markdown("<span class='index-chart-price'>N/A</span>", unsafe_allow_html=True)
                 
             
-            # --- !!! ---
-            # --- THIS IS THE FIX ---
-            # --- !!! ---
+            # --- THIS IS THE CHART FIX ---
             
             # Plot the chart
             if chart_data and ticker in chart_data and not chart_data[ticker].empty:
@@ -1811,7 +1788,6 @@ def render_dashboard():
                 
             else:
                 st.caption("Chart data unavailable.")
-            # --- END OF FIX ---
                 
             st.markdown("</div>", unsafe_allow_html=True)
 
@@ -1843,6 +1819,7 @@ def render_dashboard():
             "<div class='section-card'><div class='section-title'>Market Summary (AI-Generated)</div>",
             unsafe_allow_html=True,
         )
+        # We pass the original index_data here, not the macro data
         summary_text = generate_market_summary(index_data)
         st.markdown(summary_text)
         st.markdown("</div>", unsafe_allow_html=True)

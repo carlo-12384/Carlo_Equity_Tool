@@ -1052,6 +1052,7 @@ def five_day_price_plot(ticker: str):
     return plt_fig
     
 # --- NEW FUNCTION (Using Plotly for better visual charts) ---
+# --- Replace this function ---
 def plot_index_sparkline(chart_df: pd.DataFrame, is_positive: bool):
     """
     Creates a Plotly-based sparkline chart (a simplified, good-looking line chart).
@@ -1093,7 +1094,12 @@ def plot_index_sparkline(chart_df: pd.DataFrame, is_positive: bool):
             showticklabels=False,
             showgrid=False,
             zeroline=False,
-            fixedrange=True # User can't pan/zoom Y-axis
+            fixedrange=True, # User can't pan/zoom Y-axis
+            # --- THIS IS THE FIX ---
+            # The 'autorangeoptions' was moved from a separate
+            # call into this 'yaxis' dictionary where it belongs.
+            autorangeoptions=dict(tight=True)
+            # --- END FIX ---
         ),
         paper_bgcolor='rgba(0,0,0,0)', # Transparent background
         plot_bgcolor='#FAFAFA', # Match the card background
@@ -1101,8 +1107,7 @@ def plot_index_sparkline(chart_df: pd.DataFrame, is_positive: bool):
         dragmode=False # Disable dragging
     )
     
-    # Auto-set Y-axis to be tight around the data
-    fig.update_yaxes(autorangeoptions=dict(tight=True))
+    # The old, incorrect fig.update_yaxes() call has been removed.
     
     return fig
 

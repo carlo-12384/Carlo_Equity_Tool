@@ -1623,6 +1623,48 @@ def inject_global_css():
             border-bottom: 2px solid var(--color-primary-text); /* --- MODIFIED --- Use primary text color for underline */
             padding-bottom: 0.3rem;
         }
+        /* ============================================================
+           NUCLEAR FIX — MAKE NAV TEXT ALWAYS VISIBLE
+           ============================================================ */
+
+       /* force visibility of text inside nav tabs */
+       .nav-tabs-pro [role="radiogroup"] label span {
+            color: #001f3f !important;          /* your primary navy */
+            opacity: 1 !important;
+            visibility: visible !important;
+            filter: none !important;
+            text-shadow: none !important;
+       }
+
+       /* ensure selected tab text is visible */
+       .nav-tabs-pro [role="radiogroup"] label:has(input[checked]) span {
+           color: #001f3f !important;
+           opacity: 1 !important;
+       }
+
+       /* ensure the radio input itself never hides text */
+       .nav-tabs-pro [role="radiogroup"] input {
+            opacity: 0 !important; /* hide dot, not text */
+           visibility: hidden !important;
+           height: 0 !important;
+           width: 0 !important;
+           pointer-events: none !important;
+       }
+
+       /* ensure Streamlit does not auto-dim radio label text */
+       .nav-tabs-pro [role="radiogroup"] label {
+           color: #001f3f !important;
+           opacity: 1 !important;
+       }
+
+       /* override Streamlit's default gray text for all radios */
+       [data-testid="stRadio"] p, 
+       [data-testid="stRadio"] label, 
+       [data-testid="stRadio"] span {
+           color: #001f3f !important;
+           opacity: 1 !important;
+       }
+
         </style>
         """,
         unsafe_allow_html=True,

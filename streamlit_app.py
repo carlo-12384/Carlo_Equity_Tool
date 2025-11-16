@@ -44,7 +44,7 @@ def _first_row(df: pd.DataFrame, aliases) -> pd.Series:
 
 def yf_quarterly(symbol: str):
     t = yf.Ticker(symbol)
-    return t.quarterly_income_stmt, t.quarterly_balance_sheet, t.quarterly_cashflow
+    return t.quartertry_income_stmt, t.quarterly_balance_sheet, t.quarterly_cashflow
 
 def ttm_from_rows(df: pd.DataFrame, aliases) -> float:
     try:
@@ -79,7 +79,7 @@ def load_revenue_series(symbol: str) -> pd.Series:
     s = _first_row(a_df, aliases)
     s = _coerce_cols_desc(s)
     return s.astype(float)
-    
+
 def generate_market_summary(index_data):
     """
     Build a richer, human-style market wrap based on the index moves.
@@ -206,7 +206,7 @@ def get_economic_calendar():
         ("Initial Jobless Claims", "Thursday 8:30 AM"),
         ("PMI Index", "Friday 9:45 AM"),
     ]
-    
+
 def get_smart_money_signals():
     return {
         "Insider Buy/Sell Ratio": "1.8 (bullish)",
@@ -214,7 +214,7 @@ def get_smart_money_signals():
         "Hedge Fund Sentiment": "Net long positioning rising",
         "ETF Money Flow": "$2.4B inflow over 5 days",
     }
-    
+
 def get_earnings_momentum_data():
     sectors = ["Tech","Health","Energy","Financials","Consumer","Industrials"]
     beats = np.random.uniform(50, 85, size=6)  # placeholder synthetic
@@ -325,10 +325,10 @@ def get_live_index_data():
             else:
                 prev_close = hist['Close'].iloc[0]
                 last_price = hist['Close'].iloc[-1]
-            
+
             change = last_price - prev_close
             pct_change = (change / prev_close) * 100
-            
+
             data.append({
                 'symbol': name,
                 'price': last_price,
@@ -338,76 +338,6 @@ def get_live_index_data():
         except Exception as e:
             logging.warning(f"Failed to get live index data for {ticker}: {e}")
     return data
-    
-@st.cache_data(ttl=300)
-def get_top_movers_sp500(n_gainers: int = 6, n_losers: int = 6):
-    """
-    Approximate daily top gainers/losers using S&P 500 constituents.
-    Uses 2 days of daily data and ranks by % change.
-    """
-    try:
-        sp500 = yf.tickers_sp500()
-        # yfinance sometimes returns DataFrame, sometimes list
-        if isinstance(sp500, pd.DataFrame):
-            tickers = sp500["Symbol"].dropna().astype(str).tolist()
-        elif isinstance(sp500, (list, tuple)):
-            tickers = list(sp500)
-        else:
-            tickers = list(sp500.keys())
-
-        # Safety: don't hammer the API – cap number of tickers
-        tickers = tickers[:350]
-
-        if not tickers:
-            return [], []
-
-        data = yf.download(
-            tickers,
-            period="2d",
-            interval="1d",
-            group_by="ticker",
-            auto_adjust=False,
-            progress=False,
-            threads=True,
-        )
-
-        movers = []
-        for t in tickers:
-            try:
-                df = data[t]
-                closes = df["Close"].dropna()
-                if len(closes) < 2:
-                    continue
-                prev, last = float(closes.iloc[-2]), float(closes.iloc[-1])
-                if prev <= 0:
-                    continue
-                change = last - prev
-                pct = (last / prev - 1.0) * 100.0
-                movers.append(
-                    {
-                        "symbol": t.upper(),
-                        "price": last,
-                        "change": change,
-                        "pct_change": pct,
-                    }
-                )
-            except Exception:
-                continue
-
-        movers = [m for m in movers if np.isfinite(m["pct_change"])]
-
-        if not movers:
-            return [], []
-
-        movers_sorted = sorted(movers, key=lambda x: x["pct_change"], reverse=True)
-        top_gainers = movers_sorted[:n_gainers]
-        top_losers = sorted(movers, key=lambda x: x["pct_change"])[:n_losers]
-
-        return top_gainers, top_losers
-    except Exception as e:
-        logging.warning(f"Failed to compute top movers: {e}")
-        return [], []
-
 
 # --- Replace this function ---
 @st.cache_data(ttl=300)
@@ -419,15 +349,15 @@ def get_intraday_index_charts_data():
     try:
         # --- FIX: Changed period to "1d" and interval to "15m" ---
         data = yf.download(tickers, period="1d", interval="15m")
-        
+
         if data.empty:
             return None
-        
+
         chart_data = {}
         for ticker in tickers:
             # --- FIX: Select all OHLC columns for this ticker ---
             ohlc_df = data.loc[:, (slice(None), ticker)]
-            
+
             # Check if we have data for this ticker
             if not ohlc_df.empty:
                 # Clean up column names
@@ -460,12 +390,12 @@ def get_sector_performance():
         'XLRE': 'Real Estate',
         'XLI': 'Industrials'
     }
-    
+
     try:
         data = yf.Tickers(list(sectors.keys())).history(period="2d", interval="1d")
         if data.empty:
             return {}
-        
+
         perf = {}
         for ticker, name in sectors.items():
             try:
@@ -486,63 +416,68 @@ def get_sector_performance():
 # --- NEW FUNCTION ---
 def plot_sector_heatmap(sector_data: dict):
     """
-    Plotly Treemap of sector performance with a red→grey→green gradient.
-    Tiles are equal-sized; color encodes 1-day % change.
+    Creates a Plotly Treemap (heatmap) of sector performance.
+    This version robustly handles 0.0, None, and np.nan values and
+    uses only valid Plotly Treemap kwargs.
     """
-    if not sector_data:
+    if not sector_data:  # Safety check for empty data
         fig = go.Figure()
-        fig.update_layout(
-            title_text="Sector Performance (Data Unavailable)",
-            title_x=0.5,
-            margin=dict(t=40, l=4, r=4, b=4),
-        )
+        fig.update_layout(title_text="Sector Performance (Data Unavailable)", title_x=0.5)
         return fig
 
     labels = list(sector_data.keys())
-    perfs = []
+    raw_values = list(sector_data.values())
 
-    for v in sector_data.values():
+    values_for_area = []
+    colors_for_perf = []
+    hover_text_list = []
+
+    for v in raw_values:
+        # Sanitize the value: coerce None, np.nan, etc. to 0.0
         try:
             perf = float(v)
-            if not np.isfinite(perf):
+            if not np.isfinite(perf):  # catches np.nan, np.inf
                 perf = 0.0
         except (ValueError, TypeError):
             perf = 0.0
-        perfs.append(perf)
 
-    # Equal tile areas; color carries the meaning
-    values = [1.0] * len(labels)
-    customdata = [f"{p:+.2f}%" for p in perfs]
+        # Area value must be positive
+        if perf == 0.0:
+            values_for_area.append(1.0)
+        else:
+            values_for_area.append(abs(perf))
 
-    # Make sure we always have a sensible center around 0
-    max_abs = max(max(abs(p) for p in perfs), 1e-6)
+        # Color based on performance
+        if perf > 0:
+            colors_for_perf.append("#057A55")  # green
+        elif perf < 0:
+            colors_for_perf.append("#E02424")  # red
+        else:
+            colors_for_perf.append("#6B7280")  # neutral gray
 
+        hover_text_list.append(f"{perf:+.2f}%")
+
+    # NOTE:
+    # - marker_colors -> marker=dict(colors=...)
+    # - root_label removed (not a valid Treemap property)
+    # - parents set to "" so Plotly uses a single implicit root
     fig = go.Figure(
         go.Treemap(
             labels=labels,
             parents=[""] * len(labels),
-            values=values,
-            customdata=customdata,
+            values=values_for_area,
+            marker=dict(colors=colors_for_perf),
             texttemplate="<b>%{label}</b><br>%{customdata}",
-            hovertemplate="<b>%{label}</b><br>1D Change: %{customdata}<extra></extra>",
-            marker=dict(
-                colors=perfs,
-                colorscale=[
-                    [0.0, "#7F1D1D"],   # deep red
-                    [0.5, "#1F2933"],   # neutral dark grey
-                    [1.0, "#047857"],   # deep green
-                ],
-                cmid=0,  # center colorscale at 0%
-            ),
+            customdata=hover_text_list,
+            hovertemplate="<b>%{label}</b><br>Change: %{customdata}<extra></extra>",
         )
     )
 
     fig.update_layout(
-        margin=dict(t=40, l=4, r=4, b=4),
+        margin=dict(t=25, l=10, r=10, b=10),
         title=dict(text="Daily Sector Performance Heatmap", x=0.5, font=dict(size=18)),
     )
     return fig
-
 
 # -------------------- FINNHUB (FREE) --------------------
 def safe_finnhub_get(path, **params):
@@ -601,7 +536,7 @@ def corr_peers(ticker: str, candidates: list, lookback_days=365, top_k=6):
     cors = []
     for c in candidates:
         try:
-            h = yf.Ticker(c).history(period="1y", interval="1d")["Close"].pct_change().dropna()
+            h = yf.Ticker(c).history(period="1Y", interval="1d")["Close"].pct_change().dropna()
             j = base.index.intersection(h.index)
             if len(j) >= 60:
                 cors.append((c, float(np.corrcoef(base.loc[j], h.loc[j])[0, 1])))
@@ -1120,74 +1055,63 @@ def five_day_price_plot(ticker: str):
     except Exception:
         plt_fig = None
     return plt_fig
-    
+
 # --- NEW FUNCTION (Using Plotly for better visual charts) ---
 def plot_index_candlestick(chart_df: pd.DataFrame, is_positive: bool):
     """
-    Finviz-style intraday sparkline:
-      - Smooth line of Close prices
-      - Subtle fill under the line
-      - No axes, grid, or legend
+    Creates a Plotly-based dark-theme candlestick chart.
     """
-    if chart_df is None or chart_df.empty:
-        return go.Figure()
-
-    color = "#057A55" if is_positive else "#E02424"
-    fill_color = "rgba(5, 122, 85, 0.15)" if is_positive else "rgba(224, 36, 36, 0.18)"
-
-    closes = chart_df["Close"].astype(float)
 
     fig = go.Figure()
 
-    # Main line + area fill
-    fig.add_trace(
-        go.Scatter(
-            x=chart_df.index,
-            y=closes,
-            mode="lines",
-            line=dict(width=2, color=color),
-            fill="tozeroy",
-            fillcolor=fill_color,
-            hoverinfo="skip",
-            showlegend=False,
-        )
-    )
+    # Add the candlestick trace
+    fig.add_trace(go.Candlestick(
+        x=chart_df.index,
+        open=chart_df['Open'],
+        high=chart_df['High'],
+        low=chart_df['Low'],
+        close=chart_df['Close'],
+        increasing_line_color='#057A55', # Green
+        decreasing_line_color='#E02424', # Red
+        increasing_fillcolor='#057A55',
+        decreasing_fillcolor='#E02424',
+        name='Candlestick',
+        hoverinfo='none' # Hides the default hover info
+    ))
 
-    # Dot at the last price
-    fig.add_trace(
-        go.Scatter(
-            x=[chart_df.index[-1]],
-            y=[closes.iloc[-1]],
-            mode="markers",
-            marker=dict(size=6, color=color),
-            hoverinfo="skip",
-            showlegend=False,
-        )
-    )
-
+    # --- Style the chart to be dark and clean ---
     fig.update_layout(
-        height=120,
-        margin=dict(t=4, l=0, r=0, b=0),
+        height=150, # Give it a bit more height for candlesticks
+        margin=dict(t=0, l=0, r=0, b=0), # No margins
+        xaxis_rangeslider_visible=False, # Hide the range slider
+
         xaxis=dict(
-            showticklabels=False,
+            showticklabels=True,
             showgrid=False,
-            zeroline=False,
-            fixedrange=True,
+            tickformat="%I:%M %p", # e.g., "02:30 PM"
         ),
         yaxis=dict(
             showticklabels=False,
             showgrid=False,
             zeroline=False,
-            fixedrange=True,
+            fixedrange=True, # User can't pan/zoom Y-axis
         ),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
+
+        # --- Dark Theme Styling ---
+        paper_bgcolor="#1E1E1E", # Dark background for the card
+        plot_bgcolor="#1E1E1E",  # Dark background for the plot
+
         showlegend=False,
-        dragmode=False,
+        dragmode=False # Disable dragging
     )
 
-    return fig
+    # Hide the "Time" axis title
+    fig.update_xaxes(title_text='')
 
+    # Auto-set Y-axis to be tight around the data
+    fig.update_yaxes(autorange=True, fixedrange=True)
+
+    return fig
 
 
 # -------------------- LOCAL STORAGE HELPERS --------------------
@@ -1297,7 +1221,7 @@ def _estimate_fcff_and_net_debt(symbol: str):
 
         cfo_ttm = ttm_from_rows(q_cf, ["Operating Cash Flow", "Total Cash From Operating Activities"])
         capex_ttm = ttm_from_rows(q_cf, ["Capital Expenditure", "Change In Property Plant Equipment"])
-        
+
         fcff_ttm = np.nan
         if np.isfinite(cfo_ttm) and np.isfinite(capex_ttm):
             fcff_ttm = cfo_ttm - abs(capex_ttm)
@@ -1306,7 +1230,7 @@ def _estimate_fcff_and_net_debt(symbol: str):
 
         total_debt_aliases = ["Total Debt", "Long Term Debt", "Total Liabilities Net Minority Interest"]
         total_debt = last_q_from_rows(q_bs, total_debt_aliases)
-        
+
         cash_aliases = ["Cash And Cash Equivalents", "Cash", "Cash And Short Term Investments"]
         cash = last_q_from_rows(q_bs, cash_aliases)
 
@@ -1315,7 +1239,7 @@ def _estimate_fcff_and_net_debt(symbol: str):
             net_debt = total_debt - cash
         elif np.isfinite(total_debt):
             net_debt = total_debt
-        
+
         return fcff_ttm, net_debt
     except Exception as e:
         logging.warning(f"Failed _estimate_fcff_and_net_debt for {symbol}: {e}")
@@ -1341,7 +1265,7 @@ def _build_scenario_params(metrics, scenario):
         params["terminal_g"] = 0.015
         params["g_proj"] = base_g * 0.8 - 1.0
         params["m_proj"] = base_m - 2.0
-    
+
     return params
 
 def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
@@ -1352,10 +1276,10 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
         metrics = get_metrics(ticker)
         fcff_ttm, net_debt = _estimate_fcff_and_net_debt(ticker)
         price, shares = get_price_and_shares(ticker)
-        
+
         t_is = yf.Ticker(ticker).quarterly_income_stmt
         rev_ttm = ttm_from_rows(t_is, ["Total Revenue", "Revenue"])
-        
+
         ebitda_ttm = np.nan
         if np.isfinite(metrics.get("EBITDAMargin%")) and np.isfinite(rev_ttm):
             ebitda_ttm = metrics.get("EBITDAMargin%") * rev_ttm / 100.0
@@ -1380,10 +1304,10 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
                 for i in range(1, 6):
                     last_fcff = last_fcff * (1 + g_proj_frac)
                     pv_fcffs.append(last_fcff / ((1 + wacc) ** i))
-                
+
                 tv = (last_fcff * (1 + term_g)) / (wacc - term_g)
                 pv_tv = tv / ((1 + wacc) ** 5)
-                
+
                 enterprise_value_dcf = sum(pv_fcffs) + pv_tv
                 equity_value_dcf = enterprise_value_dcf - net_debt
                 implied_price_dcf = equity_value_dcf / shares
@@ -1397,7 +1321,7 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
             if peers:
                 peer_metrics = [get_metrics(p) for p in peers]
                 df_peers = pd.DataFrame(peer_metrics).dropna(subset=["EV/EBITDA (raw)", "P/S (raw)"], how="all")
-                
+
                 median_ev_ebitda = np.nanmedian(df_peers["EV/EBITDA (raw)"])
                 median_ps = np.nanmedian(df_peers["P/S (raw)"])
 
@@ -1405,7 +1329,7 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
                     ev = ebitda_ttm * median_ev_ebitda
                     eq_val = ev - net_debt
                     implied_price_ev_ebitda = eq_val / shares
-                
+
                 if np.isfinite(median_ps) and np.isfinite(rev_ttm) and shares > 0:
                     mkt_cap = rev_ttm * median_ps
                     implied_price_ps = mkt_cap / shares
@@ -1417,12 +1341,12 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
             "Implied Price": [implied_price_dcf, implied_price_ev_ebitda, implied_price_ps]
         }
         df = pd.DataFrame(df_data).dropna(subset=["Implied Price"])
-        
+
         md = f"#### {scenario} Scenario\n**Assumptions:**\n"
         md += f"- Proj. Growth: `{params['g_proj']:.1f}%`\n"
         md += f"- WACC: `{wacc:.1%}`\n"
         md += f"- Terminal Growth: `{term_g:.1%}`\n"
-        
+
         if df.empty:
             md += "\n_Insufficient data for valuation._"
         else:
@@ -1432,7 +1356,7 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
             df["Implied Price"] = df["Implied Price"].map(lambda x: f"${x:.2f}")
 
         return df, md
-    
+
     except Exception as e:
         logging.error(f"Failed _scenario_valuation_core for {ticker} ({scenario}): {e}")
         return pd.DataFrame(), f"_Valuation failed for {scenario}: {e}_"
@@ -1450,17 +1374,17 @@ def inject_global_css():
             --color-primary-bg: #001f3f;    /* Dark Navy Blue */
             --color-secondary-bg: #F5EAAA; /* Khaki */
             --color-page-bg: #FFFFFF;      /* White */
-            
+
             --color-primary-text: #001f3f;    /* Dark Navy Blue */
             --color-secondary-text: #F5EAAA; /* Khaki */
             --color-tertiary-text: #FFFFFF;  /* White */
-            
+
             /* --- NEW DARK THEME --- */
             --color-dark-card-bg: #1E1E1E;
             --color-dark-card-text: #FAFAFA;
             --color-dark-card-border: #333333;
         }
-        
+
         /* ===== GLOBAL LAYOUT ===== */
         html, body, .stApp {
             background: var(--color-page-bg) !important;
@@ -1485,7 +1409,7 @@ def inject_global_css():
         h1, h2, h3, h4, h5, h6 {
             color: var(--color-primary-text) !important;
         }
-        
+
         /* ===== PAGE HEADER ===== */
         .page-header {
             text-align: center;
@@ -1563,7 +1487,7 @@ def inject_global_css():
             color: var(--color-primary-text);
             margin-bottom: 12px;
         }
-        
+
         /* --- !!! ---
            --- FIX: Updated Index Chart Cards to be DARK ---
            --- !!! --- */
@@ -1573,20 +1497,20 @@ def inject_global_css():
             padding: 12px 16px;
             background: var(--color-dark-card-bg); /* Dark background */
         }
-        
+
         .index-chart-title {
             font-weight: 600;
             font-size: 1.1rem;
             color: var(--color-dark-card-text); /* Light text */
         }
-        
+
         .index-chart-price {
             font-weight: 600;
             font-size: 1rem;
             color: var(--color-dark-card-text); /* Light text */
         }
         /* --- END FIX --- */
-        
+
         .index-chart-change {
             font-weight: 500;
             font-size: 0.9rem;
@@ -1648,18 +1572,6 @@ def inject_global_css():
             color: #E02424;
         }
 
-        .ticker-section-label {
-            display: inline-block;
-            padding: 0 25px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            opacity: 0.75;
-            color: var(--color-secondary-text);
-        }
-
-
         /* ===== VALUATION PAGE OVERRIDES ===== */
         html body .stApp .main-content [data-testid="stMetric"] div {
             color: var(--color-primary-text) !important;
@@ -1678,7 +1590,7 @@ def inject_global_css():
         html body .stApp .main-content .snapshot-title {
             color: var(--color-primary-text) !important;
         }
-        
+
         /* ===== ULTIMATE 100% FIX FOR TABS ===== */
         button[data-testid="stTab"] {
             color: #4B5563 !important;
@@ -1690,7 +1602,7 @@ def inject_global_css():
             opacity: 1 !important;
         }
         div[data-baseweb="tab-highlight"] {
-            background-color: var(--color-primary-text) !important; 
+            background-color: var(--color-primary-text) !important;
         }
 
         </style>
@@ -1702,22 +1614,16 @@ def inject_global_css():
 # --- Replace this function ---
 # --- Replace this function ---
 def render_dashboard():
-    inject_global_css() 
+    inject_global_css()
 
-    # --- Live Index Data (for summary + cards) ---
+    # --- Live Index Ticker ---
     index_data = get_live_index_data()
-
-       # --- TOP BAR: S&P 500 Top Gainers & Losers Ticker Tape ---
-    top_gainers, top_losers = get_top_movers_sp500()
-
-    if top_gainers or top_losers:
+    if index_data:
         item_html_list = []
-
-        # First: top gainers (green)
-        for item in top_gainers:
-            change_class = "positive"   # uses .ticker-change.positive { color: #057A55; }
-            change_sign = "+" if item["change"] >= 0 else ""
-            item_html_list.append(
+        for item in index_data:
+            change_class = "positive" if item['change'] >= 0 else "negative"
+            change_sign = "+" if item['change'] >= 0 else ""
+            item_html = (
                 f'<div class="ticker-item">'
                 f'  <span class="ticker-symbol">{item["symbol"]}</span>'
                 f'  <span class="ticker-price">${item["price"]:,.2f}</span>'
@@ -1726,22 +1632,8 @@ def render_dashboard():
                 f'  </span>'
                 f'</div>'
             )
+            item_html_list.append(item_html)
 
-        # Then: top losers (red)
-        for item in top_losers:
-            change_class = "negative"   # uses .ticker-change.negative { color: #E02424; }
-            change_sign = "+" if item["change"] >= 0 else ""
-            item_html_list.append(
-                f'<div class="ticker-item">'
-                f'  <span class="ticker-symbol">{item["symbol"]}</span>'
-                f'  <span class="ticker-price">${item["price"]:,.2f}</span>'
-                f'  <span class="ticker-change {change_class}">'
-                f'    {change_sign}{item["change"]:,.2f} ({change_sign}{item["pct_change"]:,.2f}%)'
-                f'  </span>'
-                f'</div>'
-            )
-
-        # Duplicate once to create a seamless infinite scroll
         all_items_html = "".join(item_html_list)
         full_ticker_html = f"""
         <div class="ticker-tape-container">
@@ -1752,32 +1644,31 @@ def render_dashboard():
         """
         st.markdown(full_ticker_html, unsafe_allow_html=True)
 
-
     # ============================
     # --- ROW 0: Index Charts
     # ============================
     st.markdown("### Market Snapshot")
     chart_cols = st.columns(4)
     chart_data = get_intraday_index_charts_data() # Get 1d/15m OHLC data
-    
+
     index_map = {
         'Dow Jones': ('^DJI', chart_cols[0]),
         'NASDAQ': ('^IXIC', chart_cols[1]),
         'S&P 500': ('^GSPC', chart_cols[2]),
         'Russell 2000': ('^RUT', chart_cols[3])
     }
-    
+
     for display_name, (ticker, col) in index_map.items():
         with col:
             # --- CSS class is now dark themed ---
-            st.markdown(f"<div class='index-chart-card'>", unsafe_allow_html=True) 
-            
+            st.markdown(f"<div class='index-chart-card'>", unsafe_allow_html=True)
+
             summary = next((item for item in index_data if item["symbol"] == display_name), None)
-            
+
             if summary:
                 change_class = "positive" if summary['change'] >= 0 else "negative"
                 change_sign = "+" if summary['change'] >= 0 else ""
-                
+
                 # --- Text is now light-colored due to CSS ---
                 st.markdown(f"<div class='index-chart-title'>{display_name}</div>", unsafe_allow_html=True)
                 st.markdown(
@@ -1790,29 +1681,29 @@ def render_dashboard():
             else:
                 st.markdown(f"<div class='index-chart-title'>{display_name}</div>", unsafe_allow_html=True)
                 st.markdown("<span class='index-chart-price'>N/A</span>", unsafe_allow_html=True)
-                
-            
+
+
             # --- !!! ---
             # --- THIS IS THE FIX ---
             # --- !!! ---
-            
+
             # Plot the chart
             if chart_data and ticker in chart_data and not chart_data[ticker].empty:
                 chart_df = chart_data[ticker]
-                
+
                 # We need to know if the trend is positive
                 is_positive = chart_df['Close'].iloc[-1] >= chart_df['Open'].iloc[0]
 
                 # --- Call the NEW candlestick function ---
                 fig = plot_index_candlestick(chart_df, is_positive)
-                
+
                 # Render the Plotly figure
                 st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-                
+
             else:
                 st.caption("Chart data unavailable.")
             # --- END OF FIX ---
-                
+
             st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("---") # Horizontal rule
@@ -1825,8 +1716,6 @@ def render_dashboard():
     if sector_perf_data:
         heatmap_fig = plot_sector_heatmap(sector_perf_data)
         st.plotly_chart(heatmap_fig, use_container_width=True)
-        st.caption("Each tile represents a sector ETF. Color = 1-day % change; tiles sized equally for easier comparison.")
-
     else:
         st.warning("Could not retrieve sector performance data.")
 
@@ -1894,7 +1783,7 @@ def render_dashboard():
 def render_analysis_page():
     # --- MODIFIED --- Added CSS call
     inject_global_css()
-    
+
     st.markdown(
         """
         <div class="hero-card">
@@ -1906,15 +1795,15 @@ def render_analysis_page():
         """,
         unsafe_allow_html=True,
     )
-    
+
     # --- MODIFICATION ---
     # We must now add a way to trigger analysis from this page,
     # since it was removed from the Dashboard.
-    
+
     default_ticker = ""
     if st.session_state.get("last_results"):
         default_ticker = st.session_state.last_results.get("ticker", "")
-        
+
     ticker = st.text_input(
         "Enter ticker to analyze (e.g., AAPL, MSFT)",
         value=default_ticker,
@@ -1923,7 +1812,7 @@ def render_analysis_page():
     ).upper()
 
     analyze_clicked = st.button("Analyze", use_container_width=True, key="analysis_page_button")
-    
+
     if analyze_clicked and ticker:
         with st.spinner(f"Analyzing {ticker.upper()}..."):
             try:
@@ -1987,14 +1876,18 @@ def render_analysis_page():
         """,
         unsafe_allow_html=True,
     )
-    
+    charts_dict = res.get("charts", {})
+    if charts_dict.get("price") is not None:
+        st.pyplot(charts_dict["price"])
+    if charts_dict.get("scatter") is not None:
+        st.pyplot(charts_dict["scatter"])
     st.markdown("</div>", unsafe_allow_html=True)
 
 # ---------- VALUATION PAGE ----------
 def render_valuation_page():
     # --- MODIFIED --- Added CSS call
     inject_global_css()
-    
+
     st.markdown(
         """
         <div class="hero-card">
@@ -2092,7 +1985,7 @@ def render_valuation_page():
         default_ticker = st.session_state.last_results.get("ticker", "")
 
     st.markdown('<div class="valuation-load-section">', unsafe_allow_html=True)
-    
+
     selected_ticker = st.text_input(
         "Ticker symbol",
         value=default_ticker,
@@ -2100,7 +1993,7 @@ def render_valuation_page():
         placeholder="Enter ticker symbol (e.g., AAPL, MSFT)",
         label_visibility="collapsed",
     ).upper()
-    
+
     load_clicked = st.button("Load Company", use_container_width=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
@@ -2115,7 +2008,7 @@ def render_valuation_page():
                 st.session_state.valuation_metrics = metrics
                 st.session_state.valuation_price = price
                 st.success(f"Loaded metrics for {tkr}")
-                
+
                 # --- NEW: Trigger analysis run ---
                 # Also run a full analysis and save it
                 max_peers = 6
@@ -2127,7 +2020,7 @@ def render_valuation_page():
                 )
                 st.session_state.recent_tickers = st.session_state.recent_tickers[:12]
                 st.success(f"Full analysis report updated for {tkr}")
-                
+
             except Exception as e:
                 logging.error(f"Failed to load metrics for {selected_ticker}: {e}")
                 st.error(f"Could not load data for {selected_ticker.upper()}.")
@@ -2142,7 +2035,7 @@ def render_valuation_page():
         prof = get_profile(current_ticker) or {}
         company_name = prof.get("name") or current_ticker
         eps = metrics.get("EPS_TTM")
-        
+
         st.markdown(
             """
             <div class="section-card snapshot-card">
@@ -2205,14 +2098,14 @@ def render_valuation_page():
             "Base Case": {"revenue_growth": 15.0, "discount_rate": 10.0, "terminal_growth": 3.0, "pe_multiple": 25.0},
             "Bear Case": {"revenue_growth": 5.0,  "discount_rate": 12.0, "terminal_growth": 2.0, "pe_multiple": 15.0},
         }
-        
+
         # 1. Initialize the scenario in session state if it's not there
         if "valuation_scenario" not in st.session_state:
             st.session_state.valuation_scenario = "Base Case"
 
         # 2. Create columns for the buttons
         scen_c1, scen_c2, scen_c3 = st.columns(3)
-        
+
         # 3. Create the buttons. When clicked, they update session state.
         with scen_c1:
             if st.button("Bull Case", use_container_width=True, key="scen_bull"):
@@ -2223,17 +2116,17 @@ def render_valuation_page():
         with scen_c3:
             if st.button("Bear Case", use_container_width=True, key="scen_bear"):
                 st.session_state.valuation_scenario = "Bear Case"
-        
+
         # 4. Read the current scenario from session state
         selected_scenario = st.session_state.valuation_scenario
-        
+
         # 5. (Optional) Show which one is active
         st.markdown(f"**Active Scenario:** `{selected_scenario}`")
-        
+
 
         st.markdown("</div>", unsafe_allow_html=True)
         st.write("")
-        
+
 
         st.markdown(
             """
@@ -2245,9 +2138,9 @@ def render_valuation_page():
         )
 
         preset = scenario_presets[selected_scenario]
-        
+
         col_a, col_b, col_c, col_d = st.columns(4)
-        
+
         with col_a:
             st.markdown(f"""
             <p style="font-size: 0.875rem; color: #001f3f !important; margin-bottom: 0.25rem;">
@@ -2450,7 +2343,7 @@ def render_valuation_page():
 def render_research_page():
     # --- MODIFIED --- Added CSS call
     inject_global_css()
-    
+
     st.markdown(
         """
         <div class="hero-card">
@@ -2478,14 +2371,14 @@ def render_research_page():
     key = selected if selected != "(no ticker yet)" else current_from_recent or ""
 
     existing = notes_store.get(key, "") if key else ""
-    
+
     st.markdown(
         """
         <div class="section-card">
         """,
         unsafe_allow_html=True
     )
-    
+
     new_text = st.text_area("Notes", existing, height=260, key=f"notes_area_{key or 'global'}")
 
     col_save, col_info = st.columns([1, 3])
@@ -2504,14 +2397,14 @@ def render_research_page():
     if st.session_state.notes_store:
         st.markdown("#### Tickers with saved notes")
         st.write(", ".join(sorted(st.session_state.notes_store.keys())))
-        
+
     st.markdown("</div>", unsafe_allow_html=True)
 
 # ---------- THESES PAGE ----------
 def render_theses_page():
     # --- MODIFIED --- Added CSS call
     inject_global_css()
-    
+
     st.markdown(
         """
         <div class="hero-card">
@@ -2562,7 +2455,7 @@ def render_theses_page():
             st.success(f"Thesis saved for {ticker.upper()}.")
         else:
             st.warning("Please enter a ticker for the thesis.")
-            
+
     st.markdown("</div>", unsafe_allow_html=True)
     st.write("")
 
@@ -2616,23 +2509,23 @@ def main():
     # --- !!! ---
     # --- FIX 1: Replaced st.radio and custom CSS with st.tabs ---
     # This provides the [ Home ] [ Screener ] ... layout natively
-    
+
     tab_home, tab_screener, tab_val, tab_research, tab_theses = st.tabs(
         ["Home", "Screener", "Valuation", "Research", "Theses"]
     )
 
     with tab_home:
         render_dashboard()
-        
+
     with tab_screener:
         render_analysis_page()
-        
+
     with tab_val:
         render_valuation_page()
-        
+
     with tab_research:
         render_research_page()
-        
+
     with tab_theses:
         render_theses_page()
     # --- END FIX 1 ---

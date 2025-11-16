@@ -1231,49 +1231,44 @@ def inject_global_css():
             padding-top: 0.5rem !important;
         }
 
-
-        /* ===== TOP NAV BAR (FULL-WIDTH STRIP) ===== */
+        /* ===== TOP NAV BAR (FIXED) ===== */
         .top-nav-bar {
             background: var(--color-primary-bg);
-            padding: 4px 0 4px;
-            width: 100vw;
-            position: relative;
-            left: 50%;
-            right: 50%;
-            margin-left: -50vw;
-            margin-right: -50vw;
-            margin-top: 0;  /* ensure no extra gap */
-            border-bottom: 1px solid rgba(245, 234, 170, 0.25);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 999;                 /* sit above everything */
+            padding: 10px 0;
+            width: 100%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.12);  /* subtle shadow */
         }
-
 
         .top-nav-inner {
-            max-width: 720px;
+            max-width: 1100px;
             margin: 0 auto;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        /* Push main content below fixed nav bar */
+        .main-content {
+            padding-top: 90px;   /* roughly nav height; tweak 80–110px to taste */
         }
 
-        .top-nav-inner [data-testid="column"] {
-            padding-left: 0 !important;
-            padding-right: 0 !important;
-        }
 
         .top-nav-container .stButton {
+            width: 100%;
             margin: 0 !important;
         }
 
         .top-nav-container .stButton > button {
-            background: transparent !important;
-            color: var(--color-secondary-text) !important;
+            width: 100%;
+            padding: 10px 0;
             border-radius: 999px !important;
-            border: 1px solid rgba(245, 234, 170, 0.65) !important;
-            font-weight: 500;
-            font-size: 13px;
-            padding: 6px 18px;
-            box-shadow: none !important;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            box-shadow: none;
         }
 
         .top-nav-container .stButton > button:hover {
@@ -1438,6 +1433,37 @@ def inject_global_css():
             color: var(--color-tertiary-text);
         }
         
+        /* Remove Streamlit header completely */
+        header[data-testid="stHeader"] {
+            background: transparent !important;
+            height: 0 !important;
+            min-height: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Remove default top padding on the body */
+        main.block-container {
+            padding-top: 0 !important;
+            margin-top: -20px !important;  /* pulls content upward */
+        }
+
+        /* OR if you use .main .block-container instead */
+        .main .block-container {
+            padding-top: 0 !important;
+            margin-top: -20px !important;
+        }
+
+        /* Pull the custom nav bar up */
+        .top-nav-bar {
+            margin-top: -10px !important;
+        }
+
+        /* Optional: tighten page header spacing */
+        .page-header {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+        }
+
         /* ====================================================== */
         /* == HYPER-SPECIFIC ("NUCLEAR") OVERRIDE FOR VALUATION == */
         /* ====================================================== */

@@ -1239,17 +1239,19 @@ def inject_global_css():
 
 
         /* ===== TOP NAV BAR (FULL-WIDTH STRIP) ===== */
-                .top-nav-bar {
+        .top-nav-bar {
             background: var(--color-primary-bg);
-            padding: 6px 0 4px;
+            padding: 4px 0 4px;
             width: 100vw;
             position: relative;
             left: 50%;
             right: 50%;
             margin-left: -50vw;
             margin-right: -50vw;
+            margin-top: 0;  /* ensure no extra gap */
             border-bottom: 1px solid rgba(245, 234, 170, 0.25);
         }
+
 
         .top-nav-inner {
             max-width: 720px;
@@ -1323,9 +1325,10 @@ def inject_global_css():
         /* ===== PAGE HEADER (TITLE + TAGLINE) ===== */
         .page-header {
             text-align: center;
-            margin: 0 auto 0.75rem;
-            padding-top: 0.4rem;
+            margin: 0.25rem auto 0.5rem;
+            padding-top: 0.1rem;
         }
+
         .page-title {
             font-family: "DM Serif Display", serif;
             font-size: 2.6rem;
@@ -1338,6 +1341,19 @@ def inject_global_css():
             font-size: 0.95rem;
             color: #4B5563;
         }
+        /* Kill the default Streamlit header space */
+        header[data-testid="stHeader"] {
+            background: transparent;
+            height: 0 !important;
+            min-height: 0 !important;
+            padding: 0 !important;
+        }
+
+        /* Reduce top padding of main content */
+        .main .block-container {
+            padding-top: 0.25rem !important;
+        }
+
 
         /* ===== DASHBOARD HEADER (if you use later) ===== */
         .dashboard-header {
@@ -2366,22 +2382,6 @@ def main():
         </div>
         """,
         unsafe_allow_html=True,
-    )
-
-
-    st.markdown(
-    """
-    <h1 style='text-align:center; margin-bottom:0.35rem; padding-top:0.35rem;
-               font-weight:400; font-family:"DM Serif Display", serif;
-               font-size:2.6rem; color:var(--color-primary-text);'>
-        Equity Research Platform
-    </h1>
-    <p style='text-align:center; margin-top:0; margin-bottom:1.3rem;
-              font-size:0.95rem; color:#4B5563;'>
-        Live market insights · Equity analysis · Valuation modeling
-    </p>
-    """,
-    unsafe_allow_html=True,
     )
 
 

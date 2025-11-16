@@ -80,41 +80,124 @@ def load_revenue_series(symbol: str) -> pd.Series:
     return s.astype(float)
     
 def generate_market_summary(index_data):
+    """
+    Build a richer, human-style market wrap based on the index moves.
+    Expects output from get_live_index_data().
+    """
     if not index_data:
-        return "Market data unavailable."
+        return (
+            "Market data is temporarily unavailable. "
+            "Check your connection or try again in a few minutes."
+        )
 
+    # Pull core indices if present
     sp = next((x for x in index_data if x["symbol"] == "S&P 500"), None)
     nd = next((x for x in index_data if x["symbol"] == "NASDAQ"), None)
     dj = next((x for x in index_data if x["symbol"] == "Dow Jones"), None)
 
-    movers = []
+    lines = []
+
+    # Overall tone
+    avg_move = np.nanmean([x["pct_change"] for x in index_data])
+    if avg_move >= 0.7:
+        tone = "risk-on, with buyers clearly in control"
+    elif avg_move >= 0.2:
+        tone = "constructive, with a mild positive bias"
+    elif avg_move > -0.2:
+        tone = "mixed and mostly sideways, with no dominant trend"
+    elif avg_move > -0.7:
+        tone = "cautious, as sellers have a slight edge"
+    else:
+        tone = "decidedly risk-off, with broad-based pressure across assets"
+
+    lines.append(f"**Overall tone:** The market is {tone}.")
+
+    # Index-level detail
+    idx_bits = []
     for idx in [sp, nd, dj]:
         if idx:
-            pct = idx["pct_change"]
-            dir = "up" if pct >= 0 else "down"
-            movers.append(f"{idx['symbol']} is {dir} {pct:.2f}%")
+            direction = "up" if idx["pct_change"] >= 0 else "down"
+            idx_bits.append(f"{idx['symbol']} is {direction} {idx['pct_change']:.2f}%")
 
-    summary = (
-        "• " + "; ".join(movers) + ".\n"
-        "• Market tone appears "
-        + ("bullish." if sum(i["pct_change"] for i in index_data) > 0 else "cautious.")
+    if idx_bits:
+        lines.append("**Major indices:** " + "; ".join(idx_bits) + ".")
+
+    # Leadership / laggards
+    leader = max(index_data, key=lambda x: x["pct_change"])
+    laggard = min(index_data, key=lambda x: x["pct_change"])
+    lines.append(
+        f"**Leadership:** {leader['symbol']} is leading today, while "
+        f"{laggard['symbol']} is lagging the field."
     )
 
-    return summary
-    
+    # Simple “style” read: growth vs value via NASDAQ vs Dow
+    if nd and dj:
+        style_spread = nd["pct_change"] - dj["pct_change"]
+        if style_spread > 0.4:
+            style_msg = "Growth/tech is outperforming more value-oriented names."
+        elif style_spread < -0.4:
+            style_msg = "Value / cyclicals are holding up better than growth and tech."
+        else:
+            style_msg = "Performance between growth and value looks fairly balanced."
+        lines.append(f"**Style lens:** {style_msg}")
+
+    # Volatility / conviction (based on move magnitude)
+    max_abs_move = max(abs(x["pct_change"]) for x in index_data)
+    if max_abs_move < 0.4:
+        vol_msg = "Moves are relatively contained, suggesting low intraday volatility."
+    elif max_abs_move < 1.0:
+        vol_msg = "Indices are moving, but still within a normal volatility range."
+    else:
+        vol_msg = "Swings are elevated, pointing to higher-than-normal volatility."
+    lines.append(f"**Volatility check:** {vol_msg}")
+
+    # Wrap-up guidance style line
+    lines.append(
+        "**Takeaway for research:** It’s a good day to focus on how individual names "
+        "are trading versus their sector and the broader tape, rather than just the headlines."
+    )
+
+    return "\n\n".join(lines)
+
 @st.cache_data(ttl=300)
-def get_market_news(n=10):
+def get_market_news(n=8):
+    """
+    Fetch broad market news using SPY as a proxy.
+    Filters out items without a title or link so the UI doesn't show 'None'.
+    """
     try:
-        data = yf.Ticker("SPY").news[:n]
-        news = [{
-            "headline": x.get("title"),
-            "url": x.get("link"),
-            "publisher": x.get("publisher"),
-            "time": pd.to_datetime(x.get("providerPublishTime"), unit="s")
-        } for x in data]
-        return news
-    except:
-        return []
+        t = yf.Ticker("SPY")
+        raw = t.news or []
+    except Exception:
+        raw = []
+
+    news = []
+    for item in raw[:n]:
+        title = item.get("title") or item.get("headline")
+        link = item.get("link") or item.get("url")
+        if not title or not link:
+            continue
+
+        publisher = item.get("publisher") or item.get("source") or ""
+        ts_raw = item.get("providerPublishTime") or item.get("datetime")
+        try:
+            if isinstance(ts_raw, (int, float)):
+                ts = pd.to_datetime(ts_raw, unit="s")
+            else:
+                ts = pd.to_datetime(ts_raw, errors="coerce")
+        except Exception:
+            ts = None
+
+        news.append(
+            {
+                "headline": title,
+                "url": link,
+                "publisher": publisher,
+                "time": ts,
+            }
+        )
+    return news
+
 def get_economic_calendar():
     return [
         ("CPI Report", "Wednesday 8:30 AM"),
@@ -1354,8 +1437,9 @@ def inject_global_css():
 # PAGE RENDER FUNCTIONS
 # ======================================================================
 def render_dashboard():
-    
-    # --- NEW: Live Index Ticker ---
+    inject_global_css()
+
+    # --- Live Index Ticker (kept) ---
     index_data = get_live_index_data()
     if index_data:
         item_html_list = []
@@ -1372,9 +1456,8 @@ def render_dashboard():
                 f'</div>'
             )
             item_html_list.append(item_html)
-        
+
         all_items_html = "".join(item_html_list)
-        # Duplicate the items for a seamless scroll
         full_ticker_html = f"""
         <div class="ticker-tape-container">
             <div class="ticker-tape-inner">
@@ -1383,8 +1466,8 @@ def render_dashboard():
         </div>
         """
         st.markdown(full_ticker_html, unsafe_allow_html=True)
-    # --- END: Live Index Ticker ---
-    
+
+    # --- Hero card ---
     st.markdown(
         """
         <div class="hero-card">
@@ -1398,13 +1481,8 @@ def render_dashboard():
     )
 
     st.write("")
-    
-    # --- REMOVED Ticker Input and Analyze Button ---
-    # The st.text_input and st.button("Analyze") were here.
-    # The `if analyze_clicked and ticker:` block was also removed.
-    
-    st.write("")
-    
+
+    # --- KPI row ---
     companies_tracked = len({x["ticker"] for x in st.session_state.recent_tickers}) or 0
     active_theses = len(st.session_state.theses_store)
     research_docs = len(st.session_state.notes_store)
@@ -1443,8 +1521,10 @@ def render_dashboard():
             """,
             unsafe_allow_html=True,
         )
-        
+
     st.write("")
+
+    # --- Quick Actions strip ---
     st.markdown(
         """
         <div class="section-card">
@@ -1457,9 +1537,8 @@ def render_dashboard():
     qa_col1, qa_col2, qa_col3 = st.columns(3)
 
     with qa_col1:
-        # This button now requires you to enter a ticker on the Valuation page
         if st.button("Start New Analysis", use_container_width=True):
-            st.session_state.top_nav_page = "Valuation" 
+            st.session_state.top_nav_page = "Valuation"
             st.rerun()
     with qa_col2:
         if st.button("Draft Thesis", use_container_width=True):
@@ -1471,71 +1550,61 @@ def render_dashboard():
             st.rerun()
 
     st.markdown("</div>", unsafe_allow_html=True)
-    # ============================
-    # AI MARKET SUMMARY (Daily Brief)
-    # ============================
 
+    # ============================
+    # AI MARKET SUMMARY (DETAILED)
+    # ============================
     st.markdown(
         "<div class='section-card'><div class='section-title'>Market Summary (AI-Generated)</div>",
         unsafe_allow_html=True,
     )
-    summary = generate_market_summary(index_data)
-    st.write(summary)
+    summary_text = generate_market_summary(index_data)
+    st.markdown(summary_text)
     st.markdown("</div>", unsafe_allow_html=True)
 
     # ============================
-    # TWO COLUMN LAYOUT
+    # TWO-COLUMN LAYOUT
     # ============================
-    left, right = st.columns([1.3, 1])
+    left, right = st.columns([1.4, 1])
 
-    # ------- LEFT COLUMN -------
+    # ------- LEFT: Trending News -------
     with left:
-        st.markdown("<div class='section-card'><div class='section-title'>Trending Market News</div>",
-                    unsafe_allow_html=True)
-        news = get_market_news()
-        if news:
-            for n in news:
-                st.markdown(f"**[{n['headline']}]({n['url']})** — {n['publisher']}  \n*{n['time']}*")
+        st.markdown(
+            "<div class='section-card'><div class='section-title'>Trending Market News</div>",
+            unsafe_allow_html=True,
+        )
+        news_items = get_market_news()
+        if news_items:
+            for n in news_items:
+                ts_str = n["time"].strftime("%Y-%m-%d %H:%M") if isinstance(n["time"], pd.Timestamp) else ""
+                meta = " — " + n["publisher"] if n["publisher"] else ""
+                if ts_str:
+                    meta += f" • {ts_str}"
+                st.markdown(f"**[{n['headline']}]({n['url']})**{meta}")
         else:
-            st.write("No news available.")
+            st.write("No recent broad-market headlines available.")
         st.markdown("</div>", unsafe_allow_html=True)
 
-        # Top Gainers / Losers
-        gainers, losers = get_gainers_losers()
-        st.markdown("<div class='section-card'><div class='section-title'>Top Gainers</div>",
-                    unsafe_allow_html=True)
-        st.dataframe(gainers, use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        st.markdown("<div class='section-card'><div class='section-title'>Top Losers</div>",
-                    unsafe_allow_html=True)
-        st.dataframe(losers, use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    # ------- RIGHT COLUMN -------
+    # ------- RIGHT: Econ Calendar + Smart Money -------
     with right:
-        st.markdown("<div class='section-card'><div class='section-title'>Economic Calendar</div>",
-                    unsafe_allow_html=True)
+        # Economic calendar
+        st.markdown(
+            "<div class='section-card'><div class='section-title'>Economic Calendar (Focus)</div>",
+            unsafe_allow_html=True,
+        )
         for event, time_str in get_economic_calendar():
-            st.write(f"**{event}** — {time_str}")
+            st.markdown(f"• **{event}** — {time_str}")
         st.markdown("</div>", unsafe_allow_html=True)
 
-        st.markdown("<div class='section-card'><div class='section-title'>Smart Money Tracker</div>",
-                    unsafe_allow_html=True)
-        for k, v in get_smart_money_signals().items():
-            st.markdown(f"**{k}:** {v}")
+        # Smart Money Tracker
+        st.markdown(
+            "<div class='section-card'><div class='section-title'>Smart Money Tracker</div>",
+            unsafe_allow_html=True,
+        )
+        for label, value in get_smart_money_signals().items():
+            st.markdown(f"**{label}:** {value}")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # ============================
-    # EARNINGS MOMENTUM RADAR
-    # ============================
-
-    st.markdown("<div class='section-card'><div class='section-title'>Earnings Momentum Radar</div>",
-                unsafe_allow_html=True)
-    sectors, beats, misses = get_earnings_momentum_data()
-    fig_radar = radar_chart(sectors, beats)
-    st.pyplot(fig_radar)
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
 def render_analysis_page():

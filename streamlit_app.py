@@ -1661,11 +1661,19 @@ def render_dashboard():
                 st.markdown(f"<div class='index-chart-title'>{display_name}</div>", unsafe_allow_html=True)
                 st.markdown("<span class='index-chart-price'>N/A</span>", unsafe_allow_html=True)
                 
+            # ... inside render_dashboard ...
             # Plot the chart
             if chart_data and ticker in chart_data and not chart_data[ticker].empty:
                 # Create a simple line chart, remove axis labels for a cleaner look
                 chart_df = chart_data[ticker]
                 chart_df.index.name = "Time"
+                
+                # --- FIX ---
+                # Rename the series to a simple string.
+                # The tuple name ('Close', 'TICKER') causes a KeyError inside st.line_chart
+                chart_df = chart_df.rename("Price")
+                # --- END FIX ---
+                
                 st.line_chart(chart_df, height=100)
             else:
                 st.caption("Chart data unavailable.")

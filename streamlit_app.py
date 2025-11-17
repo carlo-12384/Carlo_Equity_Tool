@@ -299,6 +299,110 @@ def get_smart_money_signals():
         "Hedge Fund Sentiment": "Net long positioning rising",
         "ETF Money Flow": "$2.4B inflow over 5 days",
     }
+
+
+@st.cache_data(ttl=60)
+def get_dashboard_kpis():
+    """
+    Macro KPIs for the header strip (VIX, USD, HY Credit, IG Credit).
+    """
+    kpi_assets = {
+        "^VIX": "Volatility (VIX)",
+        "UUP": "US Dollar (UUP)",
+        "HYG": "High Yield Credit",
+        "LQD": "IG Credit",
+    }
+
+    rows = []
+    for ticker, label in kpi_assets.items():
+        last_price = None
+        prev_close = None
+        try:
+            t = yf.Ticker(ticker)
+            hist = t.history(period="2d", interval="1d")
+            if hist is not None and not hist.empty and len(hist) >= 2:
+                prev_close = float(hist["Close"].iloc[0])
+                last_price = float(hist["Close"].iloc[-1])
+            else:
+                fast = t.fast_info or {}
+                last_price = fast.get("last_price") or fast.get("lastPrice")
+                prev_close = fast.get("previous_close") or fast.get("previousClose")
+                if last_price is not None:
+                    last_price = float(last_price)
+                if prev_close is not None:
+                    prev_close = float(prev_close)
+        except Exception as e:
+            logging.warning(f"Failed to fetch KPI data for {ticker}: {e}")
+
+        if last_price is None and prev_close is None:
+            value_str = "N/A"
+            change_str = "+0.00 (0.00%)"
+            change_val = 0.0
+        else:
+            if last_price is None:
+                last_price = prev_close
+            if prev_close is None or prev_close == 0:
+                prev_close = last_price
+            try:
+                change = last_price - prev_close
+                pct_change = (change / prev_close) * 100 if prev_close else 0.0
+            except Exception:
+                change = 0.0
+                pct_change = 0.0
+            value_str = f"{last_price:,.2f}"
+            change_str = f"{change:+.2f} ({pct_change:+.2f}%)"
+            change_val = change
+
+        rows.append(
+            {
+                "label": label,
+                "value_str": value_str,
+                "change_str": change_str,
+                "change_val": change_val,
+            }
+        )
+    return rows
+
+
+def render_global_header_and_kpis():
+    """
+    Hero block + KPI cards shown at the top of the Home tab.
+    """
+    st.markdown(
+        """
+        <div class="header-hero">
+            <div class="page-header">
+                <h1 class="page-title">Equity Research Tool</h1>
+                <p class="page-subtitle">Fricano Capital Research</p>
+                <p class="page-mini-desc">
+                    Track macro tone, leadership, and research workflows from one command center.
+                </p>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    data = get_dashboard_kpis()
+    if not data:
+        return
+
+    st.markdown("<div class='header-kpi-container'>", unsafe_allow_html=True)
+    cols = st.columns(len(data))
+    for col, item in zip(cols, data):
+        with col:
+            change_class = "positive" if item["change_val"] >= 0 else "negative"
+            st.markdown(
+                f"""
+                <div class="header-kpi-card">
+                    <div class="header-kpi-label">{item['label']}</div>
+                    <div class="header-kpi-value">{item['value_str']}</div>
+                    <div class="header-kpi-change {change_class}">{item['change_str']}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+    st.markdown("</div>", unsafe_allow_html=True)
     
 def get_earnings_momentum_data():
     sectors = ["Tech","Health","Energy","Financials","Consumer","Industrials"]
@@ -1599,6 +1703,62 @@ def inject_global_css():
             color: #4B5563;
             margin: 0;
         }
+        .page-mini-desc {
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.85);
+            margin-top: 0.35rem;
+        }
+        .header-hero {
+            background: linear-gradient(120deg, #012c74, #014c9b);
+            border-radius: 18px;
+            padding: 24px;
+            margin: 0 auto 1.5rem auto;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #F8FAFC;
+        }
+        .header-hero .page-header {
+            text-align: left;
+            padding: 0;
+        }
+        .header-hero .page-title {
+            color: #F8FAFC !important;
+            margin-bottom: 0.25rem;
+        }
+        .header-hero .page-subtitle {
+            color: rgba(248, 250, 252, 0.85);
+            margin-bottom: 0;
+        }
+        .header-kpi-container {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .header-kpi-card {
+            background: #FFFFFF;
+            border-radius: 16px;
+            padding: 16px 18px;
+            border: 1px solid rgba(0, 31, 63, 0.12);
+            box-shadow: 0 8px 20px rgba(1, 44, 116, 0.1);
+        }
+        .header-kpi-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #6B7280;
+            margin-bottom: 0.4rem;
+        }
+        .header-kpi-value {
+            font-size: 1.35rem;
+            font-weight: 600;
+            color: #001f3f;
+        }
+        .header-kpi-change {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 0.15rem;
+        }
+        .header-kpi-change.positive { color: #057A55; }
+        .header-kpi-change.negative { color: #E02424; }
 
         /* ===== GLOBAL BUTTON RESET ===== */
         .stButton > button,
@@ -1837,6 +1997,7 @@ def inject_global_css():
 # --- Replace this function ---
 def render_dashboard():
     inject_global_css() 
+    render_global_header_and_kpis()
 
     # --- Live Index Data (for summary + cards) ---
     index_data = get_live_index_data()

@@ -1889,6 +1889,29 @@ def inject_global_css():
         div[data-baseweb="tab-highlight"] {
             background-color: var(--color-primary-text) !important; 
         }
+        /* FIX METRIC TEXT VISIBILITY */
+        div[data-testid="stMetricValue"],
+        div[data-testid="stMetricDelta"],
+        div[data-testid="stMetricLabel"] {
+            color: #001f3f !important;     /* Dark navy (matches your theme) */
+            font-weight: 600 !important;
+        }
+
+        div[data-testid="stMetricDelta"] .positive {
+            color: #0cb400 !important;     /* Green for positive */
+        }
+
+        div[data-testid="stMetricDelta"] .negative {
+            color: #d00000 !important;     /* Red for negative */
+        }
+        div[data-testid="stMetric"] {
+            background: #f8fafc !important;
+            border-radius: 10px;
+            padding: 12px 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+
 
         </style>
         """,

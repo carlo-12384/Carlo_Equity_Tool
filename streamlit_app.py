@@ -2401,14 +2401,21 @@ def inject_global_css():
         .market-summary-card {
             background: #F8FAFC;
             border-radius: 16px;
-            padding: 24px;
             border: 1px solid #E2E8F0;
             box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
         }
         .market-summary-header {
             font-size: 1.2rem;
             font-weight: 700;
-            margin-bottom: 16px;
+            margin: 0;
+            padding: 14px 18px;
+            background: linear-gradient(120deg, #0b3d91, #0f172a);
+            color: #fff;
+            border-radius: 16px 16px 0 0;
+            letter-spacing: 0.04em;
+        }
+        .market-summary-body {
+            padding: 20px 24px 28px;
         }
         .market-summary-body p {
             margin-bottom: 12px;
@@ -2423,15 +2430,21 @@ def inject_global_css():
         .mini-card {
             background: #FFFFFF;
             border-radius: 14px;
-            padding: 18px;
             border: 1px solid #E2E8F0;
             box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
         }
-        .mini-card .mini-card-title {
+        .mini-card-header {
             font-size: 1rem;
             font-weight: 600;
-            margin-bottom: 10px;
-            color: #0F172A;
+            margin: 0;
+            padding: 12px 16px;
+            background: linear-gradient(120deg, #0b3d91, #0f172a);
+            color: #fff;
+            border-radius: 14px 14px 0 0;
+            letter-spacing: 0.08em;
+        }
+        .mini-card-content {
+            padding: 16px;
         }
         .mini-list {
             list-style: none;
@@ -2650,16 +2663,20 @@ def render_dashboard():
             f"""
             <div class="mini-card-stack">
                 <div class="mini-card">
-                    <div class="mini-card-title">Economic Calendar (Focus)</div>
-                    <ul class="mini-list">
-                        {econ_rows}
-                    </ul>
+                    <div class="mini-card-header">Economic Calendar (Focus)</div>
+                    <div class="mini-card-content">
+                        <ul class="mini-list">
+                            {econ_rows}
+                        </ul>
+                    </div>
                 </div>
                 <div class="mini-card">
-                    <div class="mini-card-title">Smart Money Tracker</div>
-                    <ul class="mini-list">
-                        {smart_rows}
-                    </ul>
+                    <div class="mini-card-header">Smart Money Tracker</div>
+                    <div class="mini-card-content">
+                        <ul class="mini-list">
+                            {smart_rows}
+                        </ul>
+                    </div>
                 </div>
             </div>
             """,

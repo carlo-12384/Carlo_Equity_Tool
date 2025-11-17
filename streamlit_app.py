@@ -189,6 +189,7 @@ MAJOR_NEWS_KEYWORDS = [
 ]
 
 MARKET_INDEX_TICKERS = {"SPY", "QQQ", "DIA", "IWM", "^GSPC", "^IXIC", "^DJI", "^RUT"}
+MAJOR_NEWS_CATEGORIES = ["general", "forex", "crypto"]
 
 
 def _is_market_moving_headline(headline: str, summary: str = "", related: str = "") -> bool:
@@ -207,42 +208,47 @@ def _is_market_moving_headline(headline: str, summary: str = "", related: str = 
     return bool(related_syms.intersection(MARKET_INDEX_TICKERS))
 
 
+def _parse_finnhub_news_item(item: dict):
+    title = (item.get("headline") or "").strip()
+    link = item.get("url") or ""
+    if not title or not link:
+        return None
+    summary = (item.get("summary") or "").strip()
+    related = item.get("related") or ""
+    ts = pd.to_datetime(item.get("datetime"), unit="s", errors="coerce")
+    is_major = _is_market_moving_headline(title, summary, related)
+    return {
+        "headline": title,
+        "url": link,
+        "publisher": item.get("source") or item.get("category") or "",
+        "time": ts,
+        "summary": summary,
+        "is_major": is_major,
+    }
+
+
 @st.cache_data(ttl=300)
 def get_market_news(n=8):
     """
     Fetch broad market news with an emphasis on macro / market-moving headlines.
-    Primary source: Finnhub general news, fallback to SPY news from yfinance.
+    Primary source: Finnhub multi-category feed, fallback to SPY news from yfinance.
     """
-    raw = safe_finnhub_get("/news", category="general") or []
-    parsed = []
-    for item in sorted(raw, key=lambda x: x.get("datetime", 0), reverse=True):
-        title = (item.get("headline") or "").strip()
-        link = item.get("url") or ""
-        if not title or not link:
-            continue
-        summary = (item.get("summary") or "").strip()
-        related = item.get("related") or ""
-        is_major = _is_market_moving_headline(title, summary, related)
-        ts = pd.to_datetime(item.get("datetime"), unit="s", errors="coerce")
-        parsed.append(
-            {
-                "headline": title,
-                "url": link,
-                "publisher": item.get("source") or item.get("category") or "",
-                "time": ts,
-                "summary": summary,
-                "is_major": is_major,
-            }
-        )
+    items = []
+    seen = set()
 
-    major = [p for p in parsed if p["is_major"]]
-    if len(major) < n:
-        filler = [p for p in parsed if not p["is_major"]]
-        major.extend(filler[: n - len(major)])
+    for category in MAJOR_NEWS_CATEGORIES:
+        raw = safe_finnhub_get("/news", category=category) or []
+        for item in raw:
+            parsed = _parse_finnhub_news_item(item)
+            if not parsed or not parsed["is_major"]:
+                continue
+            key = parsed["url"]
+            if key in seen:
+                continue
+            seen.add(key)
+            items.append(parsed)
 
-    if len(major) < n:
-        # Fallback: grab SPY news and run through the same heuristic so we still
-        # lean toward market-moving headlines.
+    if len(items) < n:
         try:
             spy_news = yf.Ticker("SPY").news or []
         except Exception:
@@ -250,35 +256,38 @@ def get_market_news(n=8):
         for item in spy_news:
             title = item.get("title") or item.get("headline") or ""
             link = item.get("link") or item.get("url") or ""
-            if not title or not link:
+            if not title or not link or link in seen:
                 continue
             summary = (item.get("summary") or "").strip()
             ts_raw = item.get("providerPublishTime") or item.get("datetime")
             ts = pd.to_datetime(ts_raw, unit="s", errors="coerce")
             is_major = _is_market_moving_headline(title, summary, related="SPY")
-            major.append(
+            if not is_major:
+                continue
+            seen.add(link)
+            items.append(
                 {
                     "headline": title,
                     "url": link,
                     "publisher": item.get("publisher") or item.get("source") or "",
                     "time": ts,
                     "summary": summary,
-                    "is_major": is_major,
+                    "is_major": True,
                 }
             )
-            if len(major) >= n:
+            if len(items) >= n:
                 break
 
-    # Trim and drop the helper flag before returning to avoid UI changes elsewhere.
+    items.sort(key=lambda x: x.get("time") or pd.Timestamp.min, reverse=True)
     cleaned = []
-    for item in major[:n]:
+    for item in items[:n]:
         cleaned.append(
             {
                 "headline": item["headline"],
                 "url": item["url"],
                 "publisher": item.get("publisher") or "",
                 "time": item.get("time"),
-                "is_major": item.get("is_major", False),
+                "is_major": True,
                 "summary": item.get("summary", ""),
             }
         )

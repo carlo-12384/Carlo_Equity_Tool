@@ -486,6 +486,50 @@ def get_dashboard_kpis():
         )
 
     return out
+    
+@st.cache_data(ttl=300)
+def get_macro_indicator_cards():
+    """
+    Returns 4 macro cards:
+      - Volatility (VIX)
+      - US Dollar (UUP)
+      - High Yield Credit (HYG)
+      - IG Credit (LQD)
+    Each card has: label, last value, change, pct change.
+    """
+    tickers = {
+        "^VIX": "Volatility (VIX)",
+        "UUP": "US Dollar (UUP)",
+        "HYG": "High Yield Credit",
+        "LQD": "IG Credit",
+    }
+
+    cards = []
+    for tkr, label in tickers.items():
+        try:
+            hist = yf.Ticker(tkr).history(period="2d", interval="1d")
+            if hist is None or hist.empty or len(hist) < 2:
+                continue
+
+            prev = float(hist["Close"].iloc[0])
+            last = float(hist["Close"].iloc[-1])
+            change = last - prev
+            pct = (change / prev) * 100 if prev != 0 else 0.0
+
+            cards.append(
+                {
+                    "label": label,
+                    "value": last,
+                    "change": change,
+                    "pct": pct,
+                }
+            )
+        except Exception as e:
+            logging.warning(f"Failed macro card for {tkr}: {e}")
+            continue
+
+    return cards
+
 
 def render_global_header_and_kpis():
     # --- BLUE HERO TITLE ---
@@ -1853,16 +1897,32 @@ def inject_global_css():
 
 
 # --- Wall Street esque Price Bar / Home Dashboard ---
+# --- Wall Street esque Price Bar ---
 def render_dashboard():
-    # We already called inject_global_css() in main(), so no need to repeat it here
+    inject_global_css()
 
     # --- Get data for Ticker Tape AND Index Cards ---
     index_data = get_live_index_data()
     macro_data = get_global_macro_data()
 
-    # --- TOP BAR: Macro-Only Ticker Tape ---
-    ticker_items = macro_data  # Only use macro data
-    
+    # ============================
+    # ROW 0: Macro Indicator Cards (VIX, USD, HY, IG)
+    # ============================
+    macro_cards = get_macro_indicator_cards()
+    if macro_cards:
+        cols = st.columns(len(macro_cards))
+        for col, card in zip(cols, macro_cards):
+            with col:
+                # format value & delta
+                val_str = f"{card['value']:,.2f}"
+                delta_str = f"{card['change']:+.2f} ({card['pct']:+.2f}%)"
+                col.metric(label=card["label"], value=val_str, delta=delta_str)
+
+    # ============================
+    # ROW 1: Macro Ticker Tape
+    # ============================
+    ticker_items = macro_data  # Only use macro data for the tape
+
     if ticker_items:
         item_html_list = []
 
@@ -1883,7 +1943,6 @@ def render_dashboard():
                 f'</div>'
             )
 
-        # One long HTML string for the tape
         all_items_html = "".join(item_html_list)
 
         full_ticker_html = f"""
@@ -1896,29 +1955,31 @@ def render_dashboard():
         st.markdown(full_ticker_html, unsafe_allow_html=True)
 
     # ============================
-    # --- ROW 0: Index Metrics (Replaced Charts)
+    # ROW 2: Index Snapshot Cards
     # ============================
     st.markdown("### Market Snapshot")
     chart_cols = st.columns(4)
-    
+
     index_map = {
-        'Dow Jones': ('^DJI', chart_cols[0]),
-        'NASDAQ': ('^IXIC', chart_cols[1]),
-        'S&P 500': ('^GSPC', chart_cols[2]),
-        'Russell 2000': ('^RUT', chart_cols[3])
+        "Dow Jones": ("^DJI", chart_cols[0]),
+        "NASDAQ": ("^IXIC", chart_cols[1]),
+        "S&P 500": ("^GSPC", chart_cols[2]),
+        "Russell 2000": ("^RUT", chart_cols[3]),
     }
-    
+
     for display_name, (ticker, col) in index_map.items():
         with col:
-            st.markdown("<div class='index-chart-card'>", unsafe_allow_html=True) 
-            
-            # Use the 'index_data' we already fetched
-            summary = next((item for item in index_data if item["symbol"] == display_name), None)
-            
+            st.markdown("<div class='index-chart-card'>", unsafe_allow_html=True)
+
+            summary = next(
+                (item for item in index_data if item["symbol"] == display_name),
+                None,
+            )
+
             if summary:
-                change_class = "positive" if summary['change'] >= 0 else "negative"
-                change_sign = "+" if summary['change'] >= 0 else ""
-                
+                change_class = "positive" if summary["change"] >= 0 else "negative"
+                change_sign = "+" if summary["change"] >= 0 else ""
+
                 st.markdown(
                     f"<div class='index-chart-title'>{display_name}</div>",
                     unsafe_allow_html=True,
@@ -1937,14 +1998,15 @@ def render_dashboard():
                     unsafe_allow_html=True,
                 )
                 st.markdown(
-                    "<span class='index-chart-price'>N/A</span>",
+                    "<span class='index-chart-price'>Key metrics unavailable.</span>",
                     unsafe_allow_html=True,
                 )
-                
-            # --- Key metrics under each index ---
+
             key_metrics = get_index_key_metrics(ticker)
             if key_metrics:
-                st.markdown("<div class='index-metric-list'>", unsafe_allow_html=True)
+                st.markdown(
+                    "<div class='index-metric-list'>", unsafe_allow_html=True
+                )
                 for metric in key_metrics:
                     st.markdown(
                         f"<div class='index-metric-row'>"
@@ -1954,15 +2016,13 @@ def render_dashboard():
                         unsafe_allow_html=True,
                     )
                 st.markdown("</div>", unsafe_allow_html=True)
-            else:
-                st.caption("Key metrics unavailable.")
-                
+
             st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("---")  # Horizontal rule
+    st.markdown("---")
 
     # ============================
-    # --- ROW 1: Heatmap
+    # ROW 3: Sector Heatmap
     # ============================
     st.markdown("### Sector Performance")
     sector_perf_data = get_sector_performance()
@@ -1970,35 +2030,30 @@ def render_dashboard():
         heatmap_fig = plot_sector_heatmap(sector_perf_data)
         st.plotly_chart(heatmap_fig, use_container_width=True)
         st.caption(
-            "Each tile represents a sector ETF. "
-            "Color = 1-day % change; tiles sized equally for easier comparison."
+            "Each tile represents a sector ETF. Color = 1-day % change; tiles sized equally for easier comparison."
         )
     else:
         st.warning("Could not retrieve sector performance data.")
 
-    st.markdown("---")  # Horizontal rule
+    st.markdown("---")
 
     # ============================
-    # ROW 2: Summary (left) + Econ/Smart Money (right)
+    # ROW 4: Summary + Econ + Smart Money
     # ============================
     left_col, right_col = st.columns([1.4, 1])
 
-    # --- LEFT: AI Market Summary ---
     with left_col:
         st.markdown(
-            "<div class='section-card'>"
-            "<div class='section-title'>Market Summary (AI-Generated)</div>",
+            "<div class='section-card'><div class='section-title'>Market Summary (AI-Generated)</div>",
             unsafe_allow_html=True,
         )
         summary_text = generate_market_summary(index_data)
         st.markdown(summary_text)
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # --- RIGHT: Econ Calendar + Smart Money ---
     with right_col:
         st.markdown(
-            "<div class='section-card'>"
-            "<div class='section-title'>Economic Calendar (Focus)</div>",
+            "<div class='section-card'><div class='section-title'>Economic Calendar (Focus)</div>",
             unsafe_allow_html=True,
         )
         for event, time_str in get_economic_calendar():
@@ -2006,8 +2061,7 @@ def render_dashboard():
         st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown(
-            "<div class='section-card'>"
-            "<div class='section-title'>Smart Money Tracker</div>",
+            "<div class='section-card'><div class='section-title'>Smart Money Tracker</div>",
             unsafe_allow_html=True,
         )
         for label, value in get_smart_money_signals().items():
@@ -2017,11 +2071,10 @@ def render_dashboard():
     st.write("")
 
     # ============================
-    # ROW 3: Trending Market News (full width)
+    # ROW 5: Trending News
     # ============================
     st.markdown(
-        "<div class='section-card'>"
-        "<div class='section-title'>Trending Market News</div>",
+        "<div class='section-card'><div class='section-title'>Trending Market News</div>",
         unsafe_allow_html=True,
     )
     news_items = get_market_news()
@@ -2039,6 +2092,7 @@ def render_dashboard():
     else:
         st.write("No recent broad-market headlines available.")
     st.markdown("</div>", unsafe_allow_html=True)
+
 
 def render_analysis_page():
     # --- MODIFIED --- Added CSS call

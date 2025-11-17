@@ -569,7 +569,6 @@ def render_global_header_and_kpis():
                 )
         st.markdown("</div>", unsafe_allow_html=True)
 
-
     
 @st.cache_data(ttl=300)
 def get_index_key_metrics(ticker: str) -> List[Dict[str, str]]:
@@ -582,16 +581,28 @@ def get_index_key_metrics(ticker: str) -> List[Dict[str, str]]:
         
         metrics = []
         
-        # 1. Day's Range
-        day_low = info.get('dayLow')
-        day_high = info.get('dayHigh')
-        if day_low and day_high:
+        # 1. YTD Performance
+        ytd_return = info.get('ytdReturn')
+        if ytd_return is not None:
+            try:
+                # Format as percentage
+                ytd_pct = float(ytd_return) * 100
+                metrics.append({
+                    'label': 'YTD Performance',
+                    'value': f"{ytd_pct:+.2f}%" # Add a + sign for positive numbers
+                })
+            except Exception:
+                pass # Skip if formatting fails
+
+        # 2. Avg. Volume
+        vol = info.get('averageVolume')
+        if vol:
             metrics.append({
-                'label': "Day's Range",
-                'value': f"{day_low:,.2f} - {day_high:,.2f}"
+                'label': 'Avg. Volume',
+                'value': f"{vol:,.0f}"
             })
             
-        # 2. 52-Week Range
+        # 3. 52-Wk Range
         low_52 = info.get('fiftyTwoWeekLow')
         high_52 = info.get('fiftyTwoWeekHigh')
         if low_52 and high_52:
@@ -600,21 +611,7 @@ def get_index_key_metrics(ticker: str) -> List[Dict[str, str]]:
                 'value': f"{low_52:,.2f} - {high_52:,.2f}"
             })
 
-        # 3. Previous Close
-        prev_close = info.get('previousClose')
-        if prev_close:
-            metrics.append({
-                'label': 'Prev. Close',
-                'value': f"{prev_close:,.2f}"
-            })
-
-        # 4. Volume
-        vol = info.get('averageVolume')
-        if vol:
-            metrics.append({
-                'label': 'Avg. Volume',
-                'value': f"{vol:,.0f}"
-            })
+        # (Removed Day's Range and Prev. Close as requested)
             
         return metrics
         

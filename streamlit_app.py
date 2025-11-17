@@ -1664,7 +1664,7 @@ def inject_global_css():
         }
 
         /* ===== METRIC CARD STYLING (VIX, USD, etc.) ===== */
-        /* --- THIS IS THE NEW, STABLE WRAPPER --- */
+        /* This is our new, stable wrapper */
         .metric-card-box {
             background: #f8fafc !important;
             border-radius: 12px;
@@ -1684,25 +1684,31 @@ def inject_global_css():
             opacity: 0.85;
         }
 
-        /* Target st.metric *inside* our new wrapper */
-        .metric-card-box div[data-testid="stMetricValue"] {
+        /* --- NEW --- Custom style for the metric value */
+        .metric-value-custom {
             color: #001f3f !important;
             font-weight: 700 !important;
             font-size: 26px !important;
+            line-height: 1.3;
+            margin-bottom: 4px;
         }
-
-        .metric-card-box div[data-testid="stMetricDelta"] .positive {
+        
+        /* --- NEW --- Custom style for the metric delta */
+        .metric-delta-custom span {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .metric-delta-custom.positive span {
             color: #047857 !important; /* Dark Green */
             background-color: #D1FAE5;
-            padding: 2px 6px;
-            border-radius: 4px;
         }
-        .metric-card-box div[data-testid="stMetricDelta"] .negative {
+        .metric-delta-custom.negative span {
             color: #991B1B !important; /* Dark Red */
             background-color: #FEE2E2;
-            padding: 2px 6px;
-            border-radius: 4px;
         }
+
 
         /* ===== TABS FIX ===== */
         button[data-testid="stTab"] {
@@ -1848,7 +1854,7 @@ def inject_global_css():
         """,
         unsafe_allow_html=True,
     )
-# --- Wall Street esque Price Bar ---
+
 # --- Wall Street esque Price Bar ---
 def render_dashboard():
     inject_global_css()
@@ -1864,12 +1870,9 @@ def render_dashboard():
 
     if ticker_items:
         item_html_list = []
-
-        # Add a static label
         item_html_list.append(
             '<div class="ticker-section-label">MACRO DATA</div>'
         )
-
         for item in ticker_items:
             change_class = "positive" if item["change_val"] >= 0 else "negative"
             item_html_list.append(
@@ -1881,9 +1884,7 @@ def render_dashboard():
                 f'  </span>'
                 f'</div>'
             )
-
         all_items_html = "".join(item_html_list)
-
         full_ticker_html = f"""
         <div class="ticker-tape-container">
             <div class="ticker-tape-inner">
@@ -1901,30 +1902,28 @@ def render_dashboard():
     # Macro cards (VIX, USD, HY Credit, IG Credit) LIVE INSIDE MARKET SNAPSHOT
     macro_cards = get_macro_indicator_cards()
     if macro_cards:
-        # One column per macro card
         macro_cols = st.columns(len(macro_cards))
 
         for col, card in zip(macro_cols, macro_cards):
             with col:
                 # --- THIS IS THE FIX ---
-                # We now wrap the entire metric in our own styled div.
-                st.markdown("<div class='metric-card-box'>", unsafe_allow_html=True)
+                # We build the *entire metric* in HTML and render it in
+                # one st.markdown call. This avoids using st.metric.
                 
-                # Custom visible header
-                st.markdown(
-                    f"<div class='metric-label'>{card['label']}</div>",
-                    unsafe_allow_html=True,
-                )
-
-                # Metric body: numbers + delta
                 val_str = f"{card['value']:,.2f}"
                 delta_str = f"{card['change']:+.2f} ({card['pct']:+.2f}%)"
+                delta_class = "negative" if card['change'] < 0 else "positive"
 
-                # Hide Streamlit's built-in label
-                st.metric(label="", value=val_str, delta=delta_str)
-                
-                # Close our custom div
-                st.markdown("</div>", unsafe_allow_html=True)
+                card_html = f"""
+                <div class="metric-card-box">
+                    <div class="metric-label">{card['label']}</div>
+                    <div class="metric-value-custom">{val_str}</div>
+                    <div class="metric-delta-custom {delta_class}">
+                        <span>{delta_str}</span>
+                    </div>
+                </div>
+                """
+                st.markdown(card_html, unsafe_allow_html=True)
 
     st.write("")  # small spacer
 
@@ -1942,9 +1941,11 @@ def render_dashboard():
 
     for display_name, (ticker, col) in index_map.items():
         with col:
+            
             # --- THIS IS THE FIX ---
-            # This whole block is now wrapped in our custom class
-            st.markdown("<div class='index-chart-card'>", unsafe_allow_html=True)
+            # We build the *entire card* as one HTML string
+            # to prevent Streamlit from breaking the layout.
+            html_parts = ["<div class='index-chart-card'>"]
 
             summary = next(
                 (item for item in index_data if item["symbol"] == display_name),
@@ -1955,43 +1956,37 @@ def render_dashboard():
                 change_class = "positive" if summary["change"] >= 0 else "negative"
                 change_sign = "+" if summary["change"] >= 0 else ""
 
-                # We use markdown for all the HTML elements
-                st.markdown(
-                    f"<div class='index-chart-title'>{display_name}</div>"
-                    # --- NOTE: class='...' with the equals sign is correct
-                    f"<span class='index-chart-price'>${summary['price']:,.2f}</span>"
+                # Add title, price, and change to our HTML list
+                html_parts.append(f"<div class='index-chart-title'>{display_name}</div>")
+                html_parts.append(f"<span class='index-chart-price'>${summary['price']:,.2f}</span>")
+                html_parts.append(
                     f"<span class='index-chart-change {change_class}'>"
                     f"{change_sign}{summary['change']:,.2f} "
                     f"({change_sign}{summary['pct_change']:,.2f}%)"
-                    f"</span>",
-                    unsafe_allow_html=True,
+                    f"</span>"
                 )
             else:
-                st.markdown(
-                    f"<div class='index-chart-title'>{display_name}</div>"
-                    f"<span class='index-chart-price'>Key metrics unavailable.</span>",
-                    unsafe_allow_html=True,
-                )
+                html_parts.append(f"<div class='index-chart-title'>{display_name}</div>")
+                html_parts.append("<span class='index-chart-price'>Key metrics unavailable.</span>")
 
             # Key metrics beneath each index
             key_metrics = get_index_key_metrics(ticker)
             if key_metrics:
-                st.markdown(
-                    "<div class='index-metric-list'>", unsafe_allow_html=True
-                )
+                html_parts.append("<div class='index-metric-list'>")
                 for metric in key_metrics:
-                    st.markdown(
-                        # --- NOTE: class='...' with the equals sign is correct
+                    # Add each metric row to our HTML list
+                    html_parts.append(
                         f"<div class='index-metric-row'>"
                         f"  <span class='index-metric-label'>{metric['label']}</span>"
                         f"  <span class='index-metric-value'>{metric['value']}</span>"
-                        f"</div>",
-                        unsafe_allow_html=True,
+                        f"</div>"
                     )
-                st.markdown("</div>", unsafe_allow_html=True)
+                html_parts.append("</div>") # Close metric-list
             
-            # Close the main card wrapper
-            st.markdown("</div>", unsafe_allow_html=True)
+            html_parts.append("</div>") # Close index-chart-card
+            
+            # Join all parts and render as a single HTML block
+            st.markdown("".join(html_parts), unsafe_allow_html=True)
 
     st.markdown("---")
 
@@ -2001,7 +1996,7 @@ def render_dashboard():
     st.markdown("### Sector Performance")
     sector_perf_data = get_sector_performance()
     if sector_perf_data:
-        heatmap_fig = plot_sector_heatmap(sector_perf_data)
+        heatmap_fig = plot_sector_heatmap(sector_per_data)
         st.plotly_chart(heatmap_fig, use_container_width=True)
         st.caption(
             "Each tile represents a sector ETF. Color = 1-day % change; tiles sized equally for easier comparison."
@@ -2055,7 +2050,7 @@ def render_dashboard():
     if news_items:
         for n in news_items:
             ts_str = (
-                n["time"].strftime("%Y-m-d %H:%M")
+                n["time"].strftime("%Y-%m-%d %H:%M")
                 if isinstance(n["time"], pd.Timestamp)
                 else ""
             )
@@ -2066,6 +2061,7 @@ def render_dashboard():
     else:
         st.write("No recent broad-market headlines available.")
     st.markdown("</div>", unsafe_allow_html=True)
+
 
 def render_analysis_page():
     # --- MODIFIED --- Added CSS call

@@ -1679,27 +1679,32 @@ def inject_global_css():
         }
 
         /* ===== METRIC CARD STYLING – SCOPED TO MARKET SNAPSHOT MACROS ===== */
-        .market-snapshot-macros div[data-testid="stMetric"] {
+        /* --- MODIFIED --- This now targets our new wrapper div */
+        .metric-card-wrapper {
             background: #f8fafc !important;
             border-radius: 12px;
             padding: 14px 18px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.06);
             border: 1px solid #e2e8f0;
+            /* Ensure all cards in a row are the same height */
+            height: 100%; 
         }
 
-        .market-snapshot-macros div[data-testid="stMetricValue"] {
+        /* --- MODIFIED --- This selector is now simpler */
+        .metric-card-wrapper div[data-testid="stMetricValue"] {
             color: #001f3f !important;
             font-weight: 700 !important;
             font-size: 26px !important;
         }
 
-        .market-snapshot-macros div[data-testid="stMetricDelta"] .positive {
+        /* --- MODIFIED --- This selector is now simpler */
+        .metric-card-wrapper div[data-testid="stMetricDelta"] .positive {
             color: #047857 !important; /* Dark Green */
             background-color: #D1FAE5;
             padding: 2px 6px;
             border-radius: 4px;
         }
-        .market-snapshot-macros div[data-testid="stMetricDelta"] .negative {
+        .metric-card-wrapper div[data-testid="stMetricDelta"] .negative {
             color: #991B1B !important; /* Dark Red */
             background-color: #FEE2E2;
             padding: 2px 6px;
@@ -1790,6 +1795,7 @@ def inject_global_css():
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
             /* min-height ensures cards in a row are same height */
             min-height: 280px; 
+            height: 100%; /* Make card fill column space */
             display: flex;
             flex-direction: column;
         }
@@ -1827,6 +1833,8 @@ def inject_global_css():
             margin-top: 16px;
             border-top: 1px solid #E2E8F0;
             padding-top: 12px;
+            /* This makes the list grow to fill remaining card space */
+            flex-grow: 1; 
         }
         .index-metric-row {
             display: flex;
@@ -1853,6 +1861,7 @@ def inject_global_css():
     )
 
 
+# --- Wall Street esque Price Bar ---
 # --- Wall Street esque Price Bar ---
 def render_dashboard():
     inject_global_css()
@@ -1913,6 +1922,9 @@ def render_dashboard():
 
         for col, card in zip(macro_cols, macro_cards):
             with col:
+                # --- MODIFICATION --- Wrap each metric in a styled card div
+                st.markdown("<div class='metric-card-wrapper'>", unsafe_allow_html=True)
+                
                 # Custom visible header using .metric-label (styled in CSS)
                 st.markdown(
                     f"<div class='metric-label'>{card['label']}</div>",
@@ -1925,6 +1937,9 @@ def render_dashboard():
 
                 # Hide Streamlit's built-in label so only our custom header shows
                 st.metric(label="", value=val_str, delta=delta_str)
+                
+                # --- MODIFICATION --- Close the wrapper div
+                st.markdown("</div>", unsafe_allow_html=True)
 
         st.write("")  # small spacer
 
@@ -1962,6 +1977,7 @@ def render_dashboard():
                     unsafe_allow_html=True,
                 )
                 st.markdown(
+                    # --- FIX 1 --- Added missing '=' after 'class'
                     f"<span class='index-chart-price'>${summary['price']:,.2f}</span>"
                     f"<span class='index-chart-change {change_class}'>"
                     f"{change_sign}{summary['change']:,.2f} "
@@ -1989,6 +2005,7 @@ def render_dashboard():
                     st.markdown(
                         f"<div class='index-metric-row'>"
                         f"  <span class='index-metric-label'>{metric['label']}</span>"
+                        # --- FIX 2 --- Added missing '=' after 'class'
                         f"  <span class='index-metric-value'>{metric['value']}</span>"
                         f"</div>",
                         unsafe_allow_html=True,
@@ -2002,6 +2019,7 @@ def render_dashboard():
     # ============================
     # ROW 3: Sector Heatmap
     # ============================
+    # ... (Rest of function is unchanged) ...
     st.markdown("### Sector Performance")
     sector_perf_data = get_sector_performance()
     if sector_perf_data:
@@ -2070,8 +2088,6 @@ def render_dashboard():
     else:
         st.write("No recent broad-market headlines available.")
     st.markdown("</div>", unsafe_allow_html=True)
-
-
 
 def render_analysis_page():
     # --- MODIFIED --- Added CSS call

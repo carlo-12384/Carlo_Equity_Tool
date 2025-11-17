@@ -1996,7 +1996,7 @@ def render_dashboard():
     st.markdown("### Sector Performance")
     sector_perf_data = get_sector_performance()
     if sector_perf_data:
-        heatmap_fig = plot_sector_heatmap(sector_per_data)
+        heatmap_fig = plot_sector_heatmap(sector_perf_data)
         st.plotly_chart(heatmap_fig, use_container_width=True)
         st.caption(
             "Each tile represents a sector ETF. Color = 1-day % change; tiles sized equally for easier comparison."

@@ -3138,6 +3138,9 @@ def render_theses_page():
 # ======================================================================
 # MAIN APP
 # ======================================================================
+# ======================================================================
+# MAIN APP
+# ======================================================================
 def main():
     st.set_page_config(
         page_title="Equity Research Tool",
@@ -3196,11 +3199,15 @@ def main():
     with tab_research:
         render_research_page()
 
+    
     # ---------- THESES ----------
+    # This part was missing from your main function
     with tab_theses:
         render_theses_page()
 
 
+# This block MUST be at the end of the file
+# and have no indentation to run the app.
 if __name__ == "__main__":
     main()
 

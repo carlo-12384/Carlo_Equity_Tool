@@ -163,43 +163,72 @@ def generate_market_summary(index_data):
     return "\n\n".join(lines)
 
 @st.cache_data(ttl=300)
-def get_market_news(n=8):
+def get_market_news(n: int = 8):
     """
     Fetch broad market news using SPY as a proxy.
-    Filters out items without a title or link so the UI doesn't show 'None'.
+    Returns a list of dicts with keys:
+      - headline
+      - url
+      - source
+      - time (pd.Timestamp or None)
+      - summary
     """
     try:
         t = yf.Ticker("SPY")
         raw = t.news or []
-    except Exception:
+    except Exception as e:
+        logging.warning(f"Failed to fetch market news from yfinance: {e}")
         raw = []
 
-    news = []
-    for item in raw[:n]:
+    items = []
+
+    for item in raw:
+        # Title / URL
         title = item.get("title") or item.get("headline")
         link = item.get("link") or item.get("url")
         if not title or not link:
             continue
 
-        publisher = item.get("publisher") or item.get("source") or ""
-        ts_raw = item.get("providerPublishTime") or item.get("datetime")
-        try:
-            if isinstance(ts_raw, (int, float)):
-                ts = pd.to_datetime(ts_raw, unit="s")
-            else:
-                ts = pd.to_datetime(ts_raw, errors="coerce")
-        except Exception:
-            ts = None
+        # Source / publisher
+        source = item.get("publisher") or item.get("source") or ""
 
-        news.append(
+        # Optional summary/description
+        summary = item.get("summary") or item.get("description") or ""
+
+        # Time handling
+        ts_raw = (
+            item.get("providerPublishTime")
+            or item.get("datetime")
+            or item.get("published")
+        )
+        ts = None
+        if ts_raw is not None:
+            try:
+                if isinstance(ts_raw, (int, float, np.integer)):
+                    ts = pd.to_datetime(ts_raw, unit="s")
+                else:
+                    ts = pd.to_datetime(ts_raw, errors="coerce")
+            except Exception:
+                ts = None
+
+        items.append(
             {
                 "headline": title,
                 "url": link,
-                "publisher": publisher,
+                "source": source,
                 "time": ts,
+                "summary": summary,
             }
         )
-    return news
+
+    # Sort by time (newest first), keeping items with None time at the end
+    items.sort(
+        key=lambda x: x["time"] if x["time"] is not None else pd.Timestamp.min,
+        reverse=True,
+    )
+
+    return items[:n]
+
 
 def get_economic_calendar():
     return [
@@ -611,6 +640,8 @@ def get_index_key_metrics(ticker: str) -> List[Dict[str, str]]:
                         'value': f"{ytd_pct:+.2f}%"
                     })
                 except Exception:
+                    if all(pd.isna(v) or v is None for v in metrics.values()):
+                        return None
                     pass
         # --- End of YTD Calculation ---
 
@@ -2269,6 +2300,7 @@ def render_dashboard():
         unsafe_allow_html=True,
     )
     news_items = get_market_news()
+
     if news_items:
         for n in news_items:
             ts_str = (
@@ -2276,12 +2308,25 @@ def render_dashboard():
                 if isinstance(n["time"], pd.Timestamp)
                 else ""
             )
-            meta = " — " + n["publisher"] if n["publisher"] else ""
+
+            # Publisher formatting
+            meta = ""
+            if n.get("source"):
+                meta += f" — {n['source']}"
             if ts_str:
                 meta += f" • {ts_str}"
-            st.markdown(f"**[{n['headline']}]({n['url']})**{meta}")
+
+            # Render headline + summary
+            st.markdown(
+                f"""
+                **[{n['headline']}]({n['url']})**{meta}  
+                <span style='font-size: 0.9em; color: #666;'>{n['summary'][:240]}...</span>
+                """,
+                unsafe_allow_html=True,
+            )
     else:
         st.write("No recent broad-market headlines available.")
+
     st.markdown("</div>", unsafe_allow_html=True)
 
 #UX for Analysis Page

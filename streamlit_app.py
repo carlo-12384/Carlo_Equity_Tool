@@ -2377,20 +2377,88 @@ def render_analysis_page():
         st.markdown("</div></div>", unsafe_allow_html=True)  # close command-inner & command-card
 
     # ===== RIGHT: MODULE PREVIEW / CAPABILITIES =====
+        # ===== RIGHT: MODULE PREVIEW / CAPABILITIES =====
     with right_col:
-        st.markdown("<div class='command-card'><div class='command-inner'>", unsafe_allow_html=True)
         st.markdown(
             """
-            <div class="command-title-row">
-                <div class="command-title">Analysis Modules</div>
-                <div class="command-pill">Live Stack</div>
-            </div>
-            <div class="command-subtitle">
-                Every run fans out across multiple engines. These modules will light up once a ticker is analyzed.
+            <div class="command-card">
+              <div class="command-inner">
+                <div class="command-title-row">
+                    <div class="command-title">Analysis Modules</div>
+                    <div class="command-pill">Live Stack</div>
+                </div>
+                <div class="command-subtitle">
+                    Every run fans out across multiple engines. These modules will light up once a ticker is analyzed.
+                </div>
+
+                <div class="module-grid">
+                    <div class="module-card">
+                        <div class="module-chip-row">
+                            <div class="module-dot"></div>
+                            <span>Quant Engine</span>
+                        </div>
+                        <div class="module-title">Factor Scores</div>
+                        <div class="module-desc">
+                            Quality, value, growth and risk scores, normalized vs. custom universes.
+                        </div>
+                        <div class="module-tags">
+                            <span class="module-tag">TTM Metrics</span>
+                            <span class="module-tag">Z-Scores</span>
+                            <span class="module-tag">Composite Rank</span>
+                        </div>
+                    </div>
+
+                    <div class="module-card">
+                        <div class="module-chip-row">
+                            <div class="module-dot"></div>
+                            <span>Market Structure</span>
+                        </div>
+                        <div class="module-title">Peer Map</div>
+                        <div class="module-desc">
+                            Auto-selected peers by industry, size, and return correlation; ready for comps.
+                        </div>
+                        <div class="module-tags">
+                            <span class="module-tag">Vendor Peers</span>
+                            <span class="module-tag">Size Filter</span>
+                        </div>
+                    </div>
+
+                    <div class="module-card">
+                        <div class="module-chip-row">
+                            <div class="module-dot"></div>
+                            <span>Timeline</span>
+                        </div>
+                        <div class="module-title">Price & Events</div>
+                        <div class="module-desc">
+                            Price history hooks for charting, earnings dates, and macro overlays.
+                        </div>
+                        <div class="module-tags">
+                            <span class="module-tag">Mini Charts</span>
+                            <span class="module-tag">Earnings</span>
+                        </div>
+                    </div>
+
+                    <div class="module-card">
+                        <div class="module-chip-row">
+                            <div class="module-dot"></div>
+                            <span>News Stream</span>
+                        </div>
+                        <div class="module-title">Headlines & Context</div>
+                        <div class="module-desc">
+                            Latest headlines and summaries to seed your thesis and risk section.
+                        </div>
+                        <div class="module-tags">
+                            <span class="module-tag">News Digest</span>
+                            <span class="module-tag">Thesis Hooks</span>
+                        </div>
+                    </div>
+                </div>
+              </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
+
 
         st.markdown(
             """

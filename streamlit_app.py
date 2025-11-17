@@ -1569,7 +1569,6 @@ def inject_global_css():
             --color-secondary-text: #F5EAAA; /* Khaki */
             --color-tertiary-text: #FFFFFF;  /* White */
             
-            /* --- NEW DARK THEME --- */
             --color-dark-card-bg: #1E1E1E;
             --color-dark-card-text: #FAFAFA;
             --color-dark-card-border: #333333;
@@ -1602,7 +1601,6 @@ def inject_global_css():
         
         /* ===== PAGE HEADER / HERO ===== */
         .header-hero {
-            /* full-width gradient bar */
             width: 100vw;
             position: relative;
             left: 50%;
@@ -1621,7 +1619,7 @@ def inject_global_css():
             font-family: 'DM Serif Display', serif;
             font-size: 3rem;
             font-weight: 500;
-            color: var(--color-tertiary-text) !important; /* white */
+            color: var(--color-tertiary-text) !important;
             margin-bottom: 0.2rem;
             letter-spacing: -0.03em;
         }
@@ -1639,60 +1637,7 @@ def inject_global_css():
             margin-top: 0.4rem;
         }
 
-        /* ===== HEADER KPI ROW ===== */
-        .header-kpi-container {
-            max-width: 1100px;
-            margin: 10px auto 24px auto;
-        }
-        .header-kpi-card {
-            background: #FFFFFF;
-            border-radius: 12px;
-            padding: 10px 14px;
-            border: 1px solid #E5E7EB;
-            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.04);
-        }
-        .header-kpi-label {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            color: #6B7280;
-            margin-bottom: 2px;
-        }
-        .header-kpi-value {
-            font-size: 1.15rem;
-            font-weight: 600;
-            color: #001f3f;
-        }
-        .header-kpi-change {
-            font-size: 0.8rem;
-            font-weight: 500;
-            margin-top: 2px;
-        }
-        .header-kpi-change.positive { color: #057A55; }
-        .header-kpi-change.negative { color: #E02424; }
-
-
-        /* ===== GLOBAL BUTTON RESET ===== */
-        .stButton > button,
-        button[kind="primary"],
-        button[kind="secondary"],
-        button[kind="outline"] {
-            background: var(--color-secondary-bg) !important;
-            color: var(--color-primary-text) !important;
-            border-radius: 8px !important;
-            border: 1px solid var(--color-primary-text) !important;
-            font-weight: 500;
-            font-size: 14px;
-        }
-        .stButton > button:hover,
-        button[kind="primary"]:hover,
-        button[kind="secondary"]:hover,
-        button[kind="outline"]:hover {
-            filter: brightness(1.1);
-            color: var(--color-primary-text) !important;
-        }
-
-        /* ===== CARDS ===== */
+        /* ===== CARD UI ===== */
         .hero-card {
             background: var(--color-primary-bg);
             border-radius: 16px;
@@ -1700,16 +1645,6 @@ def inject_global_css():
             margin-top: 16px;
             margin-bottom: 16px;
             border: 1px solid var(--color-secondary-bg);
-        }
-        .hero-title {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 4px;
-            color: var(--color-secondary-text) !important;
-        }
-        .hero-subtitle {
-            font-size: 14px;
-            color: var(--color-tertiary-text) !important;
         }
         .section-card {
             background: var(--color-page-bg);
@@ -1719,164 +1654,40 @@ def inject_global_css():
             margin-bottom: 18px;
             border: 1px solid var(--color-primary-bg);
         }
-        .section-title {
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-        .section-subtitle {
+
+        /* ===== CUSTOM FIX: *VISIBLE* METRIC HEADERS ===== */
+        .metric-label {
             font-size: 13px;
-            color: var(--color-primary-text);
-            margin-bottom: 12px;
-        }
-        
-        /* --- !!! ---
-           --- FIX: Updated Index Chart Cards to be DARK ---
-           --- !!! --- */
-        .index-chart-card {
-            border: 1px solid var(--color-dark-card-border);
-            border-radius: 8px;
-            padding: 12px 16px;
-            background: var(--color-dark-card-bg); /* Dark background */
-        }
-        
-        .index-chart-title {
             font-weight: 600;
-            font-size: 1.1rem;
-            color: var(--color-primary-text) !important; /* DARK text */
-        }
-        
-        .index-chart-price {
-            font-weight: 600;
-            font-size: 1rem;
-            color: var(--color-primary-text) !important; /* DARK text */
-        }
-        /* --- END FIX --- */
-        
-        .index-chart-change {
-            font-weight: 500;
-            font-size: 0.9rem;
-            margin-left: 8px;
-        }
-        .index-chart-change.positive { color: #057A55; }
-        .index-chart-change.negative { color: #E02424; }
-
-        /* --- NEW METRIC LIST --- */
-        .index-metric-list {
-            margin-top: 12px;
-            padding-top: 8px;
-            border-top: 1px solid #EEEEEE;
-        }
-        .index-metric-row {
-            font-size: 0.85rem;
-            color: var(--color-primary-text) !important;
-            margin-bottom: 4px;
-            overflow: hidden; /* Clear floats */
-        }
-        .index-metric-label {
-            float: left;
-            font-weight: 500;
-            color: #4B5563; /* Gray */
-        }
-        .index-metric-value {
-            float: right;
-            font-weight: 600;
-        }
-
-        /* ===== METRIC COLORS ===== */
-        .positive-metric { color: #057A55; } /* Green */
-        .negative-metric { color: #E02424; } /* Red */
-
-        /* === START: COMPLETE TICKER TAPE CSS (Continuous Loop) === */
-
-        @keyframes scroll-left {
-            from { transform: translateX(0); }
-            /* We scroll 25% of the width because we will render 4 copies of the items */
-            to   { transform: translateX(-25%); }
-        }
-
-        .ticker-tape-container {
-            background: var(--color-primary-bg);
-            color: var(--color-tertiary-text);
-            overflow: hidden;
-            padding: 10px 0;
-            width: 100vw;
-            position: relative;
-            left: 50%;
-            right: 50%;
-            margin-left: -50vw;
-            margin-right: -50vw;
-            border-top: 1px solid var(--color-secondary-bg);
-            border-bottom: 1px solid var(--color-secondary-bg);
-        }
-
-        /* This is the moving strip */
-        .ticker-tape-inner {
-            display: inline-flex;       /* keep items in a row */
-            white-space: nowrap;        /* prevent wrapping */
-            width: max-content;         /* width = content */
-            animation: scroll-left 40s linear infinite;
-        }
-
-        .ticker-item {
-            display: inline-block;
-            padding: 0 25px;
-            font-size: 16px;
-            font-weight: 500;
-        }
-
-        .ticker-section-label {
-            display: inline-block;
-            padding: 0 25px;
-            font-size: 12px;
-            font-weight: 600;
+            color: #001f3f !important;
             text-transform: uppercase;
-            letter-spacing: 0.12em;
-            opacity: 0.75;
-            color: var(--color-secondary-text);
+            letter-spacing: 0.04em;
+            margin-bottom: 4px;
+            opacity: 0.85;
         }
 
-        .ticker-symbol {
-            color: var(--color-secondary-text);
-            font-weight: 600;
-            margin-right: 8px;
-        }
-        .ticker-price {
-            color: var(--color-tertiary-text);
-            margin-right: 8px;
-        }
-        .ticker-change {
-            font-weight: 600;
-        }
-        .ticker-change.positive {
-            color: #34D399; /* Brighter Green */
-        }
-        .ticker-change.negative {
-            color: #F87171; /* Brighter Red */
+        /* ===== METRIC CARD STYLING ===== */
+        div[data-testid="stMetric"] {
+            background: #f8fafc !important;
+            border-radius: 12px;
+            padding: 14px 18px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
         }
 
-        /* === END: COMPLETE TICKER TAPE CSS (Continuous Loop) === */
+        div[data-testid="stMetricValue"] {
+            color: #001f3f !important;
+            font-weight: 700 !important;
+            font-size: 26px !important;
+        }
 
+        div[data-testid="stMetricDelta"] .positive {
+            color: #0cb400 !important;
+        }
+        div[data-testid="stMetricDelta"] .negative {
+            color: #d00000 !important;
+        }
 
-        /* ===== VALUATION PAGE OVERRIDES ===== */
-        html body .stApp .main-content [data-testid="stMetric"] div {
-            color: var(--color-primary-text) !important;
-        }
-        html body .stApp .main-content [data-testid="stCaption"] {
-            color: var(--color-primary-text) !important;
-        }
-        html body .stApp .main-content [data-testid="stRadio"] p {
-            color: var(--color-primary-text) !important;
-            font-weight: 600 !important;
-        }
-        html body .stApp .main-content [data-testid="stRadio"] label {
-            color: var(--color-primary-text) !important;
-            font-weight: 500 !important;
-        }
-        html body .stApp .main-content .snapshot-title {
-            color: var(--color-primary-text) !important;
-        }
-        
-        /* ===== ULTIMATE 100% FIX FOR TABS ===== */
+        /* ===== TABS FIX ===== */
         button[data-testid="stTab"] {
             color: #4B5563 !important;
             font-weight: 600 !important;
@@ -1889,43 +1700,45 @@ def inject_global_css():
         div[data-baseweb="tab-highlight"] {
             background-color: var(--color-primary-text) !important; 
         }
-        /* FIX METRIC TEXT VISIBILITY */
-        div[data-testid="stMetricValue"],
-        div[data-testid="stMetricDelta"],
-        div[data-testid="stMetricLabel"] {
-            color: #001f3f !important;     /* Dark navy (matches your theme) */
-            font-weight: 600 !important;
-        }
 
-        div[data-testid="stMetricDelta"] .positive {
-            color: #0cb400 !important;     /* Green for positive */
+        /* ===== TICKER TAPE ===== */
+        @keyframes scroll-left {
+            from { transform: translateX(0); }
+            to   { transform: translateX(-25%); }
         }
-
-        div[data-testid="stMetricDelta"] .negative {
-            color: #d00000 !important;     /* Red for negative */
+        .ticker-tape-container {
+            background: var(--color-primary-bg);
+            color: var(--color-tertiary-text);
+            overflow: hidden;
+            padding: 10px 0;
+            width: 100vw;
+            position: relative;
+            left: 50%;
+            margin-left: -50vw;
+            border-top: 1px solid var(--color-secondary-bg);
+            border-bottom: 1px solid var(--color-secondary-bg);
         }
-        div[data-testid="stMetric"] {
-            background: #f8fafc !important;
-            border-radius: 10px;
-            padding: 12px 16px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        .ticker-tape-inner {
+            display: inline-flex;
+            white-space: nowrap;
+            width: max-content;
+            animation: scroll-left 40s linear infinite;
         }
-        /* FIX METRIC LABEL VISIBILITY (the text above the numbers) */
-        div[data-testid="stMetricLabel"] p {
-            color: #001f3f !important;     /* Dark navy */
-            font-size: 14px !important;
-            font-weight: 600 !important;
-            margin-bottom: 4px !important;
+        .ticker-item {
+            display: inline-block;
+            padding: 0 25px;
+            font-size: 16px;
+            font-weight: 500;
         }
-
-        /* FINAL OVERRIDE: make metric headers visible */
-        div[data-testid="stMetricLabel"],
-        div[data-testid="stMetricLabel"] * {
-            color: #001f3f !important;   /* Dark navy so it pops on white */
-            font-size: 14px !important;
-            font-weight: 600 !important;
+        .ticker-section-label {
+            padding: 0 25px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            opacity: 0.75;
+            color: var(--color-secondary-text);
         }
-
 
         </style>
         """,
@@ -1985,12 +1798,23 @@ def render_dashboard():
     # Macro cards (VIX, USD, HY Credit, IG Credit) LIVE INSIDE MARKET SNAPSHOT
     macro_cards = get_macro_indicator_cards()
     if macro_cards:
+        # One column per macro card
         macro_cols = st.columns(len(macro_cards))
+
         for col, card in zip(macro_cols, macro_cards):
             with col:
+                # Custom visible header using .metric-label (styled in CSS)
+                st.markdown(
+                    f"<div class='metric-label'>{card['label']}</div>",
+                    unsafe_allow_html=True,
+                )
+
+                # Metric body: numbers + delta
                 val_str = f"{card['value']:,.2f}"
                 delta_str = f"{card['change']:+.2f} ({card['pct']:+.2f}%)"
-                col.metric(label=card["label"], value=val_str, delta=delta_str)
+
+                # Hide Streamlit's built-in label so only our custom header shows
+                st.metric(label="", value=val_str, delta=delta_str)
 
         st.write("")  # small spacer
 
@@ -2132,6 +1956,7 @@ def render_dashboard():
     else:
         st.write("No recent broad-market headlines available.")
     st.markdown("</div>", unsafe_allow_html=True)
+
 
 
 def render_analysis_page():

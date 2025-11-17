@@ -1906,20 +1906,7 @@ def render_dashboard():
     macro_data = get_global_macro_data()
 
     # ============================
-    # ROW 0: Macro Indicator Cards (VIX, USD, HY, IG)
-    # ============================
-    macro_cards = get_macro_indicator_cards()
-    if macro_cards:
-        cols = st.columns(len(macro_cards))
-        for col, card in zip(cols, macro_cards):
-            with col:
-                # format value & delta
-                val_str = f"{card['value']:,.2f}"
-                delta_str = f"{card['change']:+.2f} ({card['pct']:+.2f}%)"
-                col.metric(label=card["label"], value=val_str, delta=delta_str)
-
-    # ============================
-    # ROW 1: Macro Ticker Tape
+    # ROW 0: Macro Ticker Tape (BLACK BAR DIRECTLY UNDER TITLE)
     # ============================
     ticker_items = macro_data  # Only use macro data for the tape
 
@@ -1955,9 +1942,25 @@ def render_dashboard():
         st.markdown(full_ticker_html, unsafe_allow_html=True)
 
     # ============================
-    # ROW 2: Index Snapshot Cards
+    # ROW 1: Market Snapshot (TITLE + MACRO CARDS)
     # ============================
     st.markdown("### Market Snapshot")
+
+    # Macro cards (VIX, USD, HY Credit, IG Credit) LIVE INSIDE MARKET SNAPSHOT
+    macro_cards = get_macro_indicator_cards()
+    if macro_cards:
+        macro_cols = st.columns(len(macro_cards))
+        for col, card in zip(macro_cols, macro_cards):
+            with col:
+                val_str = f"{card['value']:,.2f}"
+                delta_str = f"{card['change']:+.2f} ({card['pct']:+.2f}%)"
+                col.metric(label=card["label"], value=val_str, delta=delta_str)
+
+        st.write("")  # small spacer
+
+    # ============================
+    # ROW 2: Index Snapshot Cards (Dow / NASDAQ / S&P / Russell)
+    # ============================
     chart_cols = st.columns(4)
 
     index_map = {
@@ -2002,6 +2005,7 @@ def render_dashboard():
                     unsafe_allow_html=True,
                 )
 
+            # Key metrics beneath each index
             key_metrics = get_index_key_metrics(ticker)
             if key_metrics:
                 st.markdown(

@@ -537,28 +537,64 @@ def get_live_index_data():
             logging.warning(f"Failed to get live index data for {ticker}: {e}")
     return data
     
+@st.cache_data(ttl=1800)
+def _load_sp500_tickers() -> List[str]:
+    """
+    Fetch a list of S&P 500 tickers. yfinance removed tickers_sp500 in
+    older versions, so fall back to scraping Wikipedia or a tiny seed list.
+    """
+    tickers: List[str] = []
+
+    try:
+        if hasattr(yf, "tickers_sp500"):
+            raw = yf.tickers_sp500()
+            if isinstance(raw, pd.DataFrame):
+                tickers = raw.get("Symbol", pd.Series(dtype=str)).dropna().astype(str).tolist()
+            elif isinstance(raw, (list, tuple)):
+                tickers = list(raw)
+            elif isinstance(raw, dict):
+                tickers = list(raw.keys())
+    except Exception as e:
+        logging.debug(f"yfinance tickers_sp500 unavailable: {e}")
+
+    if not tickers:
+        try:
+            # Wikipedia table of current constituents
+            tables = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
+            if tables:
+                tickers = tables[0]["Symbol"].astype(str).tolist()
+        except Exception as e:
+            logging.debug(f"Failed to load S&P 500 table from Wikipedia: {e}")
+
+    if not tickers:
+        # Absolute last resort so the UI never fully breaks
+        tickers = ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META"]
+
+    # Normalize & dedupe
+    clean = []
+    seen = set()
+    for t in tickers:
+        sym = (t or "").strip().upper()
+        if sym and sym not in seen:
+            seen.add(sym)
+            clean.append(sym)
+    return clean
+
+
 @st.cache_data(ttl=300)
 def get_top_movers_sp500(n_gainers: int = 6, n_losers: int = 6):
     """
     Approximate daily top gainers/losers using S&P 500 constituents.
     Uses 2 days of daily data and ranks by % change.
     """
+    tickers = _load_sp500_tickers()
+    # Safety: don't hammer the API – cap number of tickers
+    tickers = tickers[:350]
+
+    if not tickers:
+        return [], []
+
     try:
-        sp500 = yf.tickers_sp500()
-        # yfinance sometimes returns DataFrame, sometimes list
-        if isinstance(sp500, pd.DataFrame):
-            tickers = sp500["Symbol"].dropna().astype(str).tolist()
-        elif isinstance(sp500, (list, tuple)):
-            tickers = list(sp500)
-        else:
-            tickers = list(sp500.keys())
-
-        # Safety: don't hammer the API – cap number of tickers
-        tickers = tickers[:350]
-
-        if not tickers:
-            return [], []
-
         data = yf.download(
             tickers,
             period="2d",
@@ -568,43 +604,43 @@ def get_top_movers_sp500(n_gainers: int = 6, n_losers: int = 6):
             progress=False,
             threads=True,
         )
-
-        movers = []
-        for t in tickers:
-            try:
-                df = data[t]
-                closes = df["Close"].dropna()
-                if len(closes) < 2:
-                    continue
-                prev, last = float(closes.iloc[-2]), float(closes.iloc[-1])
-                if prev <= 0:
-                    continue
-                change = last - prev
-                pct = (last / prev - 1.0) * 100.0
-                movers.append(
-                    {
-                        "symbol": t.upper(),
-                        "price": last,
-                        "change": change,
-                        "pct_change": pct,
-                    }
-                )
-            except Exception:
-                continue
-
-        movers = [m for m in movers if np.isfinite(m["pct_change"])]
-
-        if not movers:
-            return [], []
-
-        movers_sorted = sorted(movers, key=lambda x: x["pct_change"], reverse=True)
-        top_gainers = movers_sorted[:n_gainers]
-        top_losers = sorted(movers, key=lambda x: x["pct_change"])[:n_losers]
-
-        return top_gainers, top_losers
     except Exception as e:
-        logging.warning(f"Failed to compute top movers: {e}")
+        logging.warning(f"Failed to download S&P 500 history: {e}")
         return [], []
+
+    movers = []
+    for t in tickers:
+        try:
+            df = data[t]
+            closes = df["Close"].dropna()
+            if len(closes) < 2:
+                continue
+            prev, last = float(closes.iloc[-2]), float(closes.iloc[-1])
+            if prev <= 0:
+                continue
+            change = last - prev
+            pct = (last / prev - 1.0) * 100.0
+            movers.append(
+                {
+                    "symbol": t.upper(),
+                    "price": last,
+                    "change": change,
+                    "pct_change": pct,
+                }
+            )
+        except Exception:
+            continue
+
+    movers = [m for m in movers if np.isfinite(m["pct_change"])]
+
+    if not movers:
+        return [], []
+
+    movers_sorted = sorted(movers, key=lambda x: x["pct_change"], reverse=True)
+    top_gainers = movers_sorted[:n_gainers]
+    top_losers = sorted(movers, key=lambda x: x["pct_change"])[:n_losers]
+
+    return top_gainers, top_losers
 
 
 # --- Replace this function ---

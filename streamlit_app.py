@@ -2760,7 +2760,7 @@ def main():
     with tab_home:
     # ---- Big Hero Header ----
     st.markdown(
-        """
+    """
         <div class="header-hero">
             <div class="page-header">
                 <h1 class="page-title">Equity Research Tool</h1>

@@ -1551,10 +1551,7 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
         logging.error(f"Failed _scenario_valuation_core for {ticker} ({scenario}): {e}")
         return pd.DataFrame(), f"_Valuation failed for {scenario}: {e}_"
 
-# ======================================================================
-# GLOBAL STYLING
-# ======================================================================
-# --- Replace this function ---
+
 # ======================================================================
 # GLOBAL STYLING
 # ======================================================================
@@ -1666,8 +1663,17 @@ def inject_global_css():
             margin-bottom: 12px;
         }
 
-        /* ===== CUSTOM FIX: *VISIBLE* METRIC HEADERS ===== */
-        /* We use this class above each macro metric in Market Snapshot */
+        /* ===== METRIC CARD STYLING (VIX, USD, etc.) ===== */
+        /* --- THIS IS THE NEW, STABLE WRAPPER --- */
+        .metric-card-box {
+            background: #f8fafc !important;
+            border-radius: 12px;
+            padding: 14px 18px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+            border: 1px solid #e2e8f0;
+            height: 100%; /* Ensure cards are same height */
+        }
+        
         .metric-label {
             font-size: 13px;
             font-weight: 600;
@@ -1678,33 +1684,20 @@ def inject_global_css():
             opacity: 0.85;
         }
 
-        /* ===== METRIC CARD STYLING – SCOPED TO MARKET SNAPSHOT MACROS ===== */
-        /* --- MODIFIED --- This now targets our new wrapper div */
-        .metric-card-wrapper {
-            background: #f8fafc !important;
-            border-radius: 12px;
-            padding: 14px 18px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
-            border: 1px solid #e2e8f0;
-            /* Ensure all cards in a row are the same height */
-            height: 100%; 
-        }
-
-        /* --- MODIFIED --- This selector is now simpler */
-        .metric-card-wrapper div[data-testid="stMetricValue"] {
+        /* Target st.metric *inside* our new wrapper */
+        .metric-card-box div[data-testid="stMetricValue"] {
             color: #001f3f !important;
             font-weight: 700 !important;
             font-size: 26px !important;
         }
 
-        /* --- MODIFIED --- This selector is now simpler */
-        .metric-card-wrapper div[data-testid="stMetricDelta"] .positive {
+        .metric-card-box div[data-testid="stMetricDelta"] .positive {
             color: #047857 !important; /* Dark Green */
             background-color: #D1FAE5;
             padding: 2px 6px;
             border-radius: 4px;
         }
-        .metric-card-wrapper div[data-testid="stMetricDelta"] .negative {
+        .metric-card-box div[data-testid="stMetricDelta"] .negative {
             color: #991B1B !important; /* Dark Red */
             background-color: #FEE2E2;
             padding: 2px 6px;
@@ -1764,7 +1757,6 @@ def inject_global_css():
             color: var(--color-secondary-text);
         }
         
-        /* --- FIX 1: Ticker Tape Symbol Styling --- */
         .ticker-symbol {
             font-weight: 700 !important;
             color: var(--color-secondary-text) !important; /* Khaki */
@@ -1775,7 +1767,6 @@ def inject_global_css():
             opacity: 0.9;
         }
         
-        /* --- FIX 2: Ticker Tape Colors --- */
         .ticker-change.positive {
             color: #00E500 !important; /* Bright Green */
             font-weight: 600;
@@ -1785,7 +1776,7 @@ def inject_global_css():
             font-weight: 600;
         }
         
-        /* --- FIX 3: Index Snapshot Cards (from Screenshot) --- */
+        /* ===== INDEX SNAPSHOT CARDS (DOW, NASDAQ, etc.) ===== */
         .index-chart-card {
             background: #FFFFFF;
             border: 1px solid #E2E8F0; /* Light gray border */
@@ -1793,7 +1784,6 @@ def inject_global_css():
             padding: 18px 20px;
             margin-bottom: 16px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-            /* min-height ensures cards in a row are same height */
             min-height: 280px; 
             height: 100%; /* Make card fill column space */
             display: flex;
@@ -1833,34 +1823,31 @@ def inject_global_css():
             margin-top: 16px;
             border-top: 1px solid #E2E8F0;
             padding-top: 12px;
-            /* This makes the list grow to fill remaining card space */
             flex-grow: 1; 
         }
         .index-metric-row {
             display: flex;
             justify-content: space-between;
-            font-size: 0.85rem; /* Slightly smaller to fit */
-            color: #374151; /* Medium gray text */
+            font-size: 0.85rem; 
+            color: #374151; 
             margin-bottom: 8px;
             line-height: 1.3;
         }
         .index-metric-label {
             font-weight: 500;
-            color: #4B5563; /* Slightly darker gray */
+            color: #4B5563;
         }
         .index-metric-value {
             font-weight: 600;
             color: var(--color-primary-text); /* Navy */
             text-align: right;
-            padding-left: 8px; /* Add space */
+            padding-left: 8px; 
         }
 
         </style>
         """,
         unsafe_allow_html=True,
     )
-
-
 # --- Wall Street esque Price Bar ---
 # --- Wall Street esque Price Bar ---
 def render_dashboard():
@@ -1906,13 +1893,10 @@ def render_dashboard():
         """
         st.markdown(full_ticker_html, unsafe_allow_html=True)
 
-        # ============================
+    # ============================
     # ROW 1: Market Snapshot (TITLE + MACRO CARDS)
     # ============================
     st.markdown("### Market Snapshot")
-
-    # Wrap macro metrics so CSS can target only this section
-    st.markdown("<div class='market-snapshot-macros'>", unsafe_allow_html=True)
 
     # Macro cards (VIX, USD, HY Credit, IG Credit) LIVE INSIDE MARKET SNAPSHOT
     macro_cards = get_macro_indicator_cards()
@@ -1922,10 +1906,11 @@ def render_dashboard():
 
         for col, card in zip(macro_cols, macro_cards):
             with col:
-                # --- MODIFICATION --- Wrap each metric in a styled card div
-                st.markdown("<div class='metric-card-wrapper'>", unsafe_allow_html=True)
+                # --- THIS IS THE FIX ---
+                # We now wrap the entire metric in our own styled div.
+                st.markdown("<div class='metric-card-box'>", unsafe_allow_html=True)
                 
-                # Custom visible header using .metric-label (styled in CSS)
+                # Custom visible header
                 st.markdown(
                     f"<div class='metric-label'>{card['label']}</div>",
                     unsafe_allow_html=True,
@@ -1935,17 +1920,13 @@ def render_dashboard():
                 val_str = f"{card['value']:,.2f}"
                 delta_str = f"{card['change']:+.2f} ({card['pct']:+.2f}%)"
 
-                # Hide Streamlit's built-in label so only our custom header shows
+                # Hide Streamlit's built-in label
                 st.metric(label="", value=val_str, delta=delta_str)
                 
-                # --- MODIFICATION --- Close the wrapper div
+                # Close our custom div
                 st.markdown("</div>", unsafe_allow_html=True)
 
-        st.write("")  # small spacer
-
-    # close wrapper
-    st.markdown("</div>", unsafe_allow_html=True)
-
+    st.write("")  # small spacer
 
     # ============================
     # ROW 2: Index Snapshot Cards (Dow / NASDAQ / S&P / Russell)
@@ -1961,6 +1942,8 @@ def render_dashboard():
 
     for display_name, (ticker, col) in index_map.items():
         with col:
+            # --- THIS IS THE FIX ---
+            # This whole block is now wrapped in our custom class
             st.markdown("<div class='index-chart-card'>", unsafe_allow_html=True)
 
             summary = next(
@@ -1972,12 +1955,10 @@ def render_dashboard():
                 change_class = "positive" if summary["change"] >= 0 else "negative"
                 change_sign = "+" if summary["change"] >= 0 else ""
 
+                # We use markdown for all the HTML elements
                 st.markdown(
-                    f"<div class='index-chart-title'>{display_name}</div>",
-                    unsafe_allow_html=True,
-                )
-                st.markdown(
-                    # --- FIX 1 --- Added missing '=' after 'class'
+                    f"<div class='index-chart-title'>{display_name}</div>"
+                    # --- NOTE: class='...' with the equals sign is correct
                     f"<span class='index-chart-price'>${summary['price']:,.2f}</span>"
                     f"<span class='index-chart-change {change_class}'>"
                     f"{change_sign}{summary['change']:,.2f} "
@@ -1987,11 +1968,8 @@ def render_dashboard():
                 )
             else:
                 st.markdown(
-                    f"<div class='index-chart-title'>{display_name}</div>",
-                    unsafe_allow_html=True,
-                )
-                st.markdown(
-                    "<span class='index-chart-price'>Key metrics unavailable.</span>",
+                    f"<div class='index-chart-title'>{display_name}</div>"
+                    f"<span class='index-chart-price'>Key metrics unavailable.</span>",
                     unsafe_allow_html=True,
                 )
 
@@ -2003,15 +1981,16 @@ def render_dashboard():
                 )
                 for metric in key_metrics:
                     st.markdown(
+                        # --- NOTE: class='...' with the equals sign is correct
                         f"<div class='index-metric-row'>"
                         f"  <span class='index-metric-label'>{metric['label']}</span>"
-                        # --- FIX 2 --- Added missing '=' after 'class'
                         f"  <span class='index-metric-value'>{metric['value']}</span>"
                         f"</div>",
                         unsafe_allow_html=True,
                     )
                 st.markdown("</div>", unsafe_allow_html=True)
-
+            
+            # Close the main card wrapper
             st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("---")
@@ -2019,7 +1998,6 @@ def render_dashboard():
     # ============================
     # ROW 3: Sector Heatmap
     # ============================
-    # ... (Rest of function is unchanged) ...
     st.markdown("### Sector Performance")
     sector_perf_data = get_sector_performance()
     if sector_perf_data:
@@ -2077,7 +2055,7 @@ def render_dashboard():
     if news_items:
         for n in news_items:
             ts_str = (
-                n["time"].strftime("%Y-%m-%d %H:%M")
+                n["time"].strftime("%Y-m-d %H:%M")
                 if isinstance(n["time"], pd.Timestamp)
                 else ""
             )

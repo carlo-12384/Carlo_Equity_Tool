@@ -1,4 +1,4 @@
-    # -*- coding: utf-8 -*-
+   # -*- coding: utf-8 -*-
 """Carlo Equity Tool — Streamlit App (Blocks-style UI)"""
 
 import os, time, math, logging, textwrap, datetime as dt
@@ -3301,4 +3301,3 @@ def main():
 # and have no indentation to run the app.
 if __name__ == "__main__":
     main()
-

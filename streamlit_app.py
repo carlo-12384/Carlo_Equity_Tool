@@ -1590,6 +1590,9 @@ def inject_global_css():
         
         /* ===== GLOBAL LAYOUT ===== */
         html, body, .stApp {
+            /* Your screenshots show a dark background, but your CSS specifies white.
+               This implies Streamlit's theme is overriding your --color-page-bg.
+               The fixes below will work regardless of the background color. */
             background: var(--color-page-bg) !important;
             color: var(--color-primary-text) !important;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
@@ -1613,21 +1616,32 @@ def inject_global_css():
             color: var(--color-primary-text) !important;
         }
 
+        /* =================================================
+        THIS IS THE FIX FOR YOUR INVISIBLE BUTTON TEXT
+        =================================================
+        */
         /* ===== FIX: BUTTONS ===== */
-        /* Targets the default Streamlit button and makes text dark */
+        /* Targets the default Streamlit button */
         button[data-testid="stButton"] {
-            color: #001f3f !important; 
+            /* This targets the button element itself */
+            color: #FFFFFF !important; /* Forces text to be WHITE */
         }
-        /* Targets the <p> tag inside the button */
-        div[data-testid="stButton"] > p {
-             color: #001f3f !important; /* Dark Navy Blue text */
+        /* Targets the <p> tag inside the button's div wrapper */
+        div[data-testid="stButton"] p {
+             color: #FFFFFF !important; /* Forces text to be WHITE */
         }
+        /*
+        =================================================
+        END OF FIX
+        =================================================
+        */
 
         /* ===== FIX: INFO BOX ===== */
-        /* Targets the st.info box */
+        /* Targets the st.info box (like "Load a company first...") */
         div[data-testid="stInfo"] {
-            background-color: #E6F6FF; /* A light blue background */
-            border: 1px solid #B0E0FF; 
+            /* This light blue background is from your screenshot */
+            background-color: #E6F6FF !important; 
+            border: 1px solid #B0E0FF !important; 
             color: #001f3f !important; /* Dark Navy Blue text */
         }
         div[data-testid="stInfo"] p {
@@ -1681,7 +1695,7 @@ def inject_global_css():
             margin-bottom: 16px;
             border: 1px solid var(--color-secondary-bg);
         }
-        /* ===== NEW: Added text color to hero-card text ===== */
+        /* This ensures text inside hero-cards is light */
         .hero-card .hero-title, .hero-card .hero-subtitle {
              color: var(--color-tertiary-text) !important; /* White text */
         }
@@ -1826,9 +1840,6 @@ def inject_global_css():
             padding: 18px 20px;
             margin-bottom: 16px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-            /* --- THIS IS THE FIX --- */
-            /* We removed min-height and height: 100% */
-            /* The card will now auto-size to its content */
             display: flex;
             flex-direction: column;
         }
@@ -1885,6 +1896,12 @@ def inject_global_css():
             color: var(--color-primary-text); 
             text-align: right;
             padding-left: 8px; 
+        }
+
+        /* ===== FIX: VALUATION PAGE INPUTS ===== */
+        /* This makes the text inside the valuation inputs readable */
+        div[data-testid="stNumberInput"] input {
+             color: #001f3f !important; /* Dark text for light input */
         }
 
         </style>

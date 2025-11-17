@@ -2188,13 +2188,10 @@ def render_dashboard():
 
         for col, card in zip(macro_cols, macro_cards):
             with col:
-                # --- THIS IS THE FIX ---
-                # We build the *entire metric* in HTML and render it in
-                # one st.markdown call. This avoids using st.metric.
-                
+                # Build the metric in HTML and render once
                 val_str = f"{card['value']:,.2f}"
                 delta_str = f"{card['change']:+.2f} ({card['pct']:+.2f}%)"
-                delta_class = "negative" if card['change'] < 0 else "positive"
+                delta_class = "negative" if card["change"] < 0 else "positive"
 
                 card_html = f"""
                 <div class="metric-card-box">
@@ -2214,49 +2211,66 @@ def render_dashboard():
     # ============================
     chart_cols = st.columns(4)
 
-   index_map = {
-    "Dow Jones": ("^DJI", chart_cols[0]),
-    "NASDAQ": ("^IXIC", chart_cols[1]),
-    "S&P 500": ("^GSPC", chart_cols[2]),
-    "Russell 2000": ("^RUT", chart_cols[3]),
-}
+    index_map = {
+        "Dow Jones": ("^DJI", chart_cols[0]),
+        "NASDAQ": ("^IXIC", chart_cols[1]),
+        "S&P 500": ("^GSPC", chart_cols[2]),
+        "Russell 2000": ("^RUT", chart_cols[3]),
+    }
 
-for display_name, (ticker, col) in index_map.items():
-    with col:
-        # Build the entire card as one HTML string
-        html_parts = ["<div class='index-chart-card'>"]
+    for display_name, (ticker, col) in index_map.items():
+        with col:
+            # Build the entire card as one HTML string
+            html_parts = ["<div class='index-chart-card'>"]
 
-        # Title always
-        html_parts.append(f"<div class='index-chart-title'>{display_name}</div>")
-
-        data = get_index_card_metrics(ticker)
-
-        if data is None:
-            # Only if *everything* failed (API totally down or bad ticker)
-            html_parts.append("<span class='index-chart-price'>Key metrics unavailable.</span>")
-        else:
-            last = data["last"]
-            chg = data["change"]
-            pct = data["change_pct"]
-
-            change_class = "positive" if chg >= 0 else "negative"
-            change_sign = "+" if chg >= 0 else ""
-
-            # Price
+            # Title always
             html_parts.append(
-                f"<span class='index-chart-price'>${last:,.2f}</span>"
+                f"<div class='index-chart-title'>{display_name}</div>"
             )
 
-            # Change bar
-            html_parts.append(
-                f"<span class='index-chart-change {change_class}'>"
-                f"{change_sign}{chg:,.2f} "
-                f"({change_sign}{pct:.2f}%)"
-                f"</span>"
-            )
+            data = get_index_card_metrics(ticker)
 
-        html_parts.append("</div>")  # close card
-        st.markdown("".join(html_parts), unsafe_allow_html=True)
+            if data is None:
+                # Only if *everything* failed (API totally down or bad ticker)
+                html_parts.append(
+                    "<span class='index-chart-price'>Key metrics unavailable.</span>"
+                )
+            else:
+                last = data["last"]
+                chg = data["change"]
+                pct = data["change_pct"]
+
+                change_class = "positive" if chg >= 0 else "negative"
+                change_sign = "+" if chg >= 0 else ""
+
+                # Price
+                html_parts.append(
+                    f"<span class='index-chart-price'>${last:,.2f}</span>"
+                )
+
+                # Change bar
+                html_parts.append(
+                    f"<span class='index-chart-change {change_class}'>"
+                    f"{change_sign}{chg:,.2f} "
+                    f"({change_sign}{pct:.2f}%)"
+                    f"</span>"
+                )
+
+                # Bottom metrics (YTD, Avg Volume, 52-Wk Range)
+                html_parts.append("<div class='index-metric-list'>")
+                for metric in data["metrics"]:
+                    html_parts.append(
+                        f"<div class='index-metric-row'>"
+                        f"<span class='index-metric-label'>{metric['label']}</span>"
+                        f"<span class='index-metric-value'>{metric['value']}</span>"
+                        f"</div>"
+                    )
+                html_parts.append("</div>")  # close metric list
+
+            html_parts.append("</div>")  # close card
+            st.markdown("".join(html_parts), unsafe_allow_html=True)
+
+    st.write("")  # spacer between rows
 
     # ============================
     # ROW 3: Sector Heatmap

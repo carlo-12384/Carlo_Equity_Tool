@@ -1555,6 +1555,10 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
 # GLOBAL STYLING
 # ======================================================================
 # --- Replace this function ---
+# ======================================================================
+# GLOBAL STYLING
+# ======================================================================
+# --- Replace this function ---
 def inject_global_css():
     st.markdown(
         """
@@ -1652,7 +1656,14 @@ def inject_global_css():
             padding: 18px 20px;
             margin-top: 18px;
             margin-bottom: 18px;
-            border: 1px solid var(--color-primary-bg);
+            border: 1px solid #E2E8F0; /* Use a light border for white cards */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+        }
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--color-primary-text);
+            margin-bottom: 12px;
         }
 
         /* ===== CUSTOM FIX: *VISIBLE* METRIC HEADERS ===== */
@@ -1673,6 +1684,7 @@ def inject_global_css():
             border-radius: 12px;
             padding: 14px 18px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+            border: 1px solid #e2e8f0;
         }
 
         .market-snapshot-macros div[data-testid="stMetricValue"] {
@@ -1682,10 +1694,16 @@ def inject_global_css():
         }
 
         .market-snapshot-macros div[data-testid="stMetricDelta"] .positive {
-            color: #0cb400 !important;
+            color: #047857 !important; /* Dark Green */
+            background-color: #D1FAE5;
+            padding: 2px 6px;
+            border-radius: 4px;
         }
         .market-snapshot-macros div[data-testid="stMetricDelta"] .negative {
-            color: #d00000 !important;
+            color: #991B1B !important; /* Dark Red */
+            background-color: #FEE2E2;
+            padding: 2px 6px;
+            border-radius: 4px;
         }
 
         /* ===== TABS FIX ===== */
@@ -1740,12 +1758,99 @@ def inject_global_css():
             opacity: 0.75;
             color: var(--color-secondary-text);
         }
+        
+        /* --- FIX 1: Ticker Tape Symbol Styling --- */
+        .ticker-symbol {
+            font-weight: 700 !important;
+            color: var(--color-secondary-text) !important; /* Khaki */
+            margin-right: 8px;
+        }
+        .ticker-price {
+            margin-right: 8px;
+            opacity: 0.9;
+        }
+        
+        /* --- FIX 2: Ticker Tape Colors --- */
+        .ticker-change.positive {
+            color: #00E500 !important; /* Bright Green */
+            font-weight: 600;
+        }
+        .ticker-change.negative {
+            color: #FF2E2E !important; /* Bright Red */
+            font-weight: 600;
+        }
+        
+        /* --- FIX 3: Index Snapshot Cards (from Screenshot) --- */
+        .index-chart-card {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0; /* Light gray border */
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            /* min-height ensures cards in a row are same height */
+            min-height: 280px; 
+            display: flex;
+            flex-direction: column;
+        }
+        .index-chart-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--color-primary-text);
+            margin-bottom: 8px;
+        }
+        .index-chart-price {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--color-primary-text);
+            margin-right: 10px;
+            display: block; /* Make it stack */
+            margin-bottom: 4px;
+            line-height: 1.2;
+        }
+        .index-chart-change {
+            font-size: 0.95rem;
+            font-weight: 600;
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .index-chart-change.positive {
+            color: #047857; /* Dark Green */
+            background-color: #D1FAE5;
+        }
+        .index-chart-change.negative {
+            color: #991B1B; /* Dark Red */
+            background-color: #FEE2E2;
+        }
+        .index-metric-list {
+            margin-top: 16px;
+            border-top: 1px solid #E2E8F0;
+            padding-top: 12px;
+        }
+        .index-metric-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem; /* Slightly smaller to fit */
+            color: #374151; /* Medium gray text */
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+        .index-metric-label {
+            font-weight: 500;
+            color: #4B5563; /* Slightly darker gray */
+        }
+        .index-metric-value {
+            font-weight: 600;
+            color: var(--color-primary-text); /* Navy */
+            text-align: right;
+            padding-left: 8px; /* Add space */
+        }
 
         </style>
         """,
         unsafe_allow_html=True,
     )
-
 
 
 # --- Wall Street esque Price Bar ---

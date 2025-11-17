@@ -1565,6 +1565,8 @@ def build_metric_heatmap_figure(res: Dict[str, Any]):
         margin=dict(l=4, r=4, t=20, b=4),
         plot_bgcolor="rgba(0,0,0,0)",
         paper_bgcolor="rgba(0,0,0,0)",
+        xaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.4)", zeroline=False, showticklabels=False),
+        yaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.4)", zeroline=False, showticklabels=False),
         height=260,
     )
     return fig
@@ -1855,7 +1857,7 @@ def inject_global_css():
         
         /* ===== GLOBAL LAYOUT ===== */
         html, body, .stApp {
-            background: var(--color-page-bg) !important;
+            background: linear-gradient(180deg, #f4f7fb 0%, #ffffff 80%) !important;
             color: var(--color-primary-text) !important;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
             margin: 0 !important;
@@ -1953,11 +1955,15 @@ def inject_global_css():
             background: var(--color-page-bg);
             border-radius: 16px;
             padding: 18px 20px;
-            margin-top: 18px;
-            margin-bottom: 18px;
+            margin-top: 12px;
+            margin-bottom: 12px;
             border: 1px solid #E2E8F0;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
-                        0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .section-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 18px 50px rgba(15, 23, 42, 0.12);
         }
         .section-title {
             font-size: 1.25rem;
@@ -2464,6 +2470,69 @@ def inject_global_css():
             font-weight: 600;
             color: #0F172A;
         }
+        .mini-card, .metric-card-box, .heatmap-wrapper {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .mini-card:hover, .metric-card-box:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.15);
+        }
+        .heatmap-wrapper {
+            border-radius: 16px;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+        .left-nav {
+            position: sticky;
+            top: 30px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 18px;
+            padding: 18px 12px;
+            border: 1px solid rgba(226,232,240,0.6);
+            box-shadow: 0 14px 40px rgba(15, 23, 42, 0.1);
+        }
+        .left-nav-label {
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            font-size: 0.75rem;
+            margin-bottom: 12px;
+            color: #475569;
+        }
+        .stRadio > div > label {
+            width: 100%;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .stRadio button {
+            width: 100%;
+            text-align: left;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            background: #f8fafc;
+            font-weight: 600;
+            color: #0f172a;
+            letter-spacing: 0.05em;
+        }
+        .stRadio button:hover {
+            border-color: #c7d2fe;
+            background: #eef2ff;
+        }
+        .stRadio button[aria-pressed="true"] {
+            border-color: #0ea5e9;
+            background: linear-gradient(120deg, #0ea5e9, #0b84d7);
+            color: #fff;
+        }
+        .content-shell {
+            display: flex;
+            gap: 16px;
+        }
+        .content-grid {
+            width: 100%;
+        }
 
         </style>
         """,
@@ -2627,7 +2696,7 @@ def render_dashboard():
     # ============================
     # ROW 4: Summary + Econ + Smart Money
     # ============================
-    left_col, right_col = st.columns([1.4, 1])
+    left_col, right_col = st.columns([8, 4])
 
     with left_col:
         summary_text = generate_market_summary(
@@ -2723,6 +2792,18 @@ def render_dashboard():
     st.markdown("</div>", unsafe_allow_html=True)
 
 #UX for Analysis Page
+
+def render_watchlist_page():
+    st.markdown(
+        """
+        <div class="section-card">
+            <div class="section-title">Watchlist (coming soon)</div>
+            <p>Feature coming soon — keep track of names you monitor most.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 
 def render_analysis_page():
     inject_global_css()
@@ -2872,16 +2953,20 @@ def render_analysis_page():
 
     heatmap_fig = build_metric_heatmap_figure(res)
     if heatmap_fig:
+    heatmap_wrapper = "<div class='heatmap-wrapper'>"
+    if heatmap_fig:
         st.markdown(
-            """
+            f"""
             <div class="section-card simplified-overview">
                 <div class="section-title">Metric Heatmap</div>
+            </div>
             """,
             unsafe_allow_html=True,
         )
+        st.markdown("<div class='heatmap-wrapper'>", unsafe_allow_html=True)
         st.plotly_chart(heatmap_fig, use_container_width=True)
-        st.caption("Colored tiles compare your name versus peers. Green = strength, red = relative weakness.")
         st.markdown("</div>", unsafe_allow_html=True)
+        st.caption("Colored tiles compare your name versus peers. Green = strength, red = relative weakness.")
 
     st.markdown(
         """
@@ -3537,6 +3622,9 @@ def render_theses_page():
 # ======================================================================
 # MAIN APP
 # ======================================================================
+NAV_ITEMS = ["Dashboard", "Screener", "Research", "Valuation", "Theses", "Watchlist"]
+
+
 def main():
     st.set_page_config(
         page_title="Equity Research Tool",
@@ -3555,51 +3643,41 @@ def main():
         unsafe_allow_html=True,
     )
 
-    # Global CSS
     inject_global_css()
 
-    # ---------- TABS AS MAIN NAV (TOP LEFT) ----------
-    tab_home, tab_screener, tab_val, tab_research, tab_theses = st.tabs(
-        ["Home", "Screener", "Valuation", "Research", "Theses"]
-    )
+    if "active_section" not in st.session_state:
+        st.session_state.active_section = "Dashboard"
 
-    # ---------- HOME ----------
-    with tab_home:
-    # ---- Big Hero Header ----
-        st.markdown(
-        """
-        <div class="header-hero">
-            <div class="page-header">
-                <h1 class="page-title">Equity Research Tool</h1>
-                <p class="page-subtitle">Fricano Capital Research</p>
-                <p class="page-mini-desc">
-                </p>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-        # ---- The Ticker + Rest of Page ----
-        render_dashboard()
+    if "nav_section" not in st.session_state:
+        st.session_state.nav_section = "Dashboard"
 
+    nav_index = NAV_ITEMS.index(st.session_state.nav_section) if st.session_state.nav_section in NAV_ITEMS else 0
+    col_nav, col_main = st.columns([0.18, 0.82])
 
-    # ---------- SCREENER ----------
-    with tab_screener:
-        render_analysis_page()
+    with col_nav:
+        st.markdown("<div class='left-nav-label'>Navigation</div>", unsafe_allow_html=True)
+        selected = st.radio(
+            "",
+            NAV_ITEMS,
+            index=nav_index,
+            key="nav_section",
+            label_visibility="collapsed",
+        )
+        st.session_state.active_section = selected
 
-    # ---------- VALUATION ----------
-    with tab_val:
-        render_valuation_page()
-
-    # ---------- RESEARCH ----------
-    with tab_research:
-        render_research_page()
-
-    
-    # ---------- THESES ----------
-    # This part was missing from your main function
-    with tab_theses:
-        render_theses_page()
+    with col_main:
+        if st.session_state.active_section == "Dashboard":
+            render_dashboard()
+        elif st.session_state.active_section == "Screener":
+            render_analysis_page()
+        elif st.session_state.active_section == "Research":
+            render_research_page()
+        elif st.session_state.active_section == "Valuation":
+            render_valuation_page()
+        elif st.session_state.active_section == "Theses":
+            render_theses_page()
+        elif st.session_state.active_section == "Watchlist":
+            render_watchlist_page()
 
 
 # This block MUST be at the end of the file

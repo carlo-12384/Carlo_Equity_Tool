@@ -2290,6 +2290,7 @@ def render_analysis_page():
     inject_global_css()
     
     # ---------- HERO ----------
+    st.markdown("<style>code, pre {display:none !important;}</style>", unsafe_allow_html=True)
     st.markdown(
         """
         <div class="hero-card">
@@ -2362,18 +2363,18 @@ def render_analysis_page():
             )
 
         analyze_clicked = st.button("Run Screener", use_container_width=True, key="analysis_page_button")
-
-        st.markdown(
-            """
+            st.markdown(
+                """
                 <div class="command-footnote">
                     Tip: keep this tab open as your “command console” – after running, jump between Screener, Valuation,
                     Research, and Theses using the top tabs.
                 </div>
-              </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+                </div>   <!-- .command-inner -->
+                </div>   <!-- .command-card -->
+                """,
+                unsafe_allow_html=True,
+            )
+
 
     # ===================== RIGHT: MODULE PREVIEW =====================
     with right_col:
@@ -2532,7 +2533,23 @@ def render_analysis_page():
             """,
             unsafe_allow_html=True,
         )
-        st.dataframe(res.get("peers_df"), use_container_width=True)
+
+        peers_df = res.get("peers_df")
+
+        if peers_df is not None and not peers_df.empty:
+            # Style: negative numbers in red
+            def highlight_negatives(v):
+                try:
+                    v_float = float(v)
+                except Exception:
+                    return ""
+                return "color: #ff4d4f;" if v_float < 0 else ""
+
+            styled_peers = peers_df.style.applymap(highlight_negatives)
+            st.dataframe(styled_peers, use_container_width=True)
+        else:
+            st.write("No peer data available for this name.")
+
         st.markdown("</div>", unsafe_allow_html=True)
 
     with tab_news:

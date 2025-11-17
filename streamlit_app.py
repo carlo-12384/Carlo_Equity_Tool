@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+    # -*- coding: utf-8 -*-
 """Carlo Equity Tool — Streamlit App (Blocks-style UI)"""
 
 import os, time, math, logging, textwrap, datetime as dt
@@ -1918,6 +1918,13 @@ def inject_global_css():
             margin-bottom: 4px !important;
         }
 
+        /* FINAL OVERRIDE: make metric headers visible */
+        div[data-testid="stMetricLabel"],
+        div[data-testid="stMetricLabel"] * {
+            color: #001f3f !important;   /* Dark navy so it pops on white */
+            font-size: 14px !important;
+            font-weight: 600 !important;
+        }
 
 
         </style>
@@ -1926,7 +1933,6 @@ def inject_global_css():
     )
 
 
-# --- Wall Street esque Price Bar / Home Dashboard ---
 # --- Wall Street esque Price Bar ---
 def render_dashboard():
     inject_global_css()

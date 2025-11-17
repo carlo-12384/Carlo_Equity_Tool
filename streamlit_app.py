@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+    # -*- coding: utf-8 -*-
 """Carlo Equity Tool — Streamlit App (Blocks-style UI)"""
 
 import os, time, math, logging, textwrap, datetime as dt
@@ -10,6 +10,7 @@ from datetime import datetime
 import streamlit as st
 import json
 import plotly.graph_objects as go # --- NEW --- Import Plotly
+
 
 # -------------------- CONFIG / LOGGING --------------------
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
@@ -191,22 +192,15 @@ MAJOR_NEWS_KEYWORDS = [
 MARKET_INDEX_TICKERS = {"SPY", "QQQ", "DIA", "IWM", "^GSPC", "^IXIC", "^DJI", "^RUT"}
 MAJOR_NEWS_CATEGORIES = ["general", "forex", "crypto"]
 
-
 def _is_market_moving_headline(headline: str, summary: str = "", related: str = "") -> bool:
-    """
-    Rough heuristic that tags macro / market-moving headlines based on keywords
-    or if the article is explicitly tied to a major index ETF/ticker.
-    """
     text = f"{headline} {summary}".lower()
     if any(kw in text for kw in MAJOR_NEWS_KEYWORDS):
         return True
     rel = (related or "").replace(" ", "").upper()
     if not rel:
         return False
-    # Related symbols are comma-separated per Finnhub docs.
     related_syms = {sym for sym in rel.split(",") if sym}
     return bool(related_syms.intersection(MARKET_INDEX_TICKERS))
-
 
 def _parse_finnhub_news_item(item: dict):
     title = (item.get("headline") or "").strip()
@@ -225,7 +219,6 @@ def _parse_finnhub_news_item(item: dict):
         "summary": summary,
         "is_major": is_major,
     }
-
 
 @st.cache_data(ttl=300)
 def get_market_news(n=8):
@@ -293,6 +286,7 @@ def get_market_news(n=8):
         )
     return cleaned
 
+
 def get_economic_calendar():
     return [
         ("CPI Report", "Wednesday 8:30 AM"),
@@ -308,110 +302,6 @@ def get_smart_money_signals():
         "Hedge Fund Sentiment": "Net long positioning rising",
         "ETF Money Flow": "$2.4B inflow over 5 days",
     }
-
-
-@st.cache_data(ttl=60)
-def get_dashboard_kpis():
-    """
-    Macro KPIs for the header strip (VIX, USD, HY Credit, IG Credit).
-    """
-    kpi_assets = {
-        "^VIX": "Volatility (VIX)",
-        "UUP": "US Dollar (UUP)",
-        "HYG": "High Yield Credit",
-        "LQD": "IG Credit",
-    }
-
-    rows = []
-    for ticker, label in kpi_assets.items():
-        last_price = None
-        prev_close = None
-        try:
-            t = yf.Ticker(ticker)
-            hist = t.history(period="2d", interval="1d")
-            if hist is not None and not hist.empty and len(hist) >= 2:
-                prev_close = float(hist["Close"].iloc[0])
-                last_price = float(hist["Close"].iloc[-1])
-            else:
-                fast = t.fast_info or {}
-                last_price = fast.get("last_price") or fast.get("lastPrice")
-                prev_close = fast.get("previous_close") or fast.get("previousClose")
-                if last_price is not None:
-                    last_price = float(last_price)
-                if prev_close is not None:
-                    prev_close = float(prev_close)
-        except Exception as e:
-            logging.warning(f"Failed to fetch KPI data for {ticker}: {e}")
-
-        if last_price is None and prev_close is None:
-            value_str = "N/A"
-            change_str = "+0.00 (0.00%)"
-            change_val = 0.0
-        else:
-            if last_price is None:
-                last_price = prev_close
-            if prev_close is None or prev_close == 0:
-                prev_close = last_price
-            try:
-                change = last_price - prev_close
-                pct_change = (change / prev_close) * 100 if prev_close else 0.0
-            except Exception:
-                change = 0.0
-                pct_change = 0.0
-            value_str = f"{last_price:,.2f}"
-            change_str = f"{change:+.2f} ({pct_change:+.2f}%)"
-            change_val = change
-
-        rows.append(
-            {
-                "label": label,
-                "value_str": value_str,
-                "change_str": change_str,
-                "change_val": change_val,
-            }
-        )
-    return rows
-
-
-def render_global_header_and_kpis():
-    """
-    Hero block + KPI cards shown at the top of the Home tab.
-    """
-    st.markdown(
-        """
-        <div class="header-hero">
-            <div class="page-header">
-                <h1 class="page-title">Equity Research Tool</h1>
-                <p class="page-subtitle">Fricano Capital Research</p>
-                <p class="page-mini-desc">
-                    Track macro tone, leadership, and research workflows from one command center.
-                </p>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    data = get_dashboard_kpis()
-    if not data:
-        return
-
-    st.markdown("<div class='header-kpi-container'>", unsafe_allow_html=True)
-    cols = st.columns(len(data))
-    for col, item in zip(cols, data):
-        with col:
-            change_class = "positive" if item["change_val"] >= 0 else "negative"
-            st.markdown(
-                f"""
-                <div class="header-kpi-card">
-                    <div class="header-kpi-label">{item['label']}</div>
-                    <div class="header-kpi-value">{item['value_str']}</div>
-                    <div class="header-kpi-change {change_class}">{item['change_str']}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-    st.markdown("</div>", unsafe_allow_html=True)
     
 def get_earnings_momentum_data():
     sectors = ["Tech","Health","Energy","Financials","Consumer","Industrials"]
@@ -498,7 +388,7 @@ def get_price_and_shares(symbol: str):
 
 # --- MODIFIED FUNCTION ---
 # Changed to fetch the 4 indices from the screenshot
-@st.cache_data(ttl=300) # Cache for 5 minutes
+@st.cache_data(ttl=60) # Cache for 1 minute
 def get_live_index_data():
     """
     Fetches live price data and daily change for major indices.
@@ -537,143 +427,332 @@ def get_live_index_data():
             logging.warning(f"Failed to get live index data for {ticker}: {e}")
     return data
     
-@st.cache_data(ttl=1800)
-def _load_sp500_tickers() -> List[str]:
+# --- Retrieving Macro Data ---
+@st.cache_data(ttl=60)  # Cache for 1 minute
+def get_global_macro_data():
     """
-    Fetch a list of S&P 500 tickers. yfinance removed tickers_sp500 in
-    older versions, so fall back to scraping Wikipedia or a tiny seed list.
+    Fetches live price data and daily change for key macro assets.
+    ALWAYS returns all assets so the ticker tape stays full, even
+    if some data is missing.
     """
-    tickers: List[str] = []
+    assets = {
+        '^TNX': '10-Yr Yield',
+        'CL=F': 'Crude Oil',
+        'GC=F': 'Gold',
+        'AGG':  'US Bonds (AGG)',
+    }
 
-    try:
-        if hasattr(yf, "tickers_sp500"):
-            raw = yf.tickers_sp500()
-            if isinstance(raw, pd.DataFrame):
-                tickers = raw.get("Symbol", pd.Series(dtype=str)).dropna().astype(str).tolist()
-            elif isinstance(raw, (list, tuple)):
-                tickers = list(raw)
-            elif isinstance(raw, dict):
-                tickers = list(raw.keys())
-    except Exception as e:
-        logging.debug(f"yfinance tickers_sp500 unavailable: {e}")
+    data = []
 
-    if not tickers:
+    for ticker, name in assets.items():
+        last_price = None
+        prev_close = None
+
         try:
-            # Wikipedia table of current constituents
-            tables = pd.read_html("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies")
-            if tables:
-                tickers = tables[0]["Symbol"].astype(str).tolist()
+            t = yf.Ticker(ticker)
+            hist = t.history(period="2d", interval="1d")
+
+            if hist is not None and not hist.empty and len(hist) >= 2:
+                prev_close = float(hist["Close"].iloc[0])
+                last_price = float(hist["Close"].iloc[-1])
+            else:
+                fast = t.fast_info or {}
+                last_price = fast.get("last_price") or fast.get("lastPrice")
+                prev_close = fast.get("previous_close") or fast.get("previousClose")
+
+                if last_price is not None:
+                    last_price = float(last_price)
+                if prev_close is not None:
+                    prev_close = float(prev_close)
         except Exception as e:
-            logging.debug(f"Failed to load S&P 500 table from Wikipedia: {e}")
+            logging.warning(f"Failed to get macro data for {ticker}: {e}")
 
-    if not tickers:
-        # Absolute last resort so the UI never fully breaks
-        tickers = ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META"]
+        # ---- Fallbacks so we NEVER drop an item ----
+        if last_price is None and prev_close is None:
+            unit = "%" if ticker == "^TNX" else "$"
+            price_str = f"N/A{unit}"
+            change_str = "+0.00 (+0.00%)"
+            change_val = 0.0
+        else:
+            if last_price is None:
+                last_price = prev_close
+            if prev_close is None or prev_close == 0:
+                prev_close = last_price
 
-    # Normalize & dedupe
-    clean = []
-    seen = set()
-    for t in tickers:
-        sym = (t or "").strip().upper()
-        if sym and sym not in seen:
-            seen.add(sym)
-            clean.append(sym)
-    return clean
+            try:
+                change = last_price - prev_close
+                pct_change = (change / prev_close) * 100 if prev_close else 0.0
+            except Exception:
+                change = 0.0
+                pct_change = 0.0
 
+            unit = "%" if ticker == "^TNX" else "$"
+            price_str = f"{last_price:,.2f}{unit}"
+            change_str = f"{change:+.2f} ({pct_change:+.2f}%)"
+            change_val = change
 
-@st.cache_data(ttl=300)
-def get_top_movers_sp500(n_gainers: int = 6, n_losers: int = 6):
-    """
-    Approximate daily top gainers/losers using S&P 500 constituents.
-    Uses 2 days of daily data and ranks by % change.
-    """
-    tickers = _load_sp500_tickers()
-    # Safety: don't hammer the API – cap number of tickers
-    tickers = tickers[:350]
-
-    if not tickers:
-        return [], []
-
-    try:
-        data = yf.download(
-            tickers,
-            period="2d",
-            interval="1d",
-            group_by="ticker",
-            auto_adjust=False,
-            progress=False,
-            threads=True,
+        data.append(
+            {
+                "symbol": name,
+                "price_str": price_str,
+                "change_str": change_str,
+                "change_val": change_val,
+            }
         )
-    except Exception as e:
-        logging.warning(f"Failed to download S&P 500 history: {e}")
-        return [], []
 
-    movers = []
-    for t in tickers:
+    return data
+    
+@st.cache_data(ttl=60)  # Refresh every 60s
+def get_dashboard_kpis():
+    """
+    Macro KPIs for the header bar.
+    Uses assets that are NOT already on the page:
+      - VIX (volatility)
+      - US Dollar Index (UUP as proxy)
+      - High Yield Credit (HYG)
+      - Investment Grade Credit (LQD)
+    """
+    kpi_assets = {
+        "^VIX": "Volatility (VIX)",
+        "UUP":  "US Dollar (UUP)",
+        "HYG":  "High Yield Credit",
+        "LQD":  "IG Credit",
+    }
+
+    out = []
+    for ticker, label in kpi_assets.items():
+        last_price = None
+        prev_close = None
+
         try:
-            df = data[t]
-            closes = df["Close"].dropna()
-            if len(closes) < 2:
+            t = yf.Ticker(ticker)
+            hist = t.history(period="2d", interval="1d")
+            if hist is not None and not hist.empty and len(hist) >= 2:
+                prev_close = float(hist["Close"].iloc[0])
+                last_price = float(hist["Close"].iloc[-1])
+            else:
+                fast = t.fast_info or {}
+                last_price = fast.get("last_price") or fast.get("lastPrice")
+                prev_close = fast.get("previous_close") or fast.get("previousClose")
+                if last_price is not None:
+                    last_price = float(last_price)
+                if prev_close is not None:
+                    prev_close = float(prev_close)
+        except Exception as e:
+            logging.warning(f"Failed to get KPI data for {ticker}: {e}")
+
+        if last_price is None and prev_close is None:
+            value_str = "N/A"
+            change_str = "+0.00 (0.00%)"
+            change_val = 0.0
+        else:
+            if last_price is None:
+                last_price = prev_close
+            if prev_close is None or prev_close == 0:
+                prev_close = last_price
+
+            try:
+                change = last_price - prev_close
+                pct_change = (change / prev_close) * 100 if prev_close else 0.0
+            except Exception:
+                change = 0.0
+                pct_change = 0.0
+
+            value_str = f"{last_price:,.2f}"
+            change_str = f"{change:+.2f} ({pct_change:+.2f}%)"
+            change_val = change
+
+        out.append(
+            {
+                "label": label,
+                "value_str": value_str,
+                "change_str": change_str,
+                "change_val": change_val,
+            }
+        )
+
+    return out
+    
+@st.cache_data(ttl=300)
+def get_macro_indicator_cards():
+    """
+    Returns 4 macro cards:
+      - Volatility (VIX)
+      - US Dollar (UUP)
+      - High Yield Credit (HYG)
+      - IG Credit (LQD)
+    Each card has: label, last value, change, pct change.
+    """
+    tickers = {
+        "^VIX": "Volatility (VIX)",
+        "UUP": "US Dollar (UUP)",
+        "HYG": "High Yield Credit",
+        "LQD": "IG Credit",
+    }
+
+    cards = []
+    for tkr, label in tickers.items():
+        try:
+            hist = yf.Ticker(tkr).history(period="2d", interval="1d")
+            if hist is None or hist.empty or len(hist) < 2:
                 continue
-            prev, last = float(closes.iloc[-2]), float(closes.iloc[-1])
-            if prev <= 0:
-                continue
+
+            prev = float(hist["Close"].iloc[0])
+            last = float(hist["Close"].iloc[-1])
             change = last - prev
-            pct = (last / prev - 1.0) * 100.0
-            movers.append(
+            pct = (change / prev) * 100 if prev != 0 else 0.0
+
+            cards.append(
                 {
-                    "symbol": t.upper(),
-                    "price": last,
+                    "label": label,
+                    "value": last,
                     "change": change,
-                    "pct_change": pct,
+                    "pct": pct,
                 }
             )
-        except Exception:
+        except Exception as e:
+            logging.warning(f"Failed macro card for {tkr}: {e}")
             continue
 
-    movers = [m for m in movers if np.isfinite(m["pct_change"])]
-
-    if not movers:
-        return [], []
-
-    movers_sorted = sorted(movers, key=lambda x: x["pct_change"], reverse=True)
-    top_gainers = movers_sorted[:n_gainers]
-    top_losers = sorted(movers, key=lambda x: x["pct_change"])[:n_losers]
-
-    return top_gainers, top_losers
+    return cards
 
 
-# --- Replace this function ---
+def render_global_header_and_kpis():
+    # --- BLUE HERO TITLE ---
+    st.markdown(
+        """
+        <div class="header-hero">
+            <div class="page-header">
+                <h1 class="page-title">Equity Research Tool</h1>
+                <p class="page-subtitle">Fricano Capital Research</p>
+                <p class="page-mini-desc">
+                </p>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # --- KPI STRIP UNDER TITLE ---
+    kpi_data = get_dashboard_kpis()
+    if kpi_data:
+        st.markdown("<div class='header-kpi-container'>", unsafe_allow_html=True)
+        cols = st.columns(len(kpi_data))
+        for col, item in zip(cols, kpi_data):
+            with col:
+                change_class = "positive" if item["change_val"] >= 0 else "negative"
+                st.markdown(
+                    f"""
+                    <div class="header-kpi-card">
+                        <div class="header-kpi-label">{item['label']}</div>
+                        <div class="header-kpi-value">{item['value_str']}</div>
+                        <div class="header-kpi-change {change_class}">
+                            {item['change_str']}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    
 @st.cache_data(ttl=300)
-def get_intraday_index_charts_data():
+def get_index_card_metrics(ticker: str):
     """
-    Fetches 1-day intraday OHLC data for the 4 main indices for charting.
+    Robust index metrics based purely on historical prices.
+    Works for indices like ^DJI, ^IXIC, ^GSPC, ^RUT.
+    
+    Returns:
+      {
+        "last": float,
+        "change": float,
+        "change_pct": float,
+        "metrics": [
+            {"label": "YTD Performance", "value": "..."},
+            {"label": "Avg. Volume", "value": "..."},
+            {"label": "52-Wk Range", "value": "..."},
+        ],
+      }
+    or None if data could not be fetched at all.
     """
-    tickers = ['^GSPC', '^IXIC', '^DJI', '^RUT']
-    try:
-        # --- FIX: Changed period to "1d" and interval to "15m" ---
-        data = yf.download(tickers, period="1d", interval="15m")
-        
-        if data.empty:
-            return None
-        
-        chart_data = {}
-        for ticker in tickers:
-            # --- FIX: Select all OHLC columns for this ticker ---
-            ohlc_df = data.loc[:, (slice(None), ticker)]
-            
-            # Check if we have data for this ticker
-            if not ohlc_df.empty:
-                # Clean up column names
-                ohlc_df.columns = ohlc_df.columns.droplevel(1) # Remove 'ticker' from multi-index
-                ohlc_df = ohlc_df[['Open', 'High', 'Low', 'Close']].dropna()
-                if not ohlc_df.empty:
-                    chart_data[ticker] = ohlc_df
+    import datetime as dt
 
-        return chart_data
+    try:
+        today = dt.date.today()
+        year_start = dt.date(today.year, 1, 1)
+
+        # 1) YTD history (for last, prev close, YTD %)
+        ytd = yf.download(
+            ticker,
+            start=year_start,
+            interval="1d",
+            progress=False,
+        )
+
+        # 2) 1-year history (for 52-week range + avg volume)
+        one_year = yf.download(
+            ticker,
+            period="1y",
+            interval="1d",
+            progress=False,
+        )
     except Exception as e:
-        logging.warning(f"Failed to get intraday OHLC chart data: {e}")
+        logging.warning(f"Failed to download index data for {ticker}: {e}")
         return None
+
+    if ytd is None or ytd.empty or one_year is None or one_year.empty:
+        logging.warning(f"No price history returned for {ticker}.")
+        return None
+
+    try:
+        # ----- Current price & daily change -----
+        last_close = float(ytd["Close"].iloc[-1])
+
+        if len(ytd) >= 2:
+            prev_close = float(ytd["Close"].iloc[-2])
+            day_change = last_close - prev_close
+            day_change_pct = (day_change / prev_close) * 100.0
+        else:
+            day_change = 0.0
+            day_change_pct = 0.0
+
+        # ----- YTD performance -----
+        first_ytd_close = float(ytd["Close"].iloc[0])
+        ytd_pct = (last_close / first_ytd_close - 1.0) * 100.0
+
+        # ----- 52-week range -----
+        low_52w = float(one_year["Low"].min())
+        high_52w = float(one_year["High"].max())
+
+        # ----- Average volume (last 1y) -----
+        avg_volume = int(one_year["Volume"].mean())
+
+        metrics = [
+            {
+                "label": "YTD Performance",
+                "value": f"{ytd_pct:+.2f}%",  # + sign for positive
+            },
+            {
+                "label": "Avg. Volume",
+                "value": f"{avg_volume:,.0f}",
+            },
+            {
+                "label": "52-Wk Range",
+                "value": f"{low_52w:,.2f} - {high_52w:,.2f}",
+            },
+        ]
+
+        return {
+            "last": last_close,
+            "change": day_change,
+            "change_pct": day_change_pct,
+            "metrics": metrics,
+        }
+
+    except Exception as e:
+        logging.warning(f"Failed to compute metrics for {ticker}: {e}")
+        return None
+
 
 # --- NEW FUNCTION ---
 @st.cache_data(ttl=300)
@@ -1354,74 +1433,6 @@ def five_day_price_plot(ticker: str):
     except Exception:
         plt_fig = None
     return plt_fig
-    
-# --- NEW FUNCTION (Using Plotly for better visual charts) ---
-def plot_index_candlestick(chart_df: pd.DataFrame, is_positive: bool):
-    """
-    Finviz-style intraday sparkline:
-      - Smooth line of Close prices
-      - Subtle fill under the line
-      - No axes, grid, or legend
-    """
-    if chart_df is None or chart_df.empty:
-        return go.Figure()
-
-    color = "#057A55" if is_positive else "#E02424"
-    fill_color = "rgba(5, 122, 85, 0.15)" if is_positive else "rgba(224, 36, 36, 0.18)"
-
-    closes = chart_df["Close"].astype(float)
-
-    fig = go.Figure()
-
-    # Main line + area fill
-    fig.add_trace(
-        go.Scatter(
-            x=chart_df.index,
-            y=closes,
-            mode="lines",
-            line=dict(width=2, color=color),
-            fill="tozeroy",
-            fillcolor=fill_color,
-            hoverinfo="skip",
-            showlegend=False,
-        )
-    )
-
-    # Dot at the last price
-    fig.add_trace(
-        go.Scatter(
-            x=[chart_df.index[-1]],
-            y=[closes.iloc[-1]],
-            mode="markers",
-            marker=dict(size=6, color=color),
-            hoverinfo="skip",
-            showlegend=False,
-        )
-    )
-
-    fig.update_layout(
-        height=120,
-        margin=dict(t=4, l=0, r=0, b=0),
-        xaxis=dict(
-            showticklabels=False,
-            showgrid=False,
-            zeroline=False,
-            fixedrange=True,
-        ),
-        yaxis=dict(
-            showticklabels=False,
-            showgrid=False,
-            zeroline=False,
-            fixedrange=True,
-        ),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        showlegend=False,
-        dragmode=False,
-    )
-
-    return fig
-
 
 
 # -------------------- LOCAL STORAGE HELPERS --------------------
@@ -1451,14 +1462,6 @@ if "notes_store" not in st.session_state:
     st.session_state.notes_store = _load_json(NOTES_FILE, {})
 if "theses_store" not in st.session_state:
     st.session_state.theses_store = _load_json(THESES_FILE, [])
-if "analysis_active_step" not in st.session_state:
-    st.session_state.analysis_active_step = "step1"
-if "analysis_ticker_cache" not in st.session_state:
-    st.session_state.analysis_ticker_cache = ""
-if "analysis_active_step" not in st.session_state:
-    st.session_state.analysis_active_step = "step1"
-if "analysis_ticker_cache" not in st.session_state:
-    st.session_state.analysis_ticker_cache = ""
 
 # ======================================================================
 # ANALYSIS WRAPPER
@@ -1679,10 +1682,8 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
         logging.error(f"Failed _scenario_valuation_core for {ticker} ({scenario}): {e}")
         return pd.DataFrame(), f"_Valuation failed for {scenario}: {e}_"
 
-# ======================================================================
-# GLOBAL STYLING
-# ======================================================================
-# --- Replace this function ---
+#User interface
+
 def inject_global_css():
     st.markdown(
         """
@@ -1697,10 +1698,9 @@ def inject_global_css():
             --color-secondary-text: #F5EAAA; /* Khaki */
             --color-tertiary-text: #FFFFFF;  /* White */
             
-            /* --- NEW DARK THEME --- */
-            --color-dark-card-bg: #1E1E1E;
-            --color-dark-card-text: #FAFAFA;
-            --color-dark-card-border: #333333;
+            --color-dark-card-bg: #020617;
+            --color-dark-card-text: #E5E7EB;
+            --color-dark-card-border: #1F2937;
         }
         
         /* ===== GLOBAL LAYOUT ===== */
@@ -1727,105 +1727,66 @@ def inject_global_css():
         h1, h2, h3, h4, h5, h6 {
             color: var(--color-primary-text) !important;
         }
+
+        /* =================================================
+        BUTTON TEXT FIX
+        ================================================= */
+        button[data-testid="stButton"] {
+            color: #FFFFFF !important;
+        }
+        div[data-testid="stButton"] p {
+             color: #FFFFFF !important;
+        }
+
+        /* ===== INFO BOX ===== */
+        div[data-testid="stInfo"] {
+            background-color: #E6F6FF !important; 
+            border: 1px solid #B0E0FF !important; 
+            color: #001f3f !important;
+        }
+        div[data-testid="stInfo"] p {
+             color: #001f3f !important;
+        }
         
-        /* ===== PAGE HEADER ===== */
+        /* ===== PAGE HEADER / HERO ===== */
+        .header-hero {
+            width: 100vw;
+            position: relative;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 32px 0 26px 0;
+            background: linear-gradient(90deg, #00152E 0%, #003566 50%, #00152E 100%);
+            border-bottom: 2px solid #001f3f;
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.15);
+        }
         .page-header {
-            text-align: center;
-            padding: 1rem 0 2rem 0;
+            max-width: 1100px;
             margin: 0 auto;
-            max-width: 900px;
+            text-align: center;
         }
         .page-title {
             font-family: 'DM Serif Display', serif;
-            font-size: 3.25rem;
-            font-weight: 400;
-            color: var(--color-primary-text) !important;
-            margin-bottom: 0.25rem;
+            font-size: 3rem;
+            font-weight: 500;
+            color: var(--color-tertiary-text) !important;
+            margin-bottom: 0.2rem;
+            letter-spacing: -0.03em;
         }
         .page-subtitle {
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 500;
-            color: #4B5563;
+            color: rgba(229, 231, 235, 0.9);
             margin: 0;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
         }
         .page-mini-desc {
-            font-size: 0.95rem;
-            color: rgba(255, 255, 255, 0.85);
-            margin-top: 0.35rem;
-        }
-        .header-hero {
-            background: linear-gradient(120deg, #012c74, #014c9b);
-            border-radius: 18px;
-            padding: 24px;
-            margin: 0 auto 1.5rem auto;
-            border: 1px solid rgba(255, 255, 255, 0.12);
-            color: #F8FAFC;
-        }
-        .header-hero .page-header {
-            text-align: left;
-            padding: 0;
-        }
-        .header-hero .page-title {
-            color: #F8FAFC !important;
-            margin-bottom: 0.25rem;
-        }
-        .header-hero .page-subtitle {
-            color: rgba(248, 250, 252, 0.85);
-            margin-bottom: 0;
-        }
-        .header-kpi-container {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .header-kpi-card {
-            background: #FFFFFF;
-            border-radius: 16px;
-            padding: 16px 18px;
-            border: 1px solid rgba(0, 31, 63, 0.12);
-            box-shadow: 0 8px 20px rgba(1, 44, 116, 0.1);
-        }
-        .header-kpi-label {
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: #6B7280;
-            margin-bottom: 0.4rem;
-        }
-        .header-kpi-value {
-            font-size: 1.35rem;
-            font-weight: 600;
-            color: #001f3f;
-        }
-        .header-kpi-change {
             font-size: 0.9rem;
-            font-weight: 600;
-            margin-top: 0.15rem;
-        }
-        .header-kpi-change.positive { color: #057A55; }
-        .header-kpi-change.negative { color: #E02424; }
-
-        /* ===== GLOBAL BUTTON RESET ===== */
-        .stButton > button,
-        button[kind="primary"],
-        button[kind="secondary"],
-        button[kind="outline"] {
-            background: var(--color-secondary-bg) !important;
-            color: var(--color-primary-text) !important;
-            border-radius: 8px !important;
-            border: 1px solid var(--color-primary-text) !important;
-            font-weight: 500;
-            font-size: 14px;
-        }
-        .stButton > button:hover,
-        button[kind="primary"]:hover,
-        button[kind="secondary"]:hover,
-        button[kind="outline"]:hover {
-            filter: brightness(1.1);
-            color: var(--color-primary-text) !important;
+            color: rgba(229, 231, 235, 0.9);
+            margin-top: 0.4rem;
         }
 
-        /* ===== CARDS ===== */
+        /* ===== CARD UI ===== */
         .hero-card {
             background: var(--color-primary-bg);
             border-radius: 16px;
@@ -1834,191 +1795,68 @@ def inject_global_css():
             margin-bottom: 16px;
             border: 1px solid var(--color-secondary-bg);
         }
-        .hero-title {
-            font-size: 24px;
-            font-weight: 600;
-            margin-bottom: 4px;
-            color: var(--color-secondary-text) !important;
+        .hero-card .hero-title, .hero-card .hero-subtitle {
+             color: var(--color-tertiary-text) !important;
         }
-        .hero-subtitle {
-            font-size: 14px;
-            color: var(--color-tertiary-text) !important;
-        }
+        
         .section-card {
             background: var(--color-page-bg);
             border-radius: 16px;
             padding: 18px 20px;
             margin-top: 18px;
             margin-bottom: 18px;
-            border: 1px solid var(--color-primary-bg);
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
+                        0 2px 4px -2px rgba(0, 0, 0, 0.05);
         }
         .section-title {
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-        .section-subtitle {
-            font-size: 13px;
+            font-size: 1.25rem;
+            font-weight: 700;
             color: var(--color-primary-text);
             margin-bottom: 12px;
         }
-        .workflow-card {
-            background: linear-gradient(120deg, #020817, #07162d);
-            border: 1px solid rgba(255,255,255,0.12);
-            color: #F8FAFC !important;
+
+        /* ===== METRIC CARD STYLING (VIX, USD, etc.) ===== */
+        .metric-card-box {
+            background: #f8fafc !important;
+            border-radius: 12px;
+            padding: 14px 18px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+            border: 1px solid #e2e8f0;
+            height: 100%;
         }
-        .workflow-card .section-title,
-        .workflow-card .section-subtitle {
-            color: #F8FAFC !important;
-        }
-        .workflow-pill {
-            display: inline-block;
-            padding: 4px 16px;
-            border-radius: 999px;
-            border: 1px solid rgba(255,255,255,0.35);
-            font-size: 0.75rem;
-            letter-spacing: 0.08em;
+        .metric-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #001f3f !important;
             text-transform: uppercase;
-            color: #F8FAFC;
-            margin-bottom: 12px;
+            letter-spacing: 0.04em;
+            margin-bottom: 4px;
+            opacity: 0.85;
         }
-        .workflow-buttons {
-            margin-top: 8px;
-            margin-bottom: 16px;
+        .metric-value-custom {
+            color: #001f3f !important;
+            font-weight: 700 !important;
+            font-size: 26px !important;
+            line-height: 1.3;
+            margin-bottom: 4px;
         }
-        .workflow-buttons .stButton > button {
-            background: rgba(255,255,255,0.08) !important;
-            border-color: rgba(255,255,255,0.35) !important;
-            color: #E5E7EB !important;
-            border-radius: 999px !important;
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-        .workflow-buttons .stButton > button:hover {
-            filter: none;
-            background: rgba(245, 234, 170, 0.25) !important;
-            color: #FDFBEC !important;
-        }
-        .workflow-active-hint {
-            font-size: 0.85rem;
-            color: rgba(248,250,252,0.85);
-        }
-
-        /* --- !!! ---
-           --- FIX: Updated Index Chart Cards to be DARK ---
-           --- !!! --- */
-        .index-chart-card {
-            border: 1px solid var(--color-dark-card-border);
-            border-radius: 8px;
-            padding: 12px 16px;
-            background: var(--color-dark-card-bg); /* Dark background */
-        }
-        
-        .index-chart-title {
-            font-weight: 600;
-            font-size: 1.1rem;
-            color: var(--color-dark-card-text); /* Light text */
-        }
-        
-        .index-chart-price {
-            font-weight: 600;
-            font-size: 1rem;
-            color: var(--color-dark-card-text); /* Light text */
-        }
-        /* --- END FIX --- */
-        
-        .index-chart-change {
-            font-weight: 500;
-            font-size: 0.9rem;
-            margin-left: 8px;
-        }
-        .index-chart-change.positive { color: #057A55; }
-        .index-chart-change.negative { color: #E02424; }
-
-        /* ===== METRIC COLORS ===== */
-        .positive-metric { color: #057A55; } /* Green */
-        .negative-metric { color: #E02424; } /* Red */
-
-        /* ===== TICKER TAPE ===== */
-        @keyframes scroll-left {
-            from { transform: translateX(0%); }
-            to { transform: translateX(-50%); }
-        }
-        .ticker-tape-container {
-            background: var(--color-primary-bg);
-            color: var(--color-tertiary-text);
-            overflow: hidden;
-            white-space: nowrap;
-            padding: 10px 0;
-            width: 100vw;
-            position: relative;
-            left: 50%;
-            right: 50%;
-            margin-left: -50vw;
-            margin-right: -50vw;
-            border-top: 1px solid var(--color-secondary-bg);
-            border-bottom: 1px solid var(--color-secondary-bg);
-        }
-        .ticker-tape-inner {
-            display: inline-block;
-            animation: scroll-left 40s linear infinite;
-        }
-        .ticker-item {
-            display: inline-block;
-            padding: 0 25px;
-            font-size: 16px;
+        .metric-delta-custom span {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.875rem;
             font-weight: 500;
         }
-        .ticker-symbol {
-            color: var(--color-secondary-text);
-            font-weight: 600;
-            margin-right: 8px;
+        .metric-delta-custom.positive span {
+            color: #047857 !important;
+            background-color: #D1FAE5;
         }
-        .ticker-price {
-            color: var(--color-tertiary-text);
-            margin-right: 8px;
-        }
-        .ticker-change {
-            font-weight: 600;
-        }
-        .ticker-change.positive {
-            color: #057A55;
-        }
-        .ticker-change.negative {
-            color: #E02424;
+        .metric-delta-custom.negative span {
+            color: #991B1B !important;
+            background-color: #FEE2E2;
         }
 
-        .ticker-section-label {
-            display: inline-block;
-            padding: 0 25px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            opacity: 0.75;
-            color: var(--color-secondary-text);
-        }
-
-
-        /* ===== VALUATION PAGE OVERRIDES ===== */
-        html body .stApp .main-content [data-testid="stMetric"] div {
-            color: var(--color-primary-text) !important;
-        }
-        html body .stApp .main-content [data-testid="stCaption"] {
-            color: var(--color-primary-text) !important;
-        }
-        html body .stApp .main-content [data-testid="stRadio"] p {
-            color: var(--color-primary-text) !important;
-            font-weight: 600 !important;
-        }
-        html body .stApp .main-content [data-testid="stRadio"] label {
-            color: var(--color-primary-text) !important;
-            font-weight: 500 !important;
-        }
-        html body .stApp .main-content .snapshot-title {
-            color: var(--color-primary-text) !important;
-        }
-        
-        /* ===== ULTIMATE 100% FIX FOR TABS ===== */
+        /* ===== TABS FIX ===== */
         button[data-testid="stTab"] {
             color: #4B5563 !important;
             font-weight: 600 !important;
@@ -2032,56 +1870,359 @@ def inject_global_css():
             background-color: var(--color-primary-text) !important; 
         }
 
+        /* ===== TICKER TAPE ===== */
+        @keyframes scroll-left {
+            from { transform: translateX(0); }
+            to   { transform: translateX(-25%); }
+        }
+        .ticker-tape-container {
+            background: var(--color-primary-bg);
+            color: var(--color-tertiary-text);
+            overflow: hidden;
+            padding: 10px 0;
+            width: 100vw;
+            position: relative;
+            left: 50%;
+            margin-left: -50vw;
+            border-top: 1px solid var(--color-secondary-bg);
+            border-bottom: 1px solid var(--color-secondary-bg);
+        }
+        .ticker-tape-inner {
+            display: inline-flex;
+            white-space: nowrap;
+            width: max-content;
+            animation: scroll-left 40s linear infinite;
+        }
+        .ticker-item {
+            display: inline-block;
+            padding: 0 25px;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .ticker-section-label {
+            padding: 0 25px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            opacity: 0.75;
+            color: var(--color-secondary-text);
+        }
+        .ticker-symbol {
+            font-weight: 700 !important;
+            color: var(--color-secondary-text) !important;
+            margin-right: 8px;
+        }
+        .ticker-price {
+            margin-right: 8px;
+            opacity: 0.9;
+        }
+        .ticker-change.positive {
+            color: #00E500 !important;
+            font-weight: 600;
+        }
+        .ticker-change.negative {
+            color: #FF2E2E !important;
+            font-weight: 600;
+        }
+
+        /* ===== INDEX SNAPSHOT CARDS ===== */
+        .index-chart-card {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
+                        0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+        }
+        .index-chart-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--color-primary-text);
+            margin-bottom: 8px;
+        }
+        .index-chart-price {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--color-primary-text);
+            margin-right: 10px;
+            display: block; 
+            margin-bottom: 4px;
+            line-height: 1.2;
+        }
+        .index-chart-change {
+            font-size: 0.95rem;
+            font-weight: 600;
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .index-chart-change.positive {
+            color: #047857; 
+            background-color: #D1FAE5;
+        }
+        .index-chart-change.negative {
+            color: #991B1B; 
+            background-color: #FEE2E2;
+        }
+        .index-metric-list {
+            margin-top: 16px;
+            border-top: 1px solid #E2E8F0;
+            padding-top: 12px;
+            flex-grow: 1; 
+        }
+        .index-metric-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem; 
+            color: #374151; 
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+        .index-metric-label {
+            font-weight: 500;
+            color: #4B5563;
+        }
+        .index-metric-value {
+            font-weight: 600;
+            color: var(--color-primary-text); 
+            text-align: right;
+            padding-left: 8px; 
+        }
+
+        /* ===== VALUATION PAGE INPUTS ===== */
+        div[data-testid="stNumberInput"] input {
+             color: #001f3f !important;
+        }
+
+        /* ======================================================
+           SCREENER / ANALYSIS COMMAND CENTER (Google x Apple x JPM)
+        =======================================================*/
+        .analysis-shell {
+            margin-top: 8px;
+            margin-bottom: 8px;
+        }
+
+        .analysis-gradient {
+            background: radial-gradient(circle at top left, #0B1120 0%, #020617 38%, #020617 100%);
+            border-radius: 20px;
+            padding: 18px 20px 20px 20px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            box-shadow:
+                0 24px 60px rgba(15, 23, 42, 0.45),
+                0 0 0 1px rgba(15, 23, 42, 0.5) inset;
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+            gap: 18px;
+            align-items: stretch;
+        }
+
+        .command-card {
+            background: linear-gradient(140deg, #020617 0%, #020617 40%, #020617 100%);
+            border-radius: 16px;
+            padding: 16px 18px 18px 18px;
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            color: var(--color-dark-card-text);
+            position: relative;
+            overflow: hidden;
+        }
+        .command-card::before {
+            content: "";
+            position: absolute;
+            inset: -80px;
+            background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 55%);
+            opacity: 0.9;
+            pointer-events: none;
+        }
+        .command-inner {
+            position: relative;
+            z-index: 1;
+        }
+        .command-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+        .command-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #E5E7EB;
+        }
+        .command-pill {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.6);
+            color: #E5E7EB;
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.7), rgba(17, 24, 39, 0.9));
+        }
+        .command-subtitle {
+            font-size: 0.85rem;
+            color: #9CA3AF;
+            margin-bottom: 14px;
+        }
+        .command-steps {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 10px;
+            font-size: 0.78rem;
+            color: #9CA3AF;
+        }
+        .command-step {
+            padding: 4px 9px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.18), rgba(15, 23, 42, 0.9));
+        }
+        .command-step.active {
+            border-color: #FACC15;
+            background: radial-gradient(circle at top left, rgba(250, 204, 21, 0.25), rgba(15, 23, 42, 0.95));
+            color: #FEF3C7;
+        }
+        .command-input-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #9CA3AF;
+            margin-bottom: 4px;
+        }
+        .command-footnote {
+            margin-top: 6px;
+            font-size: 0.75rem;
+            color: #6B7280;
+        }
+
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+        .module-card {
+            background: radial-gradient(circle at top left, rgba(30, 64, 175, 0.35), rgba(15, 23, 42, 1));
+            border-radius: 14px;
+            padding: 10px 11px 11px 11px;
+            border: 1px solid rgba(148, 163, 184, 0.45);
+            color: #E5E7EB;
+            font-size: 0.8rem;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .module-chip-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.76rem;
+            color: #9CA3AF;
+        }
+        .module-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: #22C55E;
+            box-shadow: 0 0 12px rgba(34, 197, 94, 0.9);
+        }
+        .module-title {
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: #F9FAFB;
+        }
+        .module-desc {
+            font-size: 0.76rem;
+            color: #9CA3AF;
+        }
+        .module-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 3px;
+        }
+        .module-tag {
+            font-size: 0.7rem;
+            padding: 3px 7px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            color: #E5E7EB;
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        .empty-state-pro {
+            margin-top: 14px;
+            border-radius: 14px;
+            padding: 12px 14px;
+            background: rgba(239, 246, 255, 0.96);
+            border: 1px dashed rgba(148, 163, 184, 0.8);
+            font-size: 0.86rem;
+            color: #0F172A;
+        }
+        .empty-state-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .empty-state-list {
+            margin: 0;
+            padding-left: 1.2rem;
+            font-size: 0.85rem;
+        }
+        .empty-state-list li {
+            margin-bottom: 2px;
+        }
+
+        /* Smaller screens: stack analysis grid */
+        @media (max-width: 900px) {
+            .analysis-grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+
         </style>
         """,
         unsafe_allow_html=True,
     )
 
 
-# --- Replace this function ---
-# --- Replace this function ---
+# --- Wall Street esque Price Bar ---
 def render_dashboard():
-    inject_global_css() 
-    render_global_header_and_kpis()
+    inject_global_css()
 
-    # --- Live Index Data (for summary + cards) ---
+    # --- Get data for Ticker Tape AND Index Cards ---
     index_data = get_live_index_data()
+    macro_data = get_global_macro_data()
 
-       # --- TOP BAR: S&P 500 Top Gainers & Losers Ticker Tape ---
-    top_gainers, top_losers = get_top_movers_sp500()
+    # ============================
+    # ROW 0: Macro Ticker Tape (BLACK BAR DIRECTLY UNDER TITLE)
+    # ============================
+    ticker_items = macro_data  # Only use macro data for the tape
 
-    if top_gainers or top_losers:
+    if ticker_items:
         item_html_list = []
-
-        # First: top gainers (green)
-        for item in top_gainers:
-            change_class = "positive"   # uses .ticker-change.positive { color: #057A55; }
-            change_sign = "+" if item["change"] >= 0 else ""
+        item_html_list.append(
+            '<div class="ticker-section-label">MACRO DATA</div>'
+        )
+        for item in ticker_items:
+            change_class = "positive" if item["change_val"] >= 0 else "negative"
             item_html_list.append(
                 f'<div class="ticker-item">'
                 f'  <span class="ticker-symbol">{item["symbol"]}</span>'
-                f'  <span class="ticker-price">${item["price"]:,.2f}</span>'
+                f'  <span class="ticker-price">{item["price_str"]}</span>'
                 f'  <span class="ticker-change {change_class}">'
-                f'    {change_sign}{item["change"]:,.2f} ({change_sign}{item["pct_change"]:,.2f}%)'
+                f'    {item["change_str"]}'
                 f'  </span>'
                 f'</div>'
             )
-
-        # Then: top losers (red)
-        for item in top_losers:
-            change_class = "negative"   # uses .ticker-change.negative { color: #E02424; }
-            change_sign = "+" if item["change"] >= 0 else ""
-            item_html_list.append(
-                f'<div class="ticker-item">'
-                f'  <span class="ticker-symbol">{item["symbol"]}</span>'
-                f'  <span class="ticker-price">${item["price"]:,.2f}</span>'
-                f'  <span class="ticker-change {change_class}">'
-                f'    {change_sign}{item["change"]:,.2f} ({change_sign}{item["pct_change"]:,.2f}%)'
-                f'  </span>'
-                f'</div>'
-            )
-
-        # Duplicate once to create a seamless infinite scroll
         all_items_html = "".join(item_html_list)
         full_ticker_html = f"""
         <div class="ticker-tape-container">
@@ -2092,92 +2233,123 @@ def render_dashboard():
         """
         st.markdown(full_ticker_html, unsafe_allow_html=True)
 
-
     # ============================
-    # --- ROW 0: Index Charts
+    # ROW 1: Market Snapshot (TITLE + MACRO CARDS)
     # ============================
     st.markdown("### Market Snapshot")
-    chart_cols = st.columns(4)
-    chart_data = get_intraday_index_charts_data() # Get 1d/15m OHLC data
-    
-    index_map = {
-        'Dow Jones': ('^DJI', chart_cols[0]),
-        'NASDAQ': ('^IXIC', chart_cols[1]),
-        'S&P 500': ('^GSPC', chart_cols[2]),
-        'Russell 2000': ('^RUT', chart_cols[3])
-    }
-    
-    for display_name, (ticker, col) in index_map.items():
-        with col:
-            # --- CSS class is now dark themed ---
-            st.markdown(f"<div class='index-chart-card'>", unsafe_allow_html=True) 
-            
-            summary = next((item for item in index_data if item["symbol"] == display_name), None)
-            
-            if summary:
-                change_class = "positive" if summary['change'] >= 0 else "negative"
-                change_sign = "+" if summary['change'] >= 0 else ""
-                
-                # --- Text is now light-colored due to CSS ---
-                st.markdown(f"<div class='index-chart-title'>{display_name}</div>", unsafe_allow_html=True)
-                st.markdown(
-                    f"<span class='index-chart-price'>${summary['price']:,.2f}</span>"
-                    f"<span class='index-chart-change {change_class}'>"
-                    f"{change_sign}{summary['change']:,.2f} ({change_sign}{summary['pct_change']:,.2f}%)"
-                    f"</span>",
-                    unsafe_allow_html=True
-                )
-            else:
-                st.markdown(f"<div class='index-chart-title'>{display_name}</div>", unsafe_allow_html=True)
-                st.markdown("<span class='index-chart-price'>N/A</span>", unsafe_allow_html=True)
-                
-            
-            # --- !!! ---
-            # --- THIS IS THE FIX ---
-            # --- !!! ---
-            
-            # Plot the chart
-            if chart_data and ticker in chart_data and not chart_data[ticker].empty:
-                chart_df = chart_data[ticker]
-                
-                # We need to know if the trend is positive
-                is_positive = chart_df['Close'].iloc[-1] >= chart_df['Open'].iloc[0]
 
-                # --- Call the NEW candlestick function ---
-                fig = plot_index_candlestick(chart_df, is_positive)
-                
-                # Render the Plotly figure
-                st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-                
-            else:
-                st.caption("Chart data unavailable.")
-            # --- END OF FIX ---
-                
-            st.markdown("</div>", unsafe_allow_html=True)
+    # Macro cards (VIX, USD, HY Credit, IG Credit) LIVE INSIDE MARKET SNAPSHOT
+    macro_cards = get_macro_indicator_cards()
+    if macro_cards:
+        macro_cols = st.columns(len(macro_cards))
 
-    st.markdown("---") # Horizontal rule
+        for col, card in zip(macro_cols, macro_cards):
+            with col:
+                # Build the metric in HTML and render once
+                val_str = f"{card['value']:,.2f}"
+                delta_str = f"{card['change']:+.2f} ({card['pct']:+.2f}%)"
+                delta_class = "negative" if card["change"] < 0 else "positive"
+
+                card_html = f"""
+                <div class="metric-card-box">
+                    <div class="metric-label">{card['label']}</div>
+                    <div class="metric-value-custom">{val_str}</div>
+                    <div class="metric-delta-custom {delta_class}">
+                        <span>{delta_str}</span>
+                    </div>
+                </div>
+                """
+                st.markdown(card_html, unsafe_allow_html=True)
+
+    st.write("")  # small spacer
 
     # ============================
-    # --- ROW 1: Heatmap
+    # ROW 2: Index Snapshot Cards (Dow / NASDAQ / S&P / Russell)
+    # ============================
+    chart_cols = st.columns(4)
+
+    index_map = {
+        "Dow Jones": ("^DJI", chart_cols[0]),
+        "NASDAQ": ("^IXIC", chart_cols[1]),
+        "S&P 500": ("^GSPC", chart_cols[2]),
+        "Russell 2000": ("^RUT", chart_cols[3]),
+    }
+
+    for display_name, (ticker, col) in index_map.items():
+        with col:
+            # Build the entire card as one HTML string
+            html_parts = ["<div class='index-chart-card'>"]
+
+            # Title always
+            html_parts.append(
+                f"<div class='index-chart-title'>{display_name}</div>"
+            )
+
+            data = get_index_card_metrics(ticker)
+
+            if data is None:
+                # Only if *everything* failed (API totally down or bad ticker)
+                html_parts.append(
+                    "<span class='index-chart-price'>Key metrics unavailable.</span>"
+                )
+            else:
+                last = data["last"]
+                chg = data["change"]
+                pct = data["change_pct"]
+
+                change_class = "positive" if chg >= 0 else "negative"
+                change_sign = "+" if chg >= 0 else ""
+
+                # Price
+                html_parts.append(
+                    f"<span class='index-chart-price'>${last:,.2f}</span>"
+                )
+
+                # Change bar
+                html_parts.append(
+                    f"<span class='index-chart-change {change_class}'>"
+                    f"{change_sign}{chg:,.2f} "
+                    f"({change_sign}{pct:.2f}%)"
+                    f"</span>"
+                )
+
+                # Bottom metrics (YTD, Avg Volume, 52-Wk Range)
+                html_parts.append("<div class='index-metric-list'>")
+                for metric in data["metrics"]:
+                    html_parts.append(
+                        f"<div class='index-metric-row'>"
+                        f"<span class='index-metric-label'>{metric['label']}</span>"
+                        f"<span class='index-metric-value'>{metric['value']}</span>"
+                        f"</div>"
+                    )
+                html_parts.append("</div>")  # close metric list
+
+            html_parts.append("</div>")  # close card
+            st.markdown("".join(html_parts), unsafe_allow_html=True)
+
+    st.write("")  # spacer between rows
+
+    # ============================
+    # ROW 3: Sector Heatmap
     # ============================
     st.markdown("### Sector Performance")
     sector_perf_data = get_sector_performance()
     if sector_perf_data:
         heatmap_fig = plot_sector_heatmap(sector_perf_data)
         st.plotly_chart(heatmap_fig, use_container_width=True)
-        st.caption("Each tile represents a sector ETF. Color = 1-day % change; tiles sized equally for easier comparison.")
-
+        st.caption(
+            "Each tile represents a sector ETF. Color = 1-day % change; tiles sized equally for easier comparison."
+        )
     else:
         st.warning("Could not retrieve sector performance data.")
 
-    st.markdown("---") # Horizontal rule
+    st.markdown("---")
 
     # ============================
-    # ROW 2: Summary (left) + Econ/Smart Money (right)
+    # ROW 4: Summary + Econ + Smart Money
     # ============================
     left_col, right_col = st.columns([1.4, 1])
 
-    # --- LEFT: AI Market Summary ---
     with left_col:
         st.markdown(
             "<div class='section-card'><div class='section-title'>Market Summary (AI-Generated)</div>",
@@ -2187,7 +2359,6 @@ def render_dashboard():
         st.markdown(summary_text)
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # --- RIGHT: Econ Calendar + Smart Money ---
     with right_col:
         st.markdown(
             "<div class='section-card'><div class='section-title'>Economic Calendar (Focus)</div>",
@@ -2208,13 +2379,14 @@ def render_dashboard():
     st.write("")
 
     # ============================
-    # ROW 3: Trending Market News (full width)
+    # ROW 5: Trending News
     # ============================
     st.markdown(
         "<div class='section-card'><div class='section-title'>Trending Market News</div>",
         unsafe_allow_html=True,
     )
     news_items = get_market_news()
+
     if news_items:
         for n in news_items:
             ts_str = (
@@ -2222,31 +2394,33 @@ def render_dashboard():
                 if isinstance(n["time"], pd.Timestamp)
                 else ""
             )
-            meta = " — " + n["publisher"] if n["publisher"] else ""
+
+            # Publisher formatting
+            meta = ""
+            if n.get("source"):
+                meta += f" — {n['source']}"
             if ts_str:
                 meta += f" • {ts_str}"
-            tag = " _(Market moving)_" if n.get("is_major") else ""
-            st.markdown(f"**[{n['headline']}]({n['url']})**{tag}{meta}")
-            if n.get("summary"):
-                st.caption(textwrap.shorten(n["summary"], width=160, placeholder="…"))
+
+            # Render headline + summary
+            st.markdown(
+                f"""
+                **[{n['headline']}]({n['url']})**{meta}  
+                <span style='font-size: 0.9em; color: #666;'>{n['summary'][:240]}...</span>
+                """,
+                unsafe_allow_html=True,
+            )
     else:
         st.write("No recent broad-market headlines available.")
+
     st.markdown("</div>", unsafe_allow_html=True)
 
+#UX for Analysis Page
 
 def render_analysis_page():
     inject_global_css()
-
-    step_flow = [
-        ("step1", "Ticker & universe"),
-        ("step2", "Snapshot & factors"),
-        ("step3", "Peers & comps"),
-        ("step4", "News & thesis"),
-    ]
-    labels_lookup = {slug: label for slug, label in step_flow}
-    active_step = st.session_state.get("analysis_active_step", "step1")
-    st.session_state.analysis_active_step = active_step
-
+    
+    # ---------- HERO ----------
     st.markdown("<style>code, pre {display:none !important;}</style>", unsafe_allow_html=True)
     st.markdown(
         """
@@ -2260,9 +2434,12 @@ def render_analysis_page():
         unsafe_allow_html=True,
     )
 
+    # ---------- COMMAND CENTER SHELL ----------
     st.markdown("<div class='analysis-shell'><div class='analysis-gradient'>", unsafe_allow_html=True)
+
     left_col, right_col = st.columns([1.4, 1])
 
+    # ===================== LEFT: COMMAND PANEL =====================
     with left_col:
         st.markdown(
             """
@@ -2276,77 +2453,61 @@ def render_analysis_page():
                     Type a ticker, choose your universe and horizon, then run a full-stack analysis
                     pipeline (factors → peers → news → thesis scaffolding).
                 </div>
+                <div class="command-steps">
+                    <div class="command-step active">1 · Ticker &amp; universe</div>
+                    <div class="command-step">2 · Snapshot &amp; factors</div>
+                    <div class="command-step">3 · Peers &amp; comps</div>
+                    <div class="command-step">4 · News &amp; thesis</div>
+                </div>
             """,
             unsafe_allow_html=True,
         )
 
-        st.markdown("<div class='command-steps'>Navigate workflow</div>", unsafe_allow_html=True)
-        step_cols = st.columns(len(step_flow))
-        for idx, (slug, label) in enumerate(step_flow):
-            lbl = f"{idx + 1} · {label.title()}"
-            if slug == active_step:
-                lbl = f"● {lbl}"
-            if step_cols[idx].button(lbl, key=f"analysis_step_{slug}"):
-                st.session_state.analysis_active_step = slug
-                active_step = slug
-        st.caption(f"Currently viewing: {labels_lookup.get(active_step, '').title()}")
+        # pull last ticker if available
+        default_ticker = ""
+        if st.session_state.get("last_results"):
+            default_ticker = st.session_state.last_results.get("ticker", "")
 
-        cached = st.session_state.get("analysis_ticker_cache") or ""
-        if not cached and st.session_state.get("last_results"):
-            cached = st.session_state.last_results.get("ticker", "")
+        st.markdown("<div class='command-input-label'>Ticker Symbol</div>", unsafe_allow_html=True)
+        ticker = st.text_input(
+            "Enter ticker to analyze (e.g., AAPL, MSFT)",
+            value=default_ticker,
+            key="analysis_page_ticker",
+            placeholder="ENTER TICKER SYMBOL TO ANALYZE (E.G., AAPL)",
+            label_visibility="collapsed",
+        ).upper()
 
-        analyze_clicked = False
-        ticker = cached
-
-        if active_step == "step1":
-            st.markdown("<div class='command-input-label'>Ticker Symbol</div>", unsafe_allow_html=True)
-            ticker = (
-                st.text_input(
-                    "Enter ticker to analyze (e.g., AAPL, MSFT)",
-                    value=cached,
-                    placeholder="ENTER TICKER SYMBOL TO ANALYZE (E.G., AAPL)",
-                    label_visibility="collapsed",
-                )
-                .strip()
-                .upper()
+        col_univ, col_horz = st.columns(2)
+        with col_univ:
+            universe = st.selectbox(
+                "Universe",
+                ["US Large Cap", "US Mid/Small", "Global Developed", "Watchlist"],
+                index=0,
+                key="screener_universe",
             )
-            st.session_state.analysis_ticker_cache = ticker
+        with col_horz:
+            horizon = st.selectbox(
+                "Horizon",
+                ["3 Months", "12 Months", "3 Years"],
+                index=1,
+                key="screener_horizon",
+            )
 
-            col_univ, col_horz = st.columns(2)
-            with col_univ:
-                universe = st.selectbox(
-                    "Universe",
-                    ["US Large Cap", "US Mid/Small", "Global Developed", "Watchlist"],
-                    index=0,
-                    key="screener_universe",
-                )
-            with col_horz:
-                horizon = st.selectbox(
-                    "Horizon",
-                    ["3 Months", "12 Months", "3 Years"],
-                    index=1,
-                    key="screener_horizon",
-                )
-
-            analyze_clicked = st.button("Run Screener", use_container_width=True, key="analysis_run_button")
-            if st.session_state.get("last_results"):
-                st.caption(f"Last analyzed: {st.session_state.last_results.get('ticker', '')}")
-        else:
-            st.caption("Switch back to Step 1 to update the ticker or rerun the analysis.")
-
+        analyze_clicked = st.button("Run Screener", use_container_width=True, key="analysis_page_button")
         st.markdown(
-            f"""
+                """
                 <div class="command-footnote">
-                    Workflow status: <strong>{labels_lookup.get(active_step, '').title()}</strong>.
-                    Keep this tab open as your “command console” – after running, jump between Screener, Valuation,
+                    Tip: keep this tab open as your “command console” – after running, jump between Screener, Valuation,
                     Research, and Theses using the top tabs.
                 </div>
-              </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+                </div>   <!-- .command-inner -->
+                </div>   <!-- .command-card -->
+                """,
+                unsafe_allow_html=True,
+            )
 
+
+    # ===================== RIGHT: MODULE PREVIEW =====================
     with right_col:
         st.markdown(
             """
@@ -2428,10 +2589,12 @@ def render_analysis_page():
             unsafe_allow_html=True,
         )
 
+    # close analysis shell
     st.markdown("</div></div>", unsafe_allow_html=True)
 
-    if active_step == "step1" and analyze_clicked and ticker:
-        with st.spinner(f"Analyzing {ticker}..."):
+    # ===================== RUN ANALYSIS =====================
+    if analyze_clicked and ticker:
+        with st.spinner(f"Analyzing {ticker.upper()} in {universe}, {horizon} horizon..."):
             try:
                 max_peers = 6
                 results = run_equity_analysis(ticker, max_peers=max_peers)
@@ -2442,8 +2605,6 @@ def render_analysis_page():
                 )
                 st.session_state.recent_tickers = st.session_state.recent_tickers[:12]
                 st.success(f"Analysis updated for {results['ticker']}")
-                st.session_state.analysis_active_step = "step2"
-                active_step = "step2"
                 st.session_state.valuation_ticker_input = results["ticker"]
             except Exception as e:
                 st.session_state.last_results = None
@@ -2452,35 +2613,39 @@ def render_analysis_page():
                     f"Analysis failed for {ticker.upper()}. "
                     f"The ticker might be invalid, delisted, or have no data. Error: {e}"
                 )
-    elif active_step == "step1" and analyze_clicked and not ticker:
-        st.warning("Please enter a ticker symbol.")
 
     res = st.session_state.get("last_results")
 
-    if active_step == "step1":
-        if res:
-            st.info(f"Latest analysis loaded for {res['ticker']}. Advance to Step 2 to review the outputs.")
-        else:
-            st.markdown(
-                """
-                <div class="section-card empty-state-pro">
-                    <div class="empty-state-title">Ready when you are.</div>
-                    <ul class="empty-state-list">
-                        <li>Start with a liquid name (AAPL, MSFT, NVDA) to see a full factor and peer breakdown.</li>
-                        <li>Then jump to the <strong>Valuation</strong> tab to layer on DCF and multiples scenarios.</li>
-                        <li>Capture your notes in <strong>Research</strong> and turn them into a structured thesis in <strong>Theses</strong>.</li>
-                    </ul>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        return
-
+    # ===================== EMPTY STATE BEFORE RUN =====================
     if not res:
-        st.info("No analysis available yet. Complete Step 1 to unlock the remaining workflow.")
+        st.markdown(
+            """
+            <div class="section-card empty-state-pro">
+                <div class="empty-state-title">Ready when you are.</div>
+                <ul class="empty-state-list">
+                    <li>Start with a liquid name (AAPL, MSFT, NVDA) to see a full factor and peer breakdown.</li>
+                    <li>Then jump to the <strong>Valuation</strong> tab to layer on DCF and multiples scenarios.</li>
+                    <li>Capture your notes in <strong>Research</strong> and turn them into a structured thesis in <strong>Theses</strong>.</li>
+                </ul>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         return
 
-    if active_step == "step2":
+    # ===================== ANALYSIS WORKSPACE AFTER RUN =====================
+    st.markdown(
+        """
+        <div class="section-card">
+            <div class="section-title">Analysis Workspace</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    tab_overview, tab_peers, tab_news = st.tabs(["Overview", "Peer Table", "Headlines"])
+
+    with tab_overview:
         st.markdown(
             """
             <div class="section-card">
@@ -2491,29 +2656,7 @@ def render_analysis_page():
         st.markdown(res.get("overview_md", ""), unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
-        st.markdown(
-            """
-            <div class="section-card">
-                <div class="section-title">Charts</div>
-            """,
-            unsafe_allow_html=True,
-        )
-        charts = res.get("charts") or {}
-        price_fig = charts.get("price")
-        scatter_fig = charts.get("scatter")
-        if price_fig and scatter_fig:
-            c1, c2 = st.columns(2)
-            with c1:
-                st.pyplot(price_fig, use_container_width=True)
-            with c2:
-                st.pyplot(scatter_fig, use_container_width=True)
-        elif price_fig or scatter_fig:
-            st.pyplot(price_fig or scatter_fig, use_container_width=True)
-        else:
-            st.caption("Charts unavailable for this ticker.")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    elif active_step == "step3":
+    with tab_peers:
         st.markdown(
             """
             <div class="section-card">
@@ -2521,28 +2664,36 @@ def render_analysis_page():
             """,
             unsafe_allow_html=True,
         )
+
         peers_df = res.get("peers_df")
-        if isinstance(peers_df, pd.DataFrame) and not peers_df.empty:
-            st.dataframe(peers_df, use_container_width=True)
+
+        if peers_df is not None and not peers_df.empty:
+            # Style: negative numbers in red
+            def highlight_negatives(v):
+                try:
+                    v_float = float(v)
+                except Exception:
+                    return ""
+                return "color: #ff4d4f;" if v_float < 0 else ""
+
+            styled_peers = peers_df.style.applymap(highlight_negatives)
+            st.dataframe(styled_peers, use_container_width=True)
         else:
-            st.info("Peer comparison unavailable for this ticker.")
+            st.write("No peer data available for this name.")
+
         st.markdown("</div>", unsafe_allow_html=True)
 
-    elif active_step == "step4":
+    with tab_news:
         st.markdown(
             """
             <div class="section-card">
-                <div class="section-title">Recent Headlines & Thesis Inputs</div>
+                <div class="section-title">Recent Headlines</div>
             """,
             unsafe_allow_html=True,
         )
-        news_md = res.get("news_md", "")
-        if news_md.strip():
-            st.markdown(news_md, unsafe_allow_html=True)
-        else:
-            st.info("No recent headlines were found for this company.")
-        st.caption("Need to formalize the view? Jump to the Theses tab to draft structured notes.")
+        st.markdown(res.get("news_md", ""), unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
+
 
 # ---------- VALUATION PAGE ----------
 def render_valuation_page():
@@ -3135,9 +3286,12 @@ def render_theses_page():
 # ======================================================================
 # MAIN APP
 # ======================================================================
+# ======================================================================
+# MAIN APP
+# ======================================================================
 def main():
     st.set_page_config(
-        page_title="Equity Research Platform",
+        page_title="Equity Research Tool",
         page_icon="📊",
         layout="wide",
         initial_sidebar_state="collapsed",
@@ -3153,44 +3307,54 @@ def main():
         unsafe_allow_html=True,
     )
 
-    # Inject all global CSS
+    # Global CSS
     inject_global_css()
 
-    # ---------- PAGE HEADER ----------
-    st.markdown(
-        """
-        <div class="page-header">
-            <h1 class="page-title">Equity Research Platform</h1>
-            <p class="page-subtitle">Fricano Capital Research</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # --- !!! ---
-    # --- FIX 1: Replaced st.radio and custom CSS with st.tabs ---
-    # This provides the [ Home ] [ Screener ] ... layout natively
-    
+    # ---------- TABS AS MAIN NAV (TOP LEFT) ----------
     tab_home, tab_screener, tab_val, tab_research, tab_theses = st.tabs(
         ["Home", "Screener", "Valuation", "Research", "Theses"]
     )
 
+    # ---------- HOME ----------
     with tab_home:
+    # ---- Big Hero Header ----
+        st.markdown(
+        """
+        <div class="header-hero">
+            <div class="page-header">
+                <h1 class="page-title">Equity Research Tool</h1>
+                <p class="page-subtitle">Fricano Capital Research</p>
+                <p class="page-mini-desc">
+                </p>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+        # ---- The Ticker + Rest of Page ----
         render_dashboard()
-        
+
+
+    # ---------- SCREENER ----------
     with tab_screener:
         render_analysis_page()
-        
+
+    # ---------- VALUATION ----------
     with tab_val:
         render_valuation_page()
-        
+
+    # ---------- RESEARCH ----------
     with tab_research:
         render_research_page()
-        
+
+    
+    # ---------- THESES ----------
+    # This part was missing from your main function
     with tab_theses:
         render_theses_page()
-    # --- END FIX 1 ---
 
 
+# This block MUST be at the end of the file
+# and have no indentation to run the app.
 if __name__ == "__main__":
     main()

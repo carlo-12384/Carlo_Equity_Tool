@@ -1902,14 +1902,14 @@ def inject_global_css():
         
         /* ===== PAGE HEADER / HERO ===== */
         .header-hero {
-            width: 100vw;
+            width: 100%;
             position: relative;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 32px 0 26px 0;
-            background: linear-gradient(90deg, #00152E 0%, #003566 50%, #00152E 100%);
-            border-bottom: 2px solid #001f3f;
-            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.15);
+            left: 0;
+            transform: none;
+            padding: 42px 0 32px 0;
+            background: #001a40;
+            border-bottom: 2px solid #0f172a;
+            box-shadow: 0 15px 35px rgba(15, 23, 42, 0.45);
         }
         .page-header {
             max-width: 1100px;
@@ -1920,7 +1920,7 @@ def inject_global_css():
             font-family: 'DM Serif Display', serif;
             font-size: 3rem;
             font-weight: 500;
-            color: var(--color-tertiary-text) !important;
+            color: #ffffff !important;
             margin-bottom: 0.2rem;
             letter-spacing: -0.03em;
         }
@@ -2032,16 +2032,16 @@ def inject_global_css():
             to   { transform: translateX(-25%); }
         }
         .ticker-tape-container {
-            background: var(--color-primary-bg);
-            color: var(--color-tertiary-text);
+            background: #001528;
+            color: #f8fafc;
             overflow: hidden;
             padding: 10px 0;
-            width: 100vw;
+            width: 100%;
             position: relative;
-            left: 50%;
-            margin-left: -50vw;
-            border-top: 1px solid var(--color-secondary-bg);
-            border-bottom: 1px solid var(--color-secondary-bg);
+            left: 0;
+            margin-left: 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
         }
         .ticker-tape-inner {
             display: inline-flex;
@@ -2487,11 +2487,12 @@ def inject_global_css():
         .left-nav {
             position: sticky;
             top: 30px;
-            background: rgba(255,255,255,0.9);
+            background: #0b1f3d;
+            color: #f8fafc;
             border-radius: 18px;
-            padding: 18px 12px;
-            border: 1px solid rgba(226,232,240,0.6);
-            box-shadow: 0 14px 40px rgba(15, 23, 42, 0.1);
+            padding: 24px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 45px rgba(2, 6, 23, 0.55);
         }
         .left-nav-label {
             font-weight: 600;
@@ -2499,7 +2500,7 @@ def inject_global_css():
             letter-spacing: 0.2em;
             font-size: 0.75rem;
             margin-bottom: 12px;
-            color: #475569;
+            color: #e5e7eb !important;
         }
         .stRadio > div > label {
             width: 100%;
@@ -2525,6 +2526,16 @@ def inject_global_css():
             border-color: #0ea5e9;
             background: linear-gradient(120deg, #0ea5e9, #0b84d7);
             color: #fff;
+        }
+        .left-nav .stRadio button {
+            background: transparent;
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #f8fafc;
+        }
+        .left-nav .stRadio button[aria-pressed="true"] {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(248, 250, 252, 0.6);
+            box-shadow: 0 0 0 2px rgba(248, 250, 252, 0.4);
         }
         .content-shell {
             display: flex;
@@ -2953,7 +2964,7 @@ def render_analysis_page():
 
     heatmap_fig = build_metric_heatmap_figure(res)
     if heatmap_fig:
-        heatmap_wrapper = "<div class='heatmap-wrapper'>"
+    heatmap_wrapper = "<div class='heatmap-wrapper'>"
     if heatmap_fig:
         st.markdown(
             f"""

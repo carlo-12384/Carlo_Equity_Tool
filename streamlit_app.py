@@ -2398,6 +2398,59 @@ def inject_global_css():
             margin-top: 12px;
             margin-bottom: 18px;
         }
+        .market-summary-card {
+            background: #F8FAFC;
+            border-radius: 16px;
+            padding: 24px;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+        }
+        .market-summary-header {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+        .market-summary-body p {
+            margin-bottom: 12px;
+            line-height: 1.5;
+            color: #0F172A;
+        }
+        .mini-card-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .mini-card {
+            background: #FFFFFF;
+            border-radius: 14px;
+            padding: 18px;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+        }
+        .mini-card .mini-card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #0F172A;
+        }
+        .mini-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .mini-list-item {
+            font-size: 0.95rem;
+            color: #334155;
+            display: flex;
+            justify-content: space-between;
+        }
+        .mini-list-item span:first-child {
+            font-weight: 600;
+            color: #0F172A;
+        }
 
         </style>
         """,
@@ -2564,32 +2617,54 @@ def render_dashboard():
     left_col, right_col = st.columns([1.4, 1])
 
     with left_col:
-        st.markdown(
-            "<div class='section-card'><div class='section-title'>Market Summary (AI-Generated)</div>",
-            unsafe_allow_html=True,
-        )
         summary_text = generate_market_summary(
             index_data, macro_data=macro_data, news_items=market_news_items
         )
-        st.markdown(summary_text)
-        st.markdown("</div>", unsafe_allow_html=True)
+        summary_body = "".join(
+            f"<p>{part.strip()}</p>" for part in summary_text.strip().split("\n\n") if part.strip()
+        )
+        st.markdown(
+            f"""
+            <div class="market-summary-card">
+                <div class="market-summary-header">Market Summary (AI-Generated)</div>
+                <div class="market-summary-body">
+                    {summary_body}
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     with right_col:
+        econ_items = get_economic_calendar()
+        smart_items = get_smart_money_signals()
+        econ_rows = "".join(
+            f"<li class='mini-list-item'><span>{event}</span><span>{time_str}</span></li>"
+            for event, time_str in econ_items
+        )
+        smart_rows = "".join(
+            f"<li class='mini-list-item'><span>{label}</span><span>{value}</span></li>"
+            for label, value in smart_items.items()
+        )
         st.markdown(
-            "<div class='section-card'><div class='section-title'>Economic Calendar (Focus)</div>",
+            f"""
+            <div class="mini-card-stack">
+                <div class="mini-card">
+                    <div class="mini-card-title">Economic Calendar (Focus)</div>
+                    <ul class="mini-list">
+                        {econ_rows}
+                    </ul>
+                </div>
+                <div class="mini-card">
+                    <div class="mini-card-title">Smart Money Tracker</div>
+                    <ul class="mini-list">
+                        {smart_rows}
+                    </ul>
+                </div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
-        for event, time_str in get_economic_calendar():
-            st.markdown(f"• **{event}** — {time_str}")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-        st.markdown(
-            "<div class='section-card'><div class='section-title'>Smart Money Tracker</div>",
-            unsafe_allow_html=True,
-        )
-        for label, value in get_smart_money_signals().items():
-            st.markdown(f"**{label}:** {value}")
-        st.markdown("</div>", unsafe_allow_html=True)
 
     st.write("")
 

@@ -574,6 +574,7 @@ def render_global_header_and_kpis():
 def get_index_key_metrics(ticker: str) -> List[Dict[str, str]]:
     """
     Fetches key metrics for a given index ticker.
+    Manually calculates YTD performance for reliability.
     """
     try:
         t = yf.Ticker(ticker)
@@ -581,20 +582,39 @@ def get_index_key_metrics(ticker: str) -> List[Dict[str, str]]:
         
         metrics = []
         
-        # 1. YTD Performance
-        ytd_return = info.get('ytdReturn')
-        if ytd_return is not None:
-            try:
-                # Format as percentage
-                ytd_pct = float(ytd_return) * 100
-                metrics.append({
-                    'label': 'YTD Performance',
-                    'value': f"{ytd_pct:+.2f}%" # Add a + sign for positive numbers
-                })
-            except Exception:
-                pass # Skip if formatting fails
+        # --- NEW: Manual YTD Calculation ---
+        try:
+            # Fetch YTD data
+            hist_ytd = t.history(period="ytd", interval="1d")
+            if not hist_ytd.empty and len(hist_ytd) > 1:
+                # Get first and last closing price
+                start_price = hist_ytd['Close'].iloc[0]
+                end_price = hist_ytd['Close'].iloc[-1]
+                
+                if start_price > 0:
+                    # Calculate YTD return
+                    ytd_return = (end_price / start_price) - 1
+                    ytd_pct = ytd_return * 100
+                    metrics.append({
+                        'label': 'YTD Performance',
+                        'value': f"{ytd_pct:+.2f}%" # Add a + sign
+                    })
+        except Exception as e:
+            logging.warning(f"Failed to manually calculate YTD for {ticker}: {e}")
+            # Fallback in case manual calc fails, though unlikely
+            ytd_return_info = info.get('ytdReturn')
+            if ytd_return_info is not None:
+                try:
+                    ytd_pct = float(ytd_return_info) * 100
+                    metrics.append({
+                        'label': 'YTD Performance',
+                        'value': f"{ytd_pct:+.2f}%"
+                    })
+                except Exception:
+                    pass
+        # --- End of YTD Calculation ---
 
-        # 2. Avg. Volume
+        # 2. Avg. Volume (from info object)
         vol = info.get('averageVolume')
         if vol:
             metrics.append({
@@ -602,7 +622,7 @@ def get_index_key_metrics(ticker: str) -> List[Dict[str, str]]:
                 'value': f"{vol:,.0f}"
             })
             
-        # 3. 52-Wk Range
+        # 3. 52-Wk Range (from info object)
         low_52 = info.get('fiftyTwoWeekLow')
         high_52 = info.get('fiftyTwoWeekHigh')
         if low_52 and high_52:
@@ -610,15 +630,12 @@ def get_index_key_metrics(ticker: str) -> List[Dict[str, str]]:
                 'label': '52-Wk Range',
                 'value': f"{low_52:,.2f} - {high_52:,.2f}"
             })
-
-        # (Removed Day's Range and Prev. Close as requested)
             
         return metrics
         
     except Exception as e:
         logging.warning(f"Failed to get key metrics for {ticker}: {e}")
         return []
-
 
 # --- NEW FUNCTION ---
 @st.cache_data(ttl=300)
@@ -1553,6 +1570,10 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
 # GLOBAL STYLING
 # ======================================================================
 # --- Replace this function ---
+# ======================================================================
+# GLOBAL STYLING
+# ======================================================================
+# --- Replace this function ---
 def inject_global_css():
     st.markdown(
         """
@@ -1661,7 +1682,6 @@ def inject_global_css():
         }
 
         /* ===== METRIC CARD STYLING (VIX, USD, etc.) ===== */
-        /* This is our new, stable wrapper */
         .metric-card-box {
             background: #f8fafc !important;
             border-radius: 12px;
@@ -1681,7 +1701,6 @@ def inject_global_css():
             opacity: 0.85;
         }
 
-        /* --- NEW --- Custom style for the metric value */
         .metric-value-custom {
             color: #001f3f !important;
             font-weight: 700 !important;
@@ -1690,7 +1709,6 @@ def inject_global_css():
             margin-bottom: 4px;
         }
         
-        /* --- NEW --- Custom style for the metric delta */
         .metric-delta-custom span {
             padding: 2px 6px;
             border-radius: 4px;
@@ -1782,13 +1800,14 @@ def inject_global_css():
         /* ===== INDEX SNAPSHOT CARDS (DOW, NASDAQ, etc.) ===== */
         .index-chart-card {
             background: #FFFFFF;
-            border: 1px solid #E2E8F0; /* Light gray border */
+            border: 1px solid #E2E8F0;
             border-radius: 12px;
             padding: 18px 20px;
             margin-bottom: 16px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-            min-height: 280px; 
-            height: 100%; /* Make card fill column space */
+            /* --- THIS IS THE FIX --- */
+            /* We removed min-height and height: 100% */
+            /* The card will now auto-size to its content */
             display: flex;
             flex-direction: column;
         }
@@ -1803,7 +1822,7 @@ def inject_global_css():
             font-weight: 700;
             color: var(--color-primary-text);
             margin-right: 10px;
-            display: block; /* Make it stack */
+            display: block; 
             margin-bottom: 4px;
             line-height: 1.2;
         }
@@ -1815,11 +1834,11 @@ def inject_global_css():
             border-radius: 6px;
         }
         .index-chart-change.positive {
-            color: #047857; /* Dark Green */
+            color: #047857; 
             background-color: #D1FAE5;
         }
         .index-chart-change.negative {
-            color: #991B1B; /* Dark Red */
+            color: #991B1B; 
             background-color: #FEE2E2;
         }
         .index-metric-list {
@@ -1842,7 +1861,7 @@ def inject_global_css():
         }
         .index-metric-value {
             font-weight: 600;
-            color: var(--color-primary-text); /* Navy */
+            color: var(--color-primary-text); 
             text-align: right;
             padding-left: 8px; 
         }

@@ -600,73 +600,102 @@ def render_global_header_and_kpis():
 
     
 @st.cache_data(ttl=300)
-def get_index_key_metrics(ticker: str) -> List[Dict[str, str]]:
+def get_index_card_metrics(ticker: str):
     """
-    Fetches key metrics for a given index ticker.
-    Manually calculates YTD performance for reliability.
+    Robust index metrics based purely on historical prices.
+    Works for indices like ^DJI, ^IXIC, ^GSPC, ^RUT.
+    
+    Returns:
+      {
+        "last": float,
+        "change": float,
+        "change_pct": float,
+        "metrics": [
+            {"label": "YTD Performance", "value": "..."},
+            {"label": "Avg. Volume", "value": "..."},
+            {"label": "52-Wk Range", "value": "..."},
+        ],
+      }
+    or None if data could not be fetched at all.
     """
-    try:
-        t = yf.Ticker(ticker)
-        info = t.info
-        
-        metrics = []
-        
-        # --- NEW: Manual YTD Calculation ---
-        try:
-            # Fetch YTD data
-            hist_ytd = t.history(period="ytd", interval="1d")
-            if not hist_ytd.empty and len(hist_ytd) > 1:
-                # Get first and last closing price
-                start_price = hist_ytd['Close'].iloc[0]
-                end_price = hist_ytd['Close'].iloc[-1]
-                
-                if start_price > 0:
-                    # Calculate YTD return
-                    ytd_return = (end_price / start_price) - 1
-                    ytd_pct = ytd_return * 100
-                    metrics.append({
-                        'label': 'YTD Performance',
-                        'value': f"{ytd_pct:+.2f}%" # Add a + sign
-                    })
-        except Exception as e:
-            logging.warning(f"Failed to manually calculate YTD for {ticker}: {e}")
-            # Fallback in case manual calc fails, though unlikely
-            ytd_return_info = info.get('ytdReturn')
-            if ytd_return_info is not None:
-                try:
-                    ytd_pct = float(ytd_return_info) * 100
-                    metrics.append({
-                        'label': 'YTD Performance',
-                        'value': f"{ytd_pct:+.2f}%"
-                    })
-                except Exception:
-                    if all(pd.isna(v) or v is None for v in metrics.values()):
-                        return None
-                    pass
-        # --- End of YTD Calculation ---
+    import datetime as dt
 
-        # 2. Avg. Volume (from info object)
-        vol = info.get('averageVolume')
-        if vol:
-            metrics.append({
-                'label': 'Avg. Volume',
-                'value': f"{vol:,.0f}"
-            })
-            
-        # 3. 52-Wk Range (from info object)
-        low_52 = info.get('fiftyTwoWeekLow')
-        high_52 = info.get('fiftyTwoWeekHigh')
-        if low_52 and high_52:
-            metrics.append({
-                'label': '52-Wk Range',
-                'value': f"{low_52:,.2f} - {high_52:,.2f}"
-            })
-            
-        return metrics
-        
+    try:
+        today = dt.date.today()
+        year_start = dt.date(today.year, 1, 1)
+
+        # 1) YTD history (for last, prev close, YTD %)
+        ytd = yf.download(
+            ticker,
+            start=year_start,
+            interval="1d",
+            progress=False,
+        )
+
+        # 2) 1-year history (for 52-week range + avg volume)
+        one_year = yf.download(
+            ticker,
+            period="1y",
+            interval="1d",
+            progress=False,
+        )
     except Exception as e:
-        logging.warning(f"Failed to get key metrics for {ticker}: {e}")
-        return []
+        logging.warning(f"Failed to download index data for {ticker}: {e}")
+        return None
+
+    if ytd is None or ytd.empty or one_year is None or one_year.empty:
+        logging.warning(f"No price history returned for {ticker}.")
+        return None
+
+    try:
+        # ----- Current price & daily change -----
+        last_close = float(ytd["Close"].iloc[-1])
+
+        if len(ytd) >= 2:
+            prev_close = float(ytd["Close"].iloc[-2])
+            day_change = last_close - prev_close
+            day_change_pct = (day_change / prev_close) * 100.0
+        else:
+            day_change = 0.0
+            day_change_pct = 0.0
+
+        # ----- YTD performance -----
+        first_ytd_close = float(ytd["Close"].iloc[0])
+        ytd_pct = (last_close / first_ytd_close - 1.0) * 100.0
+
+        # ----- 52-week range -----
+        low_52w = float(one_year["Low"].min())
+        high_52w = float(one_year["High"].max())
+
+        # ----- Average volume (last 1y) -----
+        avg_volume = int(one_year["Volume"].mean())
+
+        metrics = [
+            {
+                "label": "YTD Performance",
+                "value": f"{ytd_pct:+.2f}%",  # + sign for positive
+            },
+            {
+                "label": "Avg. Volume",
+                "value": f"{avg_volume:,.0f}",
+            },
+            {
+                "label": "52-Wk Range",
+                "value": f"{low_52w:,.2f} - {high_52w:,.2f}",
+            },
+        ]
+
+        return {
+            "last": last_close,
+            "change": day_change,
+            "change_pct": day_change_pct,
+            "metrics": metrics,
+        }
+
+    except Exception as e:
+        logging.warning(f"Failed to compute metrics for {ticker}: {e}")
+        return None
+
 
 # --- NEW FUNCTION ---
 @st.cache_data(ttl=300)
@@ -2185,63 +2214,49 @@ def render_dashboard():
     # ============================
     chart_cols = st.columns(4)
 
-    index_map = {
-        "Dow Jones": ("^DJI", chart_cols[0]),
-        "NASDAQ": ("^IXIC", chart_cols[1]),
-        "S&P 500": ("^GSPC", chart_cols[2]),
-        "Russell 2000": ("^RUT", chart_cols[3]),
-    }
+   index_map = {
+    "Dow Jones": ("^DJI", chart_cols[0]),
+    "NASDAQ": ("^IXIC", chart_cols[1]),
+    "S&P 500": ("^GSPC", chart_cols[2]),
+    "Russell 2000": ("^RUT", chart_cols[3]),
+}
 
-    for display_name, (ticker, col) in index_map.items():
-        with col:
-            
-            # --- THIS IS THE FIX ---
-            # We build the *entire card* as one HTML string
-            # to prevent Streamlit from breaking the layout.
-            html_parts = ["<div class='index-chart-card'>"]
+for display_name, (ticker, col) in index_map.items():
+    with col:
+        # Build the entire card as one HTML string
+        html_parts = ["<div class='index-chart-card'>"]
 
-            summary = next(
-                (item for item in index_data if item["symbol"] == display_name),
-                None,
+        # Title always
+        html_parts.append(f"<div class='index-chart-title'>{display_name}</div>")
+
+        data = get_index_card_metrics(ticker)
+
+        if data is None:
+            # Only if *everything* failed (API totally down or bad ticker)
+            html_parts.append("<span class='index-chart-price'>Key metrics unavailable.</span>")
+        else:
+            last = data["last"]
+            chg = data["change"]
+            pct = data["change_pct"]
+
+            change_class = "positive" if chg >= 0 else "negative"
+            change_sign = "+" if chg >= 0 else ""
+
+            # Price
+            html_parts.append(
+                f"<span class='index-chart-price'>${last:,.2f}</span>"
             )
 
-            if summary:
-                change_class = "positive" if summary["change"] >= 0 else "negative"
-                change_sign = "+" if summary["change"] >= 0 else ""
+            # Change bar
+            html_parts.append(
+                f"<span class='index-chart-change {change_class}'>"
+                f"{change_sign}{chg:,.2f} "
+                f"({change_sign}{pct:.2f}%)"
+                f"</span>"
+            )
 
-                # Add title, price, and change to our HTML list
-                html_parts.append(f"<div class='index-chart-title'>{display_name}</div>")
-                html_parts.append(f"<span class='index-chart-price'>${summary['price']:,.2f}</span>")
-                html_parts.append(
-                    f"<span class='index-chart-change {change_class}'>"
-                    f"{change_sign}{summary['change']:,.2f} "
-                    f"({change_sign}{summary['pct_change']:,.2f}%)"
-                    f"</span>"
-                )
-            else:
-                html_parts.append(f"<div class='index-chart-title'>{display_name}</div>")
-                html_parts.append("<span class='index-chart-price'>Key metrics unavailable.</span>")
-
-            # Key metrics beneath each index
-            key_metrics = get_index_key_metrics(ticker)
-            if key_metrics:
-                html_parts.append("<div class='index-metric-list'>")
-                for metric in key_metrics:
-                    # Add each metric row to our HTML list
-                    html_parts.append(
-                        f"<div class='index-metric-row'>"
-                        f"  <span class='index-metric-label'>{metric['label']}</span>"
-                        f"  <span class='index-metric-value'>{metric['value']}</span>"
-                        f"</div>"
-                    )
-                html_parts.append("</div>") # Close metric-list
-            
-            html_parts.append("</div>") # Close index-chart-card
-            
-            # Join all parts and render as a single HTML block
-            st.markdown("".join(html_parts), unsafe_allow_html=True)
-
-    st.markdown("---")
+        html_parts.append("</div>")  # close card
+        st.markdown("".join(html_parts), unsafe_allow_html=True)
 
     # ============================
     # ROW 3: Sector Heatmap

@@ -2363,7 +2363,7 @@ def render_analysis_page():
             )
 
         analyze_clicked = st.button("Run Screener", use_container_width=True, key="analysis_page_button")
-            st.markdown(
+        st.markdown(
                 """
                 <div class="command-footnote">
                     Tip: keep this tab open as your “command console” – after running, jump between Screener, Valuation,

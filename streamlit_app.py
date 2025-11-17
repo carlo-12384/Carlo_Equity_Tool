@@ -1910,6 +1910,13 @@ def inject_global_css():
             padding: 12px 16px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
+        /* FIX METRIC LABEL VISIBILITY (the text above the numbers) */
+        div[data-testid="stMetricLabel"] p {
+            color: #001f3f !important;     /* Dark navy */
+            font-size: 14px !important;
+            font-weight: 600 !important;
+            margin-bottom: 4px !important;
+        }
 
 
 
@@ -2847,7 +2854,6 @@ def main():
                 <h1 class="page-title">Equity Research Tool</h1>
                 <p class="page-subtitle">Fricano Capital Research</p>
                 <p class="page-mini-desc">
-                    Institutional-style equity analytics with live macro context.
                 </p>
             </div>
         </div>

@@ -2289,7 +2289,7 @@ def render_dashboard():
 def render_analysis_page():
     inject_global_css()
     
-    # --- Hero bar for the Screener tab (keeps branding consistent) ---
+    # ---------- HERO ----------
     st.markdown(
         """
         <div class="hero-card">
@@ -2302,37 +2302,36 @@ def render_analysis_page():
         unsafe_allow_html=True,
     )
 
-    # ---------- COMMAND CENTER SHELL (Google x Apple x JPM) ----------
-    st.markdown("<div class='analysis-shell'>", unsafe_allow_html=True)
-    st.markdown("<div class='analysis-gradient'>", unsafe_allow_html=True)
+    # ---------- COMMAND CENTER SHELL ----------
+    st.markdown("<div class='analysis-shell'><div class='analysis-gradient'>", unsafe_allow_html=True)
 
-    # We’ll use columns for layout but rely on CSS grid for the “feel”
     left_col, right_col = st.columns([1.4, 1])
 
-    # ===== LEFT: COMMAND PANEL =====
+    # ===================== LEFT: COMMAND PANEL =====================
     with left_col:
-        st.markdown("<div class='command-card'><div class='command-inner'>", unsafe_allow_html=True)
-
         st.markdown(
             """
-            <div class="command-title-row">
-                <div class="command-title">Ticker & Universe</div>
-                <div class="command-pill">Step 1 · Configure Query</div>
-            </div>
-            <div class="command-subtitle">
-                Type a ticker, choose your universe and horizon, then run a full-stack analysis
-                pipeline (factors → peers → news → thesis scaffolding).
-            </div>
-            <div class="command-steps">
-                <div class="command-step active">1 · Ticker & universe</div>
-                <div class="command-step">2 · Snapshot & factors</div>
-                <div class="command-step">3 · Peers & comps</div>
-                <div class="command-step">4 · News & thesis</div>
-            </div>
+            <div class="command-card">
+              <div class="command-inner">
+                <div class="command-title-row">
+                    <div class="command-title">Ticker &amp; Universe</div>
+                    <div class="command-pill">Step 1 · Configure Query</div>
+                </div>
+                <div class="command-subtitle">
+                    Type a ticker, choose your universe and horizon, then run a full-stack analysis
+                    pipeline (factors → peers → news → thesis scaffolding).
+                </div>
+                <div class="command-steps">
+                    <div class="command-step active">1 · Ticker &amp; universe</div>
+                    <div class="command-step">2 · Snapshot &amp; factors</div>
+                    <div class="command-step">3 · Peers &amp; comps</div>
+                    <div class="command-step">4 · News &amp; thesis</div>
+                </div>
             """,
             unsafe_allow_html=True,
         )
 
+        # pull last ticker if available
         default_ticker = ""
         if st.session_state.get("last_results"):
             default_ticker = st.session_state.last_results.get("ticker", "")
@@ -2346,7 +2345,6 @@ def render_analysis_page():
             label_visibility="collapsed",
         ).upper()
 
-        # “High-end” knobs – not wired into calculations yet, but they make the UX feel powerful
         col_univ, col_horz = st.columns(2)
         with col_univ:
             universe = st.selectbox(
@@ -2367,17 +2365,17 @@ def render_analysis_page():
 
         st.markdown(
             """
-            <div class="command-footnote">
-                Tip: keep this tab open as your “command console” – after running, jump between Screener, Valuation, Research, and Theses using the top tabs.
+                <div class="command-footnote">
+                    Tip: keep this tab open as your “command console” – after running, jump between Screener, Valuation,
+                    Research, and Theses using the top tabs.
+                </div>
+              </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        st.markdown("</div></div>", unsafe_allow_html=True)  # close command-inner & command-card
-
-    # ===== RIGHT: MODULE PREVIEW / CAPABILITIES =====
-        # ===== RIGHT: MODULE PREVIEW / CAPABILITIES =====
+    # ===================== RIGHT: MODULE PREVIEW =====================
     with right_col:
         st.markdown(
             """
@@ -2428,7 +2426,7 @@ def render_analysis_page():
                             <div class="module-dot"></div>
                             <span>Timeline</span>
                         </div>
-                        <div class="module-title">Price & Events</div>
+                        <div class="module-title">Price &amp; Events</div>
                         <div class="module-desc">
                             Price history hooks for charting, earnings dates, and macro overlays.
                         </div>
@@ -2443,7 +2441,7 @@ def render_analysis_page():
                             <div class="module-dot"></div>
                             <span>News Stream</span>
                         </div>
-                        <div class="module-title">Headlines & Context</div>
+                        <div class="module-title">Headlines &amp; Context</div>
                         <div class="module-desc">
                             Latest headlines and summaries to seed your thesis and risk section.
                         </div>
@@ -2459,81 +2457,10 @@ def render_analysis_page():
             unsafe_allow_html=True,
         )
 
+    # close analysis shell
+    st.markdown("</div></div>", unsafe_allow_html=True)
 
-        st.markdown(
-            """
-            <div class="module-grid">
-                <div class="module-card">
-                    <div class="module-chip-row">
-                        <div class="module-dot"></div>
-                        <span>Quant Engine</span>
-                    </div>
-                    <div class="module-title">Factor Scores</div>
-                    <div class="module-desc">
-                        Quality, value, growth and risk scores, normalized vs. custom universes.
-                    </div>
-                    <div class="module-tags">
-                        <span class="module-tag">TTM Metrics</span>
-                        <span class="module-tag">Z-Scores</span>
-                        <span class="module-tag">Composite Rank</span>
-                    </div>
-                </div>
-
-                <div class="module-card">
-                    <div class="module-chip-row">
-                        <div class="module-dot"></div>
-                        <span>Market Structure</span>
-                    </div>
-                    <div class="module-title">Peer Map</div>
-                    <div class="module-desc">
-                        Auto-selected peers by industry, size, and return correlation; ready for comps.
-                    </div>
-                    <div class="module-tags">
-                        <span class="module-tag">Vendor Peers</span>
-                        <span class="module-tag">Size Filter</span>
-                    </div>
-                </div>
-
-                <div class="module-card">
-                    <div class="module-chip-row">
-                        <div class="module-dot"></div>
-                        <span>Timeline</span>
-                    </div>
-                    <div class="module-title">Price & Events</div>
-                    <div class="module-desc">
-                        Price history hooks for charting, earnings dates, and macro overlays.
-                    </div>
-                    <div class="module-tags">
-                        <span class="module-tag">Mini Charts</span>
-                        <span class="module-tag">Earnings</span>
-                    </div>
-                </div>
-
-                <div class="module-card">
-                    <div class="module-chip-row">
-                        <div class="module-dot"></div>
-                        <span>News Stream</span>
-                    </div>
-                    <div class="module-title">Headlines & Context</div>
-                    <div class="module-desc">
-                        Latest headlines and summaries to seed your thesis and risk section.
-                    </div>
-                    <div class="module-tags">
-                        <span class="module-tag">News Digest</span>
-                        <span class="module-tag">Thesis Hooks</span>
-                    </div>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        st.markdown("</div></div>", unsafe_allow_html=True)
-
-    st.markdown("</div>", unsafe_allow_html=True)  # close analysis-gradient
-    st.markdown("</div>", unsafe_allow_html=True)  # close analysis-shell
-
-    # ---------- RUN ANALYSIS LOGIC ----------
+    # ===================== RUN ANALYSIS =====================
     if analyze_clicked and ticker:
         with st.spinner(f"Analyzing {ticker.upper()} in {universe}, {horizon} horizon..."):
             try:
@@ -2557,7 +2484,7 @@ def render_analysis_page():
 
     res = st.session_state.get("last_results")
 
-    # ---------- EMPTY STATE (BEFORE FIRST RUN) ----------
+    # ===================== EMPTY STATE BEFORE RUN =====================
     if not res:
         st.markdown(
             """
@@ -2574,7 +2501,7 @@ def render_analysis_page():
         )
         return
 
-    # ---------- ANALYSIS WORKSPACE (AFTER RUN) ----------
+    # ===================== ANALYSIS WORKSPACE AFTER RUN =====================
     st.markdown(
         """
         <div class="section-card">

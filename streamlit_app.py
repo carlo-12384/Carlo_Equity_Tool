@@ -2811,9 +2811,8 @@ def main():
         """,
         unsafe_allow_html=True,
     )
-
-    # ---- The Ticker + Rest of Page ----
-    render_dashboard()
+        # ---- The Ticker + Rest of Page ----
+        render_dashboard()
 
 
     # ---------- SCREENER ----------

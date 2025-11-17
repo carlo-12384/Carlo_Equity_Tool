@@ -496,7 +496,6 @@ def render_global_header_and_kpis():
                 <h1 class="page-title">Equity Research Tool</h1>
                 <p class="page-subtitle">Fricano Capital Research</p>
                 <p class="page-mini-desc">
-                    Institutional-style equity analytics with live macro context.
                 </p>
             </div>
         </div>
@@ -1853,22 +1852,24 @@ def inject_global_css():
     )
 
 
-# --- Wall Street esque Price Bar ---
+# --- Wall Street esque Price Bar / Home Dashboard ---
 def render_dashboard():
-    inject_global_css() 
+    # We already called inject_global_css() in main(), so no need to repeat it here
 
     # --- Get data for Ticker Tape AND Index Cards ---
     index_data = get_live_index_data()
     macro_data = get_global_macro_data()
 
     # --- TOP BAR: Macro-Only Ticker Tape ---
-    ticker_items = macro_data # <-- FIX: Only use macro data
+    ticker_items = macro_data  # Only use macro data
     
     if ticker_items:
         item_html_list = []
 
         # Add a static label
-        item_html_list.append('<div class="ticker-section-label">MACRO DATA</div>') # <-- Changed label
+        item_html_list.append(
+            '<div class="ticker-section-label">MACRO DATA</div>'
+        )
 
         for item in ticker_items:
             change_class = "positive" if item["change_val"] >= 0 else "negative"
@@ -1882,23 +1883,17 @@ def render_dashboard():
                 f'</div>'
             )
 
-                # Create one copy of the items
+        # One long HTML string for the tape
         all_items_html = "".join(item_html_list)
-
-        # Render 4 copies back-to-back so the strip is long enough
-        inner_html = all_items_html * 4
 
         full_ticker_html = f"""
         <div class="ticker-tape-container">
             <div class="ticker-tape-inner">
-                {inner_html}
+                {all_items_html}{all_items_html}
             </div>
         </div>
         """
-
-        
         st.markdown(full_ticker_html, unsafe_allow_html=True)
-
 
     # ============================
     # --- ROW 0: Index Metrics (Replaced Charts)
@@ -1915,7 +1910,7 @@ def render_dashboard():
     
     for display_name, (ticker, col) in index_map.items():
         with col:
-            st.markdown(f"<div class='index-chart-card'>", unsafe_allow_html=True) 
+            st.markdown("<div class='index-chart-card'>", unsafe_allow_html=True) 
             
             # Use the 'index_data' we already fetched
             summary = next((item for item in index_data if item["symbol"] == display_name), None)
@@ -1924,20 +1919,29 @@ def render_dashboard():
                 change_class = "positive" if summary['change'] >= 0 else "negative"
                 change_sign = "+" if summary['change'] >= 0 else ""
                 
-                st.markdown(f"<div class='index-chart-title'>{display_name}</div>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<div class='index-chart-title'>{display_name}</div>",
+                    unsafe_allow_html=True,
+                )
                 st.markdown(
                     f"<span class='index-chart-price'>${summary['price']:,.2f}</span>"
                     f"<span class='index-chart-change {change_class}'>"
-                    f"{change_sign}{summary['change']:,.2f} ({change_sign}{summary['pct_change']:,.2f}%)"
+                    f"{change_sign}{summary['change']:,.2f} "
+                    f"({change_sign}{summary['pct_change']:,.2f}%)"
                     f"</span>",
-                    unsafe_allow_html=True
+                    unsafe_allow_html=True,
                 )
             else:
-                st.markdown(f"<div class='index-chart-title'>{display_name}</div>", unsafe_allow_html=True)
-                st.markdown("<span class='index-chart-price'>N/A</span>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<div class='index-chart-title'>{display_name}</div>",
+                    unsafe_allow_html=True,
+                )
+                st.markdown(
+                    "<span class='index-chart-price'>N/A</span>",
+                    unsafe_allow_html=True,
+                )
                 
-            
-            # --- [FIX: Replaced Graph with Key Metrics] ---
+            # --- Key metrics under each index ---
             key_metrics = get_index_key_metrics(ticker)
             if key_metrics:
                 st.markdown("<div class='index-metric-list'>", unsafe_allow_html=True)
@@ -1947,16 +1951,15 @@ def render_dashboard():
                         f"  <span class='index-metric-label'>{metric['label']}</span>"
                         f"  <span class='index-metric-value'>{metric['value']}</span>"
                         f"</div>",
-                        unsafe_allow_html=True
+                        unsafe_allow_html=True,
                     )
                 st.markdown("</div>", unsafe_allow_html=True)
             else:
                 st.caption("Key metrics unavailable.")
-            # --- [END OF FIX] ---
                 
             st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("---") # Horizontal rule
+    st.markdown("---")  # Horizontal rule
 
     # ============================
     # --- ROW 1: Heatmap
@@ -1966,12 +1969,14 @@ def render_dashboard():
     if sector_perf_data:
         heatmap_fig = plot_sector_heatmap(sector_perf_data)
         st.plotly_chart(heatmap_fig, use_container_width=True)
-        st.caption("Each tile represents a sector ETF. Color = 1-day % change; tiles sized equally for easier comparison.")
-
+        st.caption(
+            "Each tile represents a sector ETF. "
+            "Color = 1-day % change; tiles sized equally for easier comparison."
+        )
     else:
         st.warning("Could not retrieve sector performance data.")
 
-    st.markdown("---") # Horizontal rule
+    st.markdown("---")  # Horizontal rule
 
     # ============================
     # ROW 2: Summary (left) + Econ/Smart Money (right)
@@ -1981,10 +1986,10 @@ def render_dashboard():
     # --- LEFT: AI Market Summary ---
     with left_col:
         st.markdown(
-            "<div class='section-card'><div class='section-title'>Market Summary (AI-Generated)</div>",
+            "<div class='section-card'>"
+            "<div class='section-title'>Market Summary (AI-Generated)</div>",
             unsafe_allow_html=True,
         )
-        # We pass the original index_data here, not the macro data
         summary_text = generate_market_summary(index_data)
         st.markdown(summary_text)
         st.markdown("</div>", unsafe_allow_html=True)
@@ -1992,7 +1997,8 @@ def render_dashboard():
     # --- RIGHT: Econ Calendar + Smart Money ---
     with right_col:
         st.markdown(
-            "<div class='section-card'><div class='section-title'>Economic Calendar (Focus)</div>",
+            "<div class='section-card'>"
+            "<div class='section-title'>Economic Calendar (Focus)</div>",
             unsafe_allow_html=True,
         )
         for event, time_str in get_economic_calendar():
@@ -2000,7 +2006,8 @@ def render_dashboard():
         st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown(
-            "<div class='section-card'><div class='section-title'>Smart Money Tracker</div>",
+            "<div class='section-card'>"
+            "<div class='section-title'>Smart Money Tracker</div>",
             unsafe_allow_html=True,
         )
         for label, value in get_smart_money_signals().items():
@@ -2013,7 +2020,8 @@ def render_dashboard():
     # ROW 3: Trending Market News (full width)
     # ============================
     st.markdown(
-        "<div class='section-card'><div class='section-title'>Trending Market News</div>",
+        "<div class='section-card'>"
+        "<div class='section-title'>Trending Market News</div>",
         unsafe_allow_html=True,
     )
     news_items = get_market_news()
@@ -2031,7 +2039,6 @@ def render_dashboard():
     else:
         st.write("No recent broad-market headlines available.")
     st.markdown("</div>", unsafe_allow_html=True)
-
 
 def render_analysis_page():
     # --- MODIFIED --- Added CSS call
@@ -2731,48 +2738,55 @@ def main():
         initial_sidebar_state="collapsed",
     )
 
-    # Load fonts (your Cinzel + DM Sans block)
+    # Load DM Serif Display for the title
     st.markdown(
         """
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:wght@400&display=swap" rel="stylesheet">
         """,
         unsafe_allow_html=True,
     )
 
-    # Global styles
+    # Global CSS
     inject_global_css()
 
-    # (Optional) your st_autorefresh call can stay here if you added it
-    # st_autorefresh(interval=60_000, key="auto_refresh_live_data")
-
-    # ---------- NAV TABS AT TOP-LEFT ----------
+    # ---------- TABS AS MAIN NAV (TOP LEFT) ----------
     tab_home, tab_screener, tab_val, tab_research, tab_theses = st.tabs(
         ["Home", "Screener", "Valuation", "Research", "Theses"]
     )
 
-    # Each tab renders the shared header + its own page content
+    # ---------- HOME ----------
     with tab_home:
-        render_global_header_and_kpis()
+        # Big blue hero header only on Home
+        st.markdown(
+            """
+            <div class="page-header">
+                <h1 class="page-title">Equity Research Tool</h1>
+                <p class="page-subtitle">Fricano Capital Research</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         render_dashboard()
 
+    # ---------- SCREENER ----------
     with tab_screener:
-        render_global_header_and_kpis()
         render_analysis_page()
 
+    # ---------- VALUATION ----------
     with tab_val:
-        render_global_header_and_kpis()
         render_valuation_page()
 
+    # ---------- RESEARCH ----------
     with tab_research:
-        render_global_header_and_kpis()
         render_research_page()
 
+    # ---------- THESES ----------
     with tab_theses:
-        render_global_header_and_kpis()
         render_theses_page()
 
 
 if __name__ == "__main__":
     main()
+

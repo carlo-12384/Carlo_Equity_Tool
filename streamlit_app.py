@@ -81,7 +81,7 @@ def load_revenue_series(symbol: str) -> pd.Series:
     s = _coerce_cols_desc(s)
     return s.astype(float)
     
-def generate_market_summary(index_data):
+def generate_market_summary(index_data, macro_data=None, news_items=None):
     """
     Build a richer, human-style market wrap based on the index moves.
     Expects output from get_live_index_data().
@@ -100,7 +100,8 @@ def generate_market_summary(index_data):
     lines = []
 
     # Overall tone
-    avg_move = np.nanmean([x["pct_change"] for x in index_data])
+    pct_changes = [x["pct_change"] for x in index_data if isinstance(x.get("pct_change"), (int, float))]
+    avg_move = np.nanmean(pct_changes) if pct_changes else 0.0
     if avg_move >= 0.7:
         tone = "risk-on, with buyers clearly in control"
     elif avg_move >= 0.2:
@@ -152,6 +153,56 @@ def generate_market_summary(index_data):
     else:
         vol_msg = "Swings are elevated, pointing to higher-than-normal volatility."
     lines.append(f"**Volatility check:** {vol_msg}")
+
+    if pct_changes:
+        lines.append(f"**Average indexed move:** {avg_move:+.2f}% across the tracked indices.")
+
+    strongest = weakest = None
+    if macro_data:
+        try:
+            macro_sorted = sorted(macro_data, key=lambda x: x.get("change_val", 0.0))
+            weakest = macro_sorted[0]
+            strongest = macro_sorted[-1]
+            macro_line = (
+                f"**Macro cues:** {strongest['symbol']} {strongest['change_str']} vs "
+                f"{weakest['symbol']} {weakest['change_str']}."
+            )
+            lines.append(macro_line)
+        except Exception:
+            strongest = weakest = None
+
+    news_highlight = ""
+    if news_items:
+        primary = news_items[0]
+        headline = primary.get("headline") or "Recent headlines"
+        source = primary.get("publisher") or primary.get("source") or ""
+        summary = primary.get("summary") or ""
+        news_context = f"{headline}"
+        if source:
+            news_context += f" ({source})"
+        news_highlight = news_context
+        lines.append(f"**News trigger:** {news_context}")
+
+    reason_parts = []
+    if idx_bits:
+        reason_parts.append(
+            "Broad index behavior—led by "
+            f"{leader['symbol']} and {laggard['symbol']}—suggests investors are rotating toward "
+            "the pockets of strength while trimming the laggards."
+        )
+    if strongest and weakest:
+        reason_parts.append(
+            f"Macro cues are a reminder that {strongest['symbol']} is {strongest['change_str']} while "
+            f"{weakest['symbol']} is {weakest['change_str']}, amplifying the directional bias for the risk trade."
+        )
+    if news_highlight:
+        reason_parts.append(
+            f"Headlines such as {news_highlight} are likely feeding the narrative, offering a plausible driver for the flow."
+        )
+
+    if reason_parts:
+        reason_paragraph = " ".join(reason_parts)
+        lines.append(f"**Why this matters:** {reason_paragraph}")
 
     # Wrap-up guidance style line
     lines.append(
@@ -1082,6 +1133,17 @@ def get_metrics(symbol: str) -> dict:
             "Net Income Applicable To Common Shares",
             "Net Income","NetIncome"
         ])
+        cfo_ttm = ttm_from_rows(q_cf, ["Operating Cash Flow","Total Cash From Operating Activities"])
+        capex_ttm = ttm_from_rows(q_cf, ["Capital Expenditure","Change In Property Plant Equipment"])
+        fcff_ttm = np.nan
+        if np.isfinite(cfo_ttm):
+            if np.isfinite(capex_ttm):
+                fcff_ttm = cfo_ttm - abs(capex_ttm)
+            else:
+                fcff_ttm = cfo_ttm
+        fcf_margin_pct = np.nan
+        if np.isfinite(fcff_ttm) and np.isfinite(rev_ttm) and rev_ttm != 0:
+            fcf_margin_pct = (fcff_ttm / rev_ttm) * 100
 
         rev_series_q = load_revenue_series(symbol)
         if not rev_series_q.empty and len(rev_series_q) >= 8:
@@ -1180,6 +1242,7 @@ def get_metrics(symbol: str) -> dict:
         ebitda_margin_pct = (ebitda_ttm / rev_ttm) * 100 if all(np.isfinite([ebitda_ttm, rev_ttm])) and rev_ttm != 0 else np.nan
         roe_pct = (netinc_ttm / total_equity) * 100 if all(np.isfinite([netinc_ttm, total_equity])) and total_equity != 0 else np.nan
         dte = (total_debt / total_equity) * 100 if all(np.isfinite([total_debt, total_equity])) and total_equity != 0 else np.nan
+        debt_ebitda = (total_debt / ebitda_ttm) if all(np.isfinite([total_debt, ebitda_ttm])) and ebitda_ttm != 0 else np.nan
 
         prof = get_profile(symbol) or {}
         industry = prof.get("finnhubIndustry") or ""
@@ -1189,7 +1252,9 @@ def get_metrics(symbol: str) -> dict:
             "P/E (raw)": pe_raw, "P/B (raw)": pb_raw, "EV/EBITDA (raw)": ev_ebitda_raw, "P/S (raw)": ps_raw,
             "P/E Ratio": pe_raw, "P/B Ratio": pb_raw, "EV/EBITDA": ev_ebitda_raw, "Price/Sales": ps_raw,
             "ROE%": roe_pct, "GrossMargin%": gross_margin_pct, "EBITDAMargin%": ebitda_margin_pct,
+            "FCF Margin%": fcf_margin_pct, "FCF_TTM": fcff_ttm,
             "RevenueGrowth%": rev_growth_pct, "DebtToEquity": dte,
+            "Debt/EBITDA": debt_ebitda, "Total Debt": total_debt, "EBITDA_TTM": ebitda_ttm,
             "GrossProfitability": gross_profitability, "AssetGrowth%": asset_growth_pct,
             "Accruals%": accruals_pct, "InterestCoverage": interest_coverage,
             "Industry": industry
@@ -1420,6 +1485,90 @@ def charts(scored: pd.DataFrame, focus: str):
 
     return fig1, fig2, fig3
 
+HEATMAP_METRIC_DEFS = [
+    {"label": "Revenue Growth (TTM)", "value_key": "RevenueGrowth%", "relative_key": "RevenueGrowth%", "fmt": "percent"},
+    {"label": "Gross Margin", "value_key": "GrossMargin%", "relative_key": "GrossMargin%", "fmt": "percent"},
+    {"label": "FCF Margin", "value_key": "FCF Margin%", "relative_key": "FCF Margin%", "fmt": "percent"},
+    {"label": "ROE", "value_key": "ROE%", "relative_key": "ROE%", "fmt": "percent"},
+    {"label": "Debt/EBITDA", "value_key": "Debt/EBITDA", "relative_key": "Debt/EBITDA", "fmt": "ratio"},
+    {"label": "P/E vs Peers", "value_key": "P/E (raw)", "relative_key": "P/E Ratio", "fmt": "ratio"},
+]
+
+def _format_metric_display_value(value, fmt):
+    if value is None or not np.isfinite(value):
+        return "N/A"
+    if fmt == "percent":
+        return f"{value:+.1f}%"
+    if fmt == "ratio":
+        return f"{value:.1f}x"
+    if fmt == "float":
+        return f"{value:,.2f}"
+    return str(value)
+
+def build_metric_heatmap_figure(res: Dict[str, Any]):
+    focus = res.get("focus_row") or {}
+    base = res.get("base_metrics") or {}
+    cells = []
+    for metric in HEATMAP_METRIC_DEFS:
+        actual = base.get(metric["value_key"])
+        relative = focus.get(metric["relative_key"])
+        cells.append(
+            {
+                "label": metric["label"],
+                "formatted": _format_metric_display_value(actual, metric["fmt"]),
+                "relative": float(relative) if relative is not None and np.isfinite(relative) else 0.0,
+            }
+        )
+
+    if not cells:
+        return None
+
+    cols = 3
+    rows = math.ceil(len(cells) / cols)
+    z_matrix = []
+    text_matrix = []
+    for r in range(rows):
+        row_z = []
+        row_text = []
+        for c in range(cols):
+            idx = r * cols + c
+            if idx < len(cells):
+                entry = cells[idx]
+                row_z.append(entry["relative"])
+                row_text.append(f"{entry['label']}<br><span style='font-size:16px;font-weight:600;'>{entry['formatted']}</span>")
+            else:
+                row_z.append(0.0)
+                row_text.append("")
+        z_matrix.append(row_z)
+        text_matrix.append(row_text)
+
+    fig = go.Figure(
+        go.Heatmap(
+            z=z_matrix,
+            x=[f"Col {i+1}" for i in range(cols)],
+            y=[f"Row {i+1}" for i in range(rows)],
+            text=text_matrix,
+            hoverinfo="text",
+            texttemplate="%{text}",
+            colorscale=[
+                [0.0, "#b91d47"],
+                [0.5, "#1f2933"],
+                [1.0, "#0f9d58"],
+            ],
+            zmid=0,
+            showscale=False,
+            xgap=4,
+            ygap=4,
+        )
+    )
+    fig.update_layout(
+        margin=dict(l=4, r=4, t=20, b=4),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        height=260,
+    )
+    return fig
+
 def five_day_price_plot(ticker: str):
     plt_fig = None
     try:
@@ -1528,6 +1677,7 @@ def run_equity_analysis(ticker: str, max_peers: int = 6) -> Dict[str, Any]:
         "charts": {"price": fig_price, "scatter": fig_scatter},
         "base_params": base_params,
         "current_price": get_price_and_shares(ticker)[0],
+        "base_metrics": base_metrics,
     }
 
 # ======================================================================
@@ -2188,6 +2338,67 @@ def inject_global_css():
             }
         }
 
+        .analysis-hero {
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            background: linear-gradient(120deg, #111827, #1F2937);
+            color: #F8FAFC;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+        }
+        .analysis-hero h2 {
+            margin: 0;
+            font-size: 2rem;
+            letter-spacing: -0.02em;
+        }
+        .analysis-hero p {
+            margin: 4px 0 0;
+            color: rgba(248, 250, 252, 0.78);
+        }
+        .analysis-hero-meta {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            color: rgba(248, 250, 252, 0.65);
+        }
+        .analysis-empty {
+            border-radius: 16px;
+            padding: 28px;
+            background: rgba(15, 23, 42, 0.08);
+            text-align: center;
+            border: 1px solid rgba(15, 23, 42, 0.12);
+        }
+        .analysis-empty-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+        }
+        .metric-card-slim {
+            padding: 18px 16px;
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            background: rgba(255, 255, 255, 0.8);
+            min-height: 90px;
+        }
+        .metric-card-slim .metric-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: #475569;
+            margin-bottom: 8px;
+        }
+        .metric-card-slim .metric-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+        .simplified-overview {
+            margin-top: 12px;
+            margin-bottom: 18px;
+        }
+
         </style>
         """,
         unsafe_allow_html=True,
@@ -2343,6 +2554,8 @@ def render_dashboard():
     else:
         st.warning("Could not retrieve sector performance data.")
 
+    market_news_items = get_market_news()
+
     st.markdown("---")
 
     # ============================
@@ -2355,7 +2568,9 @@ def render_dashboard():
             "<div class='section-card'><div class='section-title'>Market Summary (AI-Generated)</div>",
             unsafe_allow_html=True,
         )
-        summary_text = generate_market_summary(index_data)
+        summary_text = generate_market_summary(
+            index_data, macro_data=macro_data, news_items=market_news_items
+        )
         st.markdown(summary_text)
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -2385,7 +2600,7 @@ def render_dashboard():
         "<div class='section-card'><div class='section-title'>Trending Market News</div>",
         unsafe_allow_html=True,
     )
-    news_items = get_market_news()
+    news_items = market_news_items
 
     if news_items:
         for n in news_items:
@@ -2419,182 +2634,54 @@ def render_dashboard():
 
 def render_analysis_page():
     inject_global_css()
-    
-    # ---------- HERO ----------
-    st.markdown("<style>code, pre {display:none !important;}</style>", unsafe_allow_html=True)
+
     st.markdown(
         """
-        <div class="hero-card">
-            <div class="hero-title">Screener Command Center</div>
-            <div class="hero-subtitle">
-                Multi-panel intelligence for factors, peers, charts, and news.
+        <div class="analysis-hero">
+            <div>
+                <h2>Equity Research Console</h2>
+                <p>A clean, high signal workspace with every stat and context point you need.</p>
+            </div>
+            <div class="analysis-hero-meta">
+                <span>Instant peers · factors · headlines · valuation scaffolding</span>
             </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # ---------- COMMAND CENTER SHELL ----------
-    st.markdown("<div class='analysis-shell'><div class='analysis-gradient'>", unsafe_allow_html=True)
+    default_ticker = ""
+    if st.session_state.get("last_results"):
+        default_ticker = st.session_state.last_results.get("ticker", "")
 
-    left_col, right_col = st.columns([1.4, 1])
+    ticker = st.text_input(
+        "Ticker",
+        value=default_ticker,
+        key="analysis_page_ticker",
+        placeholder="Enter a ticker symbol (e.g., AAPL, MSFT)",
+        label_visibility="collapsed",
+    ).upper()
 
-    # ===================== LEFT: COMMAND PANEL =====================
-    with left_col:
-        st.markdown(
-            """
-            <div class="command-card">
-              <div class="command-inner">
-                <div class="command-title-row">
-                    <div class="command-title">Ticker &amp; Universe</div>
-                    <div class="command-pill">Step 1 · Configure Query</div>
-                </div>
-                <div class="command-subtitle">
-                    Type a ticker, choose your universe and horizon, then run a full-stack analysis
-                    pipeline (factors → peers → news → thesis scaffolding).
-                </div>
-                <div class="command-steps">
-                    <div class="command-step active">1 · Ticker &amp; universe</div>
-                    <div class="command-step">2 · Snapshot &amp; factors</div>
-                    <div class="command-step">3 · Peers &amp; comps</div>
-                    <div class="command-step">4 · News &amp; thesis</div>
-                </div>
-            """,
-            unsafe_allow_html=True,
+    col_univ, col_horz = st.columns(2)
+    with col_univ:
+        universe = st.selectbox(
+            "Universe",
+            ["US Large Cap", "US Mid/Small", "Global Developed", "Watchlist"],
+            index=0,
+            key="screener_universe",
+        )
+    with col_horz:
+        horizon = st.selectbox(
+            "Horizon",
+            ["3 Months", "12 Months", "3 Years"],
+            index=1,
+            key="screener_horizon",
         )
 
-        # pull last ticker if available
-        default_ticker = ""
-        if st.session_state.get("last_results"):
-            default_ticker = st.session_state.last_results.get("ticker", "")
+    analyze_clicked = st.button("Analyze", use_container_width=True, key="analysis_page_button")
 
-        st.markdown("<div class='command-input-label'>Ticker Symbol</div>", unsafe_allow_html=True)
-        ticker = st.text_input(
-            "Enter ticker to analyze (e.g., AAPL, MSFT)",
-            value=default_ticker,
-            key="analysis_page_ticker",
-            placeholder="ENTER TICKER SYMBOL TO ANALYZE (E.G., AAPL)",
-            label_visibility="collapsed",
-        ).upper()
-
-        col_univ, col_horz = st.columns(2)
-        with col_univ:
-            universe = st.selectbox(
-                "Universe",
-                ["US Large Cap", "US Mid/Small", "Global Developed", "Watchlist"],
-                index=0,
-                key="screener_universe",
-            )
-        with col_horz:
-            horizon = st.selectbox(
-                "Horizon",
-                ["3 Months", "12 Months", "3 Years"],
-                index=1,
-                key="screener_horizon",
-            )
-
-        analyze_clicked = st.button("Run Screener", use_container_width=True, key="analysis_page_button")
-        st.markdown(
-                """
-                <div class="command-footnote">
-                    Tip: keep this tab open as your “command console” – after running, jump between Screener, Valuation,
-                    Research, and Theses using the top tabs.
-                </div>
-                </div>   <!-- .command-inner -->
-                </div>   <!-- .command-card -->
-                """,
-                unsafe_allow_html=True,
-            )
-
-
-    # ===================== RIGHT: MODULE PREVIEW =====================
-    with right_col:
-        st.markdown(
-            """
-            <div class="command-card">
-              <div class="command-inner">
-                <div class="command-title-row">
-                    <div class="command-title">Analysis Modules</div>
-                    <div class="command-pill">Live Stack</div>
-                </div>
-                <div class="command-subtitle">
-                    Every run fans out across multiple engines. These modules will light up once a ticker is analyzed.
-                </div>
-
-                <div class="module-grid">
-                    <div class="module-card">
-                        <div class="module-chip-row">
-                            <div class="module-dot"></div>
-                            <span>Quant Engine</span>
-                        </div>
-                        <div class="module-title">Factor Scores</div>
-                        <div class="module-desc">
-                            Quality, value, growth and risk scores, normalized vs. custom universes.
-                        </div>
-                        <div class="module-tags">
-                            <span class="module-tag">TTM Metrics</span>
-                            <span class="module-tag">Z-Scores</span>
-                            <span class="module-tag">Composite Rank</span>
-                        </div>
-                    </div>
-
-                    <div class="module-card">
-                        <div class="module-chip-row">
-                            <div class="module-dot"></div>
-                            <span>Market Structure</span>
-                        </div>
-                        <div class="module-title">Peer Map</div>
-                        <div class="module-desc">
-                            Auto-selected peers by industry, size, and return correlation; ready for comps.
-                        </div>
-                        <div class="module-tags">
-                            <span class="module-tag">Vendor Peers</span>
-                            <span class="module-tag">Size Filter</span>
-                        </div>
-                    </div>
-
-                    <div class="module-card">
-                        <div class="module-chip-row">
-                            <div class="module-dot"></div>
-                            <span>Timeline</span>
-                        </div>
-                        <div class="module-title">Price &amp; Events</div>
-                        <div class="module-desc">
-                            Price history hooks for charting, earnings dates, and macro overlays.
-                        </div>
-                        <div class="module-tags">
-                            <span class="module-tag">Mini Charts</span>
-                            <span class="module-tag">Earnings</span>
-                        </div>
-                    </div>
-
-                    <div class="module-card">
-                        <div class="module-chip-row">
-                            <div class="module-dot"></div>
-                            <span>News Stream</span>
-                        </div>
-                        <div class="module-title">Headlines &amp; Context</div>
-                        <div class="module-desc">
-                            Latest headlines and summaries to seed your thesis and risk section.
-                        </div>
-                        <div class="module-tags">
-                            <span class="module-tag">News Digest</span>
-                            <span class="module-tag">Thesis Hooks</span>
-                        </div>
-                    </div>
-                </div>
-              </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    # close analysis shell
-    st.markdown("</div></div>", unsafe_allow_html=True)
-
-    # ===================== RUN ANALYSIS =====================
     if analyze_clicked and ticker:
-        with st.spinner(f"Analyzing {ticker.upper()} in {universe}, {horizon} horizon..."):
+        with st.spinner(f"Analyzing {ticker} — {universe} · {horizon} horizon..."):
             try:
                 max_peers = 6
                 results = run_equity_analysis(ticker, max_peers=max_peers)
@@ -2604,40 +2691,110 @@ def render_analysis_page():
                     {"ticker": results["ticker"], "time": datetime.now().strftime("%Y-%m-%d %H:%M")},
                 )
                 st.session_state.recent_tickers = st.session_state.recent_tickers[:12]
-                st.success(f"Analysis updated for {results['ticker']}")
+                st.success(f"{results['ticker']} analysis complete")
                 st.session_state.valuation_ticker_input = results["ticker"]
             except Exception as e:
                 st.session_state.last_results = None
                 logging.error(f"Error during analysis for {ticker}: {e}", exc_info=True)
                 st.error(
-                    f"Analysis failed for {ticker.upper()}. "
+                    f"Analysis failed for {ticker}. "
                     f"The ticker might be invalid, delisted, or have no data. Error: {e}"
                 )
 
     res = st.session_state.get("last_results")
 
-    # ===================== EMPTY STATE BEFORE RUN =====================
     if not res:
         st.markdown(
             """
-            <div class="section-card empty-state-pro">
-                <div class="empty-state-title">Ready when you are.</div>
-                <ul class="empty-state-list">
-                    <li>Start with a liquid name (AAPL, MSFT, NVDA) to see a full factor and peer breakdown.</li>
-                    <li>Then jump to the <strong>Valuation</strong> tab to layer on DCF and multiples scenarios.</li>
-                    <li>Capture your notes in <strong>Research</strong> and turn them into a structured thesis in <strong>Theses</strong>.</li>
-                </ul>
+            <div class="analysis-empty">
+                <div class="analysis-empty-title">Ready when you are.</div>
+                <p>Run a ticker to unlock peer comparisons, full-factor summaries, and the new heatmap view.</p>
             </div>
             """,
             unsafe_allow_html=True,
         )
         return
 
-    # ===================== ANALYSIS WORKSPACE AFTER RUN =====================
+    base_metrics = res.get("base_metrics") or {}
+    focus_metrics = res.get("focus_row") or {}
+    current_price = res.get("current_price")
+
+    summary_items = [
+        {"label": "Current Price", "value": current_price, "fmt": "currency"},
+        {"label": "Market Cap", "value": base_metrics.get("MarketCap"), "fmt": "marketcap"},
+        {"label": "Revenue Growth", "value": base_metrics.get("RevenueGrowth%"), "fmt": "percent", "relative": focus_metrics.get("RevenueGrowth%")},
+        {"label": "Gross Margin", "value": base_metrics.get("GrossMargin%"), "fmt": "percent", "relative": focus_metrics.get("GrossMargin%")},
+        {"label": "EV/EBITDA", "value": base_metrics.get("EV/EBITDA (raw)"), "fmt": "ratio", "relative": focus_metrics.get("EV/EBITDA")},
+        {"label": "Debt/Equity", "value": base_metrics.get("DebtToEquity"), "fmt": "ratio", "relative": focus_metrics.get("DebtToEquity")},
+        {"label": "P/E (raw)", "value": base_metrics.get("P/E (raw)"), "fmt": "ratio", "relative": focus_metrics.get("P/E Ratio")},
+        {"label": "FCF Margin", "value": base_metrics.get("FCF Margin%"), "fmt": "percent", "relative": focus_metrics.get("FCF Margin%")},
+    ]
+
+    def format_summary_value(value, fmt):
+        if value is None or not np.isfinite(value):
+            return "N/A"
+        if fmt == "currency":
+            return f"${value:,.2f}"
+        if fmt == "marketcap":
+            if value >= 1e9:
+                return f"${value/1e9:,.2f}B"
+            if value >= 1e6:
+                return f"${value/1e6:,.1f}M"
+            return f"${value:,.0f}"
+        if fmt == "percent":
+            return f"{value:+.1f}%"
+        if fmt == "ratio":
+            return f"{value:.1f}x"
+        return str(value)
+
+    for i in range(0, len(summary_items), 4):
+        batch = summary_items[i : i + 4]
+        cols = st.columns(len(batch))
+        for col, item in zip(cols, batch):
+            with col:
+                relative = item.get("relative")
+                color = "#111"
+                if relative is not None and np.isfinite(relative):
+                    color = "#047857" if relative >= 0 else "#dc2626"
+                st.markdown(
+                    f"""
+                    <div class="metric-card-slim">
+                        <div class="metric-label">{item['label']}</div>
+                        <div class="metric-value" style="color:{color};">
+                            {format_summary_value(item["value"], item["fmt"])}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+    st.markdown(
+        """
+        <div class="section-card simplified-overview">
+            <div class="section-title">Summary Narrative</div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(res.get("overview_md", ""), unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    heatmap_fig = build_metric_heatmap_figure(res)
+    if heatmap_fig:
+        st.markdown(
+            """
+            <div class="section-card simplified-overview">
+                <div class="section-title">Metric Heatmap</div>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.plotly_chart(heatmap_fig, use_container_width=True)
+        st.caption("Colored tiles compare your name versus peers. Green = strength, red = relative weakness.")
+        st.markdown("</div>", unsafe_allow_html=True)
+
     st.markdown(
         """
         <div class="section-card">
-            <div class="section-title">Analysis Workspace</div>
+            <div class="section-title">Deep Dive Workspace</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -2668,7 +2825,6 @@ def render_analysis_page():
         peers_df = res.get("peers_df")
 
         if peers_df is not None and not peers_df.empty:
-            # Style: negative numbers in red
             def highlight_negatives(v):
                 try:
                     v_float = float(v)

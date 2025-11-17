@@ -1565,10 +1565,8 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
         logging.error(f"Failed _scenario_valuation_core for {ticker} ({scenario}): {e}")
         return pd.DataFrame(), f"_Valuation failed for {scenario}: {e}_"
 
+#User interface
 
-# ======================================================================
-# GLOBAL STYLING
-# ======================================================================
 def inject_global_css():
     st.markdown(
         """
@@ -1583,16 +1581,13 @@ def inject_global_css():
             --color-secondary-text: #F5EAAA; /* Khaki */
             --color-tertiary-text: #FFFFFF;  /* White */
             
-            --color-dark-card-bg: #1E1E1E;
-            --color-dark-card-text: #FAFAFA;
-            --color-dark-card-border: #333333;
+            --color-dark-card-bg: #020617;
+            --color-dark-card-text: #E5E7EB;
+            --color-dark-card-border: #1F2937;
         }
         
         /* ===== GLOBAL LAYOUT ===== */
         html, body, .stApp {
-            /* Your screenshots show a dark background, but your CSS specifies white.
-               This implies Streamlit's theme is overriding your --color-page-bg.
-               The fixes below will work regardless of the background color. */
             background: var(--color-page-bg) !important;
             color: var(--color-primary-text) !important;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
@@ -1617,35 +1612,23 @@ def inject_global_css():
         }
 
         /* =================================================
-        THIS IS THE FIX FOR YOUR INVISIBLE BUTTON TEXT
-        =================================================
-        */
-        /* ===== FIX: BUTTONS ===== */
-        /* Targets the default Streamlit button */
+        BUTTON TEXT FIX
+        ================================================= */
         button[data-testid="stButton"] {
-            /* This targets the button element itself */
-            color: #FFFFFF !important; /* Forces text to be WHITE */
+            color: #FFFFFF !important;
         }
-        /* Targets the <p> tag inside the button's div wrapper */
         div[data-testid="stButton"] p {
-             color: #FFFFFF !important; /* Forces text to be WHITE */
+             color: #FFFFFF !important;
         }
-        /*
-        =================================================
-        END OF FIX
-        =================================================
-        */
 
-        /* ===== FIX: INFO BOX ===== */
-        /* Targets the st.info box (like "Load a company first...") */
+        /* ===== INFO BOX ===== */
         div[data-testid="stInfo"] {
-            /* This light blue background is from your screenshot */
             background-color: #E6F6FF !important; 
             border: 1px solid #B0E0FF !important; 
-            color: #001f3f !important; /* Dark Navy Blue text */
+            color: #001f3f !important;
         }
         div[data-testid="stInfo"] p {
-             color: #001f3f !important; /* Dark Navy Blue text */
+             color: #001f3f !important;
         }
         
         /* ===== PAGE HEADER / HERO ===== */
@@ -1695,9 +1678,8 @@ def inject_global_css():
             margin-bottom: 16px;
             border: 1px solid var(--color-secondary-bg);
         }
-        /* This ensures text inside hero-cards is light */
         .hero-card .hero-title, .hero-card .hero-subtitle {
-             color: var(--color-tertiary-text) !important; /* White text */
+             color: var(--color-tertiary-text) !important;
         }
         
         .section-card {
@@ -1706,8 +1688,9 @@ def inject_global_css():
             padding: 18px 20px;
             margin-top: 18px;
             margin-bottom: 18px;
-            border: 1px solid #E2E8F0; /* Use a light border for white cards */
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
+                        0 2px 4px -2px rgba(0, 0, 0, 0.05);
         }
         .section-title {
             font-size: 1.25rem;
@@ -1723,9 +1706,8 @@ def inject_global_css():
             padding: 14px 18px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.06);
             border: 1px solid #e2e8f0;
-            height: 100%; /* Ensure cards are same height */
+            height: 100%;
         }
-        
         .metric-label {
             font-size: 13px;
             font-weight: 600;
@@ -1735,7 +1717,6 @@ def inject_global_css():
             margin-bottom: 4px;
             opacity: 0.85;
         }
-
         .metric-value-custom {
             color: #001f3f !important;
             font-weight: 700 !important;
@@ -1743,7 +1724,6 @@ def inject_global_css():
             line-height: 1.3;
             margin-bottom: 4px;
         }
-        
         .metric-delta-custom span {
             padding: 2px 6px;
             border-radius: 4px;
@@ -1751,14 +1731,13 @@ def inject_global_css():
             font-weight: 500;
         }
         .metric-delta-custom.positive span {
-            color: #047857 !important; /* Dark Green */
+            color: #047857 !important;
             background-color: #D1FAE5;
         }
         .metric-delta-custom.negative span {
-            color: #991B1B !important; /* Dark Red */
+            color: #991B1B !important;
             background-color: #FEE2E2;
         }
-
 
         /* ===== TABS FIX ===== */
         button[data-testid="stTab"] {
@@ -1812,34 +1791,33 @@ def inject_global_css():
             opacity: 0.75;
             color: var(--color-secondary-text);
         }
-        
         .ticker-symbol {
             font-weight: 700 !important;
-            color: var(--color-secondary-text) !important; /* Khaki */
+            color: var(--color-secondary-text) !important;
             margin-right: 8px;
         }
         .ticker-price {
             margin-right: 8px;
             opacity: 0.9;
         }
-        
         .ticker-change.positive {
-            color: #00E500 !important; /* Bright Green */
+            color: #00E500 !important;
             font-weight: 600;
         }
         .ticker-change.negative {
-            color: #FF2E2E !important; /* Bright Red */
+            color: #FF2E2E !important;
             font-weight: 600;
         }
-        
-        /* ===== INDEX SNAPSHOT CARDS (DOW, NASDAQ, etc.) ===== */
+
+        /* ===== INDEX SNAPSHOT CARDS ===== */
         .index-chart-card {
             background: #FFFFFF;
             border: 1px solid #E2E8F0;
             border-radius: 12px;
             padding: 18px 20px;
             margin-bottom: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
+                        0 2px 4px -2px rgba(0, 0, 0, 0.05);
             display: flex;
             flex-direction: column;
         }
@@ -1898,16 +1876,206 @@ def inject_global_css():
             padding-left: 8px; 
         }
 
-        /* ===== FIX: VALUATION PAGE INPUTS ===== */
-        /* This makes the text inside the valuation inputs readable */
+        /* ===== VALUATION PAGE INPUTS ===== */
         div[data-testid="stNumberInput"] input {
-             color: #001f3f !important; /* Dark text for light input */
+             color: #001f3f !important;
+        }
+
+        /* ======================================================
+           SCREENER / ANALYSIS COMMAND CENTER (Google x Apple x JPM)
+        =======================================================*/
+        .analysis-shell {
+            margin-top: 8px;
+            margin-bottom: 8px;
+        }
+
+        .analysis-gradient {
+            background: radial-gradient(circle at top left, #0B1120 0%, #020617 38%, #020617 100%);
+            border-radius: 20px;
+            padding: 18px 20px 20px 20px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            box-shadow:
+                0 24px 60px rgba(15, 23, 42, 0.45),
+                0 0 0 1px rgba(15, 23, 42, 0.5) inset;
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+            gap: 18px;
+            align-items: stretch;
+        }
+
+        .command-card {
+            background: linear-gradient(140deg, #020617 0%, #020617 40%, #020617 100%);
+            border-radius: 16px;
+            padding: 16px 18px 18px 18px;
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            color: var(--color-dark-card-text);
+            position: relative;
+            overflow: hidden;
+        }
+        .command-card::before {
+            content: "";
+            position: absolute;
+            inset: -80px;
+            background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 55%);
+            opacity: 0.9;
+            pointer-events: none;
+        }
+        .command-inner {
+            position: relative;
+            z-index: 1;
+        }
+        .command-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+        .command-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #E5E7EB;
+        }
+        .command-pill {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.6);
+            color: #E5E7EB;
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.7), rgba(17, 24, 39, 0.9));
+        }
+        .command-subtitle {
+            font-size: 0.85rem;
+            color: #9CA3AF;
+            margin-bottom: 14px;
+        }
+        .command-steps {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 10px;
+            font-size: 0.78rem;
+            color: #9CA3AF;
+        }
+        .command-step {
+            padding: 4px 9px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.18), rgba(15, 23, 42, 0.9));
+        }
+        .command-step.active {
+            border-color: #FACC15;
+            background: radial-gradient(circle at top left, rgba(250, 204, 21, 0.25), rgba(15, 23, 42, 0.95));
+            color: #FEF3C7;
+        }
+        .command-input-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #9CA3AF;
+            margin-bottom: 4px;
+        }
+        .command-footnote {
+            margin-top: 6px;
+            font-size: 0.75rem;
+            color: #6B7280;
+        }
+
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+        .module-card {
+            background: radial-gradient(circle at top left, rgba(30, 64, 175, 0.35), rgba(15, 23, 42, 1));
+            border-radius: 14px;
+            padding: 10px 11px 11px 11px;
+            border: 1px solid rgba(148, 163, 184, 0.45);
+            color: #E5E7EB;
+            font-size: 0.8rem;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .module-chip-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.76rem;
+            color: #9CA3AF;
+        }
+        .module-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: #22C55E;
+            box-shadow: 0 0 12px rgba(34, 197, 94, 0.9);
+        }
+        .module-title {
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: #F9FAFB;
+        }
+        .module-desc {
+            font-size: 0.76rem;
+            color: #9CA3AF;
+        }
+        .module-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 3px;
+        }
+        .module-tag {
+            font-size: 0.7rem;
+            padding: 3px 7px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            color: #E5E7EB;
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        .empty-state-pro {
+            margin-top: 14px;
+            border-radius: 14px;
+            padding: 12px 14px;
+            background: rgba(239, 246, 255, 0.96);
+            border: 1px dashed rgba(148, 163, 184, 0.8);
+            font-size: 0.86rem;
+            color: #0F172A;
+        }
+        .empty-state-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .empty-state-list {
+            margin: 0;
+            padding-left: 1.2rem;
+            font-size: 0.85rem;
+        }
+        .empty-state-list li {
+            margin-bottom: 2px;
+        }
+
+        /* Smaller screens: stack analysis grid */
+        @media (max-width: 900px) {
+            .analysis-grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
         }
 
         </style>
         """,
         unsafe_allow_html=True,
     )
+
 
 # --- Wall Street esque Price Bar ---
 def render_dashboard():
@@ -2116,42 +2284,190 @@ def render_dashboard():
         st.write("No recent broad-market headlines available.")
     st.markdown("</div>", unsafe_allow_html=True)
 
+#UX for Analysis Page
 
 def render_analysis_page():
-    # --- MODIFIED --- Added CSS call
     inject_global_css()
     
+    # --- Hero bar for the Screener tab (keeps branding consistent) ---
     st.markdown(
         """
         <div class="hero-card">
-            <div class="hero-title">Screener & Analysis</div>
+            <div class="hero-title">Screener Command Center</div>
             <div class="hero-subtitle">
-                Review factor scores, peer set, charts, and recent headlines for any company.
+                Multi-panel intelligence for factors, peers, charts, and news.
             </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
-    
-    # --- MODIFICATION ---
-    # We must now add a way to trigger analysis from this page,
-    # since it was removed from the Dashboard.
-    
-    default_ticker = ""
-    if st.session_state.get("last_results"):
-        default_ticker = st.session_state.last_results.get("ticker", "")
-        
-    ticker = st.text_input(
-        "Enter ticker to analyze (e.g., AAPL, MSFT)",
-        value=default_ticker,
-        key="analysis_page_ticker",
-        placeholder="ENTER TICKER SYMBOL TO ANALYZE (E.G., AAPL)",
-    ).upper()
 
-    analyze_clicked = st.button("Analyze", use_container_width=True, key="analysis_page_button")
-    
+    # ---------- COMMAND CENTER SHELL (Google x Apple x JPM) ----------
+    st.markdown("<div class='analysis-shell'>", unsafe_allow_html=True)
+    st.markdown("<div class='analysis-gradient'>", unsafe_allow_html=True)
+
+    # We’ll use columns for layout but rely on CSS grid for the “feel”
+    left_col, right_col = st.columns([1.4, 1])
+
+    # ===== LEFT: COMMAND PANEL =====
+    with left_col:
+        st.markdown("<div class='command-card'><div class='command-inner'>", unsafe_allow_html=True)
+
+        st.markdown(
+            """
+            <div class="command-title-row">
+                <div class="command-title">Ticker & Universe</div>
+                <div class="command-pill">Step 1 · Configure Query</div>
+            </div>
+            <div class="command-subtitle">
+                Type a ticker, choose your universe and horizon, then run a full-stack analysis
+                pipeline (factors → peers → news → thesis scaffolding).
+            </div>
+            <div class="command-steps">
+                <div class="command-step active">1 · Ticker & universe</div>
+                <div class="command-step">2 · Snapshot & factors</div>
+                <div class="command-step">3 · Peers & comps</div>
+                <div class="command-step">4 · News & thesis</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        default_ticker = ""
+        if st.session_state.get("last_results"):
+            default_ticker = st.session_state.last_results.get("ticker", "")
+
+        st.markdown("<div class='command-input-label'>Ticker Symbol</div>", unsafe_allow_html=True)
+        ticker = st.text_input(
+            "Enter ticker to analyze (e.g., AAPL, MSFT)",
+            value=default_ticker,
+            key="analysis_page_ticker",
+            placeholder="ENTER TICKER SYMBOL TO ANALYZE (E.G., AAPL)",
+            label_visibility="collapsed",
+        ).upper()
+
+        # “High-end” knobs – not wired into calculations yet, but they make the UX feel powerful
+        col_univ, col_horz = st.columns(2)
+        with col_univ:
+            universe = st.selectbox(
+                "Universe",
+                ["US Large Cap", "US Mid/Small", "Global Developed", "Watchlist"],
+                index=0,
+                key="screener_universe",
+            )
+        with col_horz:
+            horizon = st.selectbox(
+                "Horizon",
+                ["3 Months", "12 Months", "3 Years"],
+                index=1,
+                key="screener_horizon",
+            )
+
+        analyze_clicked = st.button("Run Screener", use_container_width=True, key="analysis_page_button")
+
+        st.markdown(
+            """
+            <div class="command-footnote">
+                Tip: keep this tab open as your “command console” – after running, jump between Screener, Valuation, Research, and Theses using the top tabs.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        st.markdown("</div></div>", unsafe_allow_html=True)  # close command-inner & command-card
+
+    # ===== RIGHT: MODULE PREVIEW / CAPABILITIES =====
+    with right_col:
+        st.markdown("<div class='command-card'><div class='command-inner'>", unsafe_allow_html=True)
+        st.markdown(
+            """
+            <div class="command-title-row">
+                <div class="command-title">Analysis Modules</div>
+                <div class="command-pill">Live Stack</div>
+            </div>
+            <div class="command-subtitle">
+                Every run fans out across multiple engines. These modules will light up once a ticker is analyzed.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            """
+            <div class="module-grid">
+                <div class="module-card">
+                    <div class="module-chip-row">
+                        <div class="module-dot"></div>
+                        <span>Quant Engine</span>
+                    </div>
+                    <div class="module-title">Factor Scores</div>
+                    <div class="module-desc">
+                        Quality, value, growth and risk scores, normalized vs. custom universes.
+                    </div>
+                    <div class="module-tags">
+                        <span class="module-tag">TTM Metrics</span>
+                        <span class="module-tag">Z-Scores</span>
+                        <span class="module-tag">Composite Rank</span>
+                    </div>
+                </div>
+
+                <div class="module-card">
+                    <div class="module-chip-row">
+                        <div class="module-dot"></div>
+                        <span>Market Structure</span>
+                    </div>
+                    <div class="module-title">Peer Map</div>
+                    <div class="module-desc">
+                        Auto-selected peers by industry, size, and return correlation; ready for comps.
+                    </div>
+                    <div class="module-tags">
+                        <span class="module-tag">Vendor Peers</span>
+                        <span class="module-tag">Size Filter</span>
+                    </div>
+                </div>
+
+                <div class="module-card">
+                    <div class="module-chip-row">
+                        <div class="module-dot"></div>
+                        <span>Timeline</span>
+                    </div>
+                    <div class="module-title">Price & Events</div>
+                    <div class="module-desc">
+                        Price history hooks for charting, earnings dates, and macro overlays.
+                    </div>
+                    <div class="module-tags">
+                        <span class="module-tag">Mini Charts</span>
+                        <span class="module-tag">Earnings</span>
+                    </div>
+                </div>
+
+                <div class="module-card">
+                    <div class="module-chip-row">
+                        <div class="module-dot"></div>
+                        <span>News Stream</span>
+                    </div>
+                    <div class="module-title">Headlines & Context</div>
+                    <div class="module-desc">
+                        Latest headlines and summaries to seed your thesis and risk section.
+                    </div>
+                    <div class="module-tags">
+                        <span class="module-tag">News Digest</span>
+                        <span class="module-tag">Thesis Hooks</span>
+                    </div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        st.markdown("</div></div>", unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)  # close analysis-gradient
+    st.markdown("</div>", unsafe_allow_html=True)  # close analysis-shell
+
+    # ---------- RUN ANALYSIS LOGIC ----------
     if analyze_clicked and ticker:
-        with st.spinner(f"Analyzing {ticker.upper()}..."):
+        with st.spinner(f"Analyzing {ticker.upper()} in {universe}, {horizon} horizon..."):
             try:
                 max_peers = 6
                 results = run_equity_analysis(ticker, max_peers=max_peers)
@@ -2172,49 +2488,69 @@ def render_analysis_page():
                 )
 
     res = st.session_state.get("last_results")
+
+    # ---------- EMPTY STATE (BEFORE FIRST RUN) ----------
     if not res:
-        st.info("Enter a ticker and click 'Analyze' to see results.")
+        st.markdown(
+            """
+            <div class="section-card empty-state-pro">
+                <div class="empty-state-title">Ready when you are.</div>
+                <ul class="empty-state-list">
+                    <li>Start with a liquid name (AAPL, MSFT, NVDA) to see a full factor and peer breakdown.</li>
+                    <li>Then jump to the <strong>Valuation</strong> tab to layer on DCF and multiples scenarios.</li>
+                    <li>Capture your notes in <strong>Research</strong> and turn them into a structured thesis in <strong>Theses</strong>.</li>
+                </ul>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         return
 
+    # ---------- ANALYSIS WORKSPACE (AFTER RUN) ----------
     st.markdown(
         """
         <div class="section-card">
-            <div class="section-title">Company Overview</div>
+            <div class="section-title">Analysis Workspace</div>
+        </div>
         """,
         unsafe_allow_html=True,
     )
-    st.markdown(res.get("overview_md", ""), unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown(
-        """
-        <div class="section-card">
-            <div class="section-title">Recent Headlines</div>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.markdown(res.get("news_md", ""), unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+    tab_overview, tab_peers, tab_news = st.tabs(["Overview", "Peer Table", "Headlines"])
 
-    st.markdown(
-        """
-        <div class="section-card">
-            <div class="section-title">Peer Table</div>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.dataframe(res.get("peers_df"), use_container_width=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+    with tab_overview:
+        st.markdown(
+            """
+            <div class="section-card">
+                <div class="section-title">Company Overview</div>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.markdown(res.get("overview_md", ""), unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown(
-        """
-        <div class="section-card">
-            <div class="section-title">Charts</div>
-        """,
-        unsafe_allow_html=True,
-    )
-    
-    st.markdown("</div>", unsafe_allow_html=True)
+    with tab_peers:
+        st.markdown(
+            """
+            <div class="section-card">
+                <div class="section-title">Peer Table</div>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.dataframe(res.get("peers_df"), use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with tab_news:
+        st.markdown(
+            """
+            <div class="section-card">
+                <div class="section-title">Recent Headlines</div>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.markdown(res.get("news_md", ""), unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
 
 # ---------- VALUATION PAGE ----------
 def render_valuation_page():

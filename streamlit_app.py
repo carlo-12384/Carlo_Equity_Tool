@@ -1569,11 +1569,6 @@ def _scenario_valuation_core(ticker: str, max_peers: int, scenario: str):
 # ======================================================================
 # GLOBAL STYLING
 # ======================================================================
-# --- Replace this function ---
-# ======================================================================
-# GLOBAL STYLING
-# ======================================================================
-# --- Replace this function ---
 def inject_global_css():
     st.markdown(
         """
@@ -1616,6 +1611,27 @@ def inject_global_css():
         }
         h1, h2, h3, h4, h5, h6 {
             color: var(--color-primary-text) !important;
+        }
+
+        /* ===== FIX: BUTTONS ===== */
+        /* Targets the default Streamlit button and makes text dark */
+        button[data-testid="stButton"] {
+            color: #001f3f !important; 
+        }
+        /* Targets the <p> tag inside the button */
+        div[data-testid="stButton"] > p {
+             color: #001f3f !important; /* Dark Navy Blue text */
+        }
+
+        /* ===== FIX: INFO BOX ===== */
+        /* Targets the st.info box */
+        div[data-testid="stInfo"] {
+            background-color: #E6F6FF; /* A light blue background */
+            border: 1px solid #B0E0FF; 
+            color: #001f3f !important; /* Dark Navy Blue text */
+        }
+        div[data-testid="stInfo"] p {
+             color: #001f3f !important; /* Dark Navy Blue text */
         }
         
         /* ===== PAGE HEADER / HERO ===== */
@@ -1665,6 +1681,11 @@ def inject_global_css():
             margin-bottom: 16px;
             border: 1px solid var(--color-secondary-bg);
         }
+        /* ===== NEW: Added text color to hero-card text ===== */
+        .hero-card .hero-title, .hero-card .hero-subtitle {
+             color: var(--color-tertiary-text) !important; /* White text */
+        }
+        
         .section-card {
             background: var(--color-page-bg);
             border-radius: 16px;

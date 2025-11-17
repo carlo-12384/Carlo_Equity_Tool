@@ -1656,6 +1656,7 @@ def inject_global_css():
         }
 
         /* ===== CUSTOM FIX: *VISIBLE* METRIC HEADERS ===== */
+        /* We use this class above each macro metric in Market Snapshot */
         .metric-label {
             font-size: 13px;
             font-weight: 600;
@@ -1666,24 +1667,24 @@ def inject_global_css():
             opacity: 0.85;
         }
 
-        /* ===== METRIC CARD STYLING ===== */
-        div[data-testid="stMetric"] {
+        /* ===== METRIC CARD STYLING – SCOPED TO MARKET SNAPSHOT MACROS ===== */
+        .market-snapshot-macros div[data-testid="stMetric"] {
             background: #f8fafc !important;
             border-radius: 12px;
             padding: 14px 18px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.06);
         }
 
-        div[data-testid="stMetricValue"] {
+        .market-snapshot-macros div[data-testid="stMetricValue"] {
             color: #001f3f !important;
             font-weight: 700 !important;
             font-size: 26px !important;
         }
 
-        div[data-testid="stMetricDelta"] .positive {
+        .market-snapshot-macros div[data-testid="stMetricDelta"] .positive {
             color: #0cb400 !important;
         }
-        div[data-testid="stMetricDelta"] .negative {
+        .market-snapshot-macros div[data-testid="stMetricDelta"] .negative {
             color: #d00000 !important;
         }
 
@@ -1746,6 +1747,7 @@ def inject_global_css():
     )
 
 
+
 # --- Wall Street esque Price Bar ---
 def render_dashboard():
     inject_global_css()
@@ -1790,10 +1792,13 @@ def render_dashboard():
         """
         st.markdown(full_ticker_html, unsafe_allow_html=True)
 
-    # ============================
+        # ============================
     # ROW 1: Market Snapshot (TITLE + MACRO CARDS)
     # ============================
     st.markdown("### Market Snapshot")
+
+    # Wrap macro metrics so CSS can target only this section
+    st.markdown("<div class='market-snapshot-macros'>", unsafe_allow_html=True)
 
     # Macro cards (VIX, USD, HY Credit, IG Credit) LIVE INSIDE MARKET SNAPSHOT
     macro_cards = get_macro_indicator_cards()
@@ -1817,6 +1822,10 @@ def render_dashboard():
                 st.metric(label="", value=val_str, delta=delta_str)
 
         st.write("")  # small spacer
+
+    # close wrapper
+    st.markdown("</div>", unsafe_allow_html=True)
+
 
     # ============================
     # ROW 2: Index Snapshot Cards (Dow / NASDAQ / S&P / Russell)

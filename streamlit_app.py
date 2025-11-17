@@ -2758,17 +2758,25 @@ def main():
 
     # ---------- HOME ----------
     with tab_home:
-        # Big blue hero header only on Home
-        st.markdown(
-            """
+    # ---- Big Hero Header ----
+    st.markdown(
+        """
+        <div class="header-hero">
             <div class="page-header">
                 <h1 class="page-title">Equity Research Tool</h1>
                 <p class="page-subtitle">Fricano Capital Research</p>
+                <p class="page-mini-desc">
+                    Institutional-style equity analytics with live macro context.
+                </p>
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        render_dashboard()
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # ---- The Ticker + Rest of Page ----
+    render_dashboard()
+
 
     # ---------- SCREENER ----------
     with tab_screener:

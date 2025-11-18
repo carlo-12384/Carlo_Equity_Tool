@@ -2455,7 +2455,7 @@ def inject_global_css():
             position: fixed;
             top: 0;
             left: 0;
-            width: 220px;
+            width: 200px;
             height: 100vh;
             background: linear-gradient(180deg, #020617 0%, #0b1120 40%, #020617 100%);
             border-radius: 0 32px 32px 0;
@@ -2499,7 +2499,7 @@ def inject_global_css():
             display: flex;
             flex-direction: column;
             gap: 6px;
-            margin-top: 8px;
+            margin-top: 0;
         }
 
         .side-nav .stButton {
@@ -2515,13 +2515,13 @@ def inject_global_css():
             font-size: 13px;
             font-weight: 500;
             background: transparent;
-            color: #cbd5f5;
+            color: #e5f4ff;
             box-shadow: none;
         }
 
         .side-nav .stButton > button:hover {
-            background: rgba(148, 163, 184, 0.14);
-            color: #e2e8f0;
+            background: rgba(148, 163, 184, 0.25);
+            color: #ffffff;
         }
 
         /* active state: we’ll add a class through markdown wrapper */
@@ -2559,6 +2559,21 @@ def inject_global_css():
         unsafe_allow_html=True,
     )
 
+
+def render_global_header_and_kpis():
+    st.markdown(
+        """
+        <div class="header-hero">
+            <div class="page-header">
+                <h1 class="page-title">Equity Research Tool</h1>
+                <p class="page-subtitle">Fricano Capital Research</p>
+                <p class="page-mini-desc">
+                </p>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 # --- Wall Street esque Price Bar ---
 def render_dashboard():
@@ -2971,7 +2986,7 @@ def render_analysis_page():
 
     heatmap_fig = build_metric_heatmap_figure(res)
     if heatmap_fig:
-        heatmap_wrapper = "<div class='heatmap-wrapper'>"
+    heatmap_wrapper = "<div class='heatmap-wrapper'>"
     if heatmap_fig:
         st.markdown(
             f"""
@@ -3707,18 +3722,9 @@ def main():
     with col_main:
         st.markdown("<div class='main-content-wrapper'>", unsafe_allow_html=True)
 
-        st.markdown(
-            """
-            <div class="hero-card" style="margin-top:0;">
-                <div class="hero-title">Equity Research Tool</div>
-                <div class="hero-subtitle">Fricano Capital Research</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
         page = st.session_state.top_nav_page
         if page == "Dashboard":
+            render_global_header_and_kpis()
             render_dashboard()
         elif page == "Analysis":
             render_analysis_page()

@@ -1852,8 +1852,8 @@ def inject_global_css():
             --color-dark-card-text: #E5E7EB;
             --color-dark-card-border: #1F2937;
             --left-rail-width: 2in;
-            --content-max-width: 1180px;
-            --content-buffer: clamp(20px, 2vw, 48px);
+            --content-max-width: calc(1180px - 0.5in);
+            --content-buffer: 0.25in;
         }
         
         /* ===== GLOBAL LAYOUT ===== */
@@ -1887,6 +1887,42 @@ def inject_global_css():
             margin: 0 auto;
             padding: 0 var(--content-buffer);
             box-sizing: border-box;
+        }
+        div[data-testid="stTabs"]:first-of-type {
+            position: relative;
+        }
+        div[data-testid="stTabs"]:first-of-type > div:first-child {
+            position: fixed;
+            top: 10px;
+            left: 0;
+            width: var(--left-rail-width);
+            height: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 6px;
+            padding: 16px 0;
+            background: transparent;
+            z-index: 1100;
+            box-sizing: border-box;
+        }
+        div[data-testid="stTabs"]:first-of-type > div:first-child button[data-testid="stTab"] {
+            justify-content: flex-start;
+            text-align: left;
+            width: 100%;
+            border-radius: 0 16px 16px 0;
+            padding: 8px 18px;
+            background: transparent;
+            color: #cbd5f5;
+            font-weight: 600;
+        }
+        div[data-testid="stTabs"]:first-of-type > div:first-child button[data-testid="stTab"][aria-selected="true"] {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.16);
+        }
+        div[data-testid="stTabs"]:first-of-type > div:nth-child(2) {
+            margin-top: 0;
+            padding-top: 0;
         }
         div[data-testid="stAppViewContainer"] {
             padding-top: 0 !important;

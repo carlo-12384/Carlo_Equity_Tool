@@ -10,7 +10,6 @@ from datetime import datetime
 import streamlit as st
 import json
 import plotly.graph_objects as go # --- NEW --- Import Plotly
-from urllib.parse import urlencode
 
 
 # -------------------- CONFIG / LOGGING --------------------
@@ -1887,15 +1886,13 @@ def inject_global_css():
         }
 
         section[data-testid="stSidebar"] {
-            display: none !important;
-        }
-
-        .custom-sidebar {
+            width: var(--sidebar-width);
+            min-width: var(--sidebar-width);
+            max-width: var(--sidebar-width);
             position: fixed;
             top: 0;
             left: 0;
             bottom: 0;
-            width: var(--sidebar-width);
             padding: 0;
             margin: 0;
             border: none;
@@ -2003,7 +2000,7 @@ def inject_global_css():
         }
 
         @media (max-width: 1100px) {
-            .custom-sidebar {
+            section[data-testid="stSidebar"] {
                 width: 220px;
                 min-width: 220px;
             }
@@ -2014,7 +2011,7 @@ def inject_global_css():
         }
 
         @media (max-width: 900px) {
-            .custom-sidebar {
+            section[data-testid="stSidebar"] {
                 position: relative;
                 width: 100%;
                 min-width: 100%;
@@ -3710,11 +3707,10 @@ def render_sidebar_nav():
         st.session_state.sidebar_nav = nav_override
     if st.session_state.sidebar_nav not in NAV_PAGES:
         st.session_state.sidebar_nav = NAV_PAGES[0]
-    st.session_state.active_page = st.session_state.sidebar_nav
 
-    stack_html = "<div class='custom-sidebar'>"
-    stack_html += """
-        <div>
+    with st.sidebar:
+        st.markdown(
+            """
             <div class="sidebar-brand">
                 <div class="sidebar-brand-icon">FC</div>
                 <div>
@@ -3723,39 +3719,46 @@ def render_sidebar_nav():
                 </div>
             </div>
             <p class="sidebar-nav-title">Navigate</p>
-    """
-    stack_html += "<div class='sidebar-chip-stack'>"
-    for page in NAV_PAGES:
-        link_params = {k: list(v) for k, v in params.items()}
-        link_params["nav"] = [page]
-        href = f"?{urlencode(link_params, doseq=True)}"
-        active_class = " active" if page == st.session_state.sidebar_nav else ""
-        stack_html += f"<a href=\"{href}\" class='sidebar-chip{active_class}'>{page}</a>"
-    stack_html += "</div>"
-    stack_html += "</div>"
-    stack_html += """
-        <div>
-            <div class='sidebar-divider'></div>
+            """,
+            unsafe_allow_html=True,
+        )
+        index = NAV_PAGES.index(st.session_state.sidebar_nav) if st.session_state.sidebar_nav in NAV_PAGES else 0
+        selected = st.radio(
+            "",
+            NAV_PAGES,
+            index=index,
+            label_visibility="collapsed",
+            key="nav_radio",
+        )
+        st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
+        st.markdown(
+            """
             <div class='sidebar-chip-styles'>
                 <span>Sidebar Menu Chips</span>
                 <span>Navigation Chips</span>
                 <span>Vertical Pills</span>
                 <span>Navigation Capsules</span>
             </div>
-            <div class='sidebar-footer'>Updated """ + datetime.now().strftime('%b %d, %Y') + """</div>
-        </div>
-    """
-    stack_html += "</div>"
+            """,
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f"<div class='sidebar-footer'>Updated {datetime.now().strftime('%b %d, %Y')}</div>",
+            unsafe_allow_html=True,
+        )
 
-    st.markdown(stack_html, unsafe_allow_html=True)
+    if selected not in NAV_PAGES:
+        selected = NAV_PAGES[0]
+    st.session_state.sidebar_nav = selected
+    st.session_state.active_page = selected
 
     current_nav_param = params.get("nav", [None])[0]
-    if current_nav_param != st.session_state.sidebar_nav:
+    if current_nav_param != selected:
         updated_params = {k: list(v) for k, v in params.items()}
-        updated_params["nav"] = [st.session_state.sidebar_nav]
+        updated_params["nav"] = [selected]
         st.experimental_set_query_params(**updated_params)
 
-    return st.session_state.sidebar_nav
+    return selected
 
 # ======================================================================
 # MAIN APP

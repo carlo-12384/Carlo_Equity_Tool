@@ -1851,9 +1851,6 @@ def inject_global_css():
             --color-dark-card-bg: #020617;
             --color-dark-card-text: #E5E7EB;
             --color-dark-card-border: #1F2937;
-            --left-rail-width: 2in;
-            --content-max-width: calc(1180px - 0.5in);
-            --content-buffer: 0.25in;
         }
         
         /* ===== GLOBAL LAYOUT ===== */
@@ -1863,8 +1860,6 @@ def inject_global_css():
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
             margin: 0 !important;
             padding: 0 !important;
-            overflow-x: hidden;
-            min-height: 100%;
         }
         header[data-testid="stHeader"] {
             background: transparent !important;
@@ -1873,20 +1868,8 @@ def inject_global_css():
             padding: 0 !important;
         }
         div.block-container {
-            margin-left: var(--left-rail-width) !important;
-            width: calc(100% - var(--left-rail-width)) !important;
-            max-width: 100% !important;
-            padding: 0 !important;
-            margin-top: 0 !important;
-            display: block;
-            box-sizing: border-box;
-        }
-        .core-content-shell {
-            width: 100%;
-            max-width: var(--content-max-width);
-            margin: 0 auto;
-            padding: 0 var(--content-buffer);
-            box-sizing: border-box;
+            padding-top: 0rem !important;
+            margin-top: -20px !important;
         }
         div[data-testid="stAppViewContainer"] {
             padding-top: 0 !important;
@@ -1914,54 +1897,13 @@ def inject_global_css():
         div[data-testid="stInfo"] p {
              color: #001f3f !important;
         }
-        .left-rail {
-            position: fixed;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            width: var(--left-rail-width);
-            background: linear-gradient(180deg, #010915 0%, #04122a 60%, #000610 100%);
-            box-shadow: 3px 0 20px rgba(1, 5, 20, 0.65);
-            z-index: 1000;
-        }
-        .left-rail-nav {
-            position: absolute;
-            top: 130px;
-            left: 0;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            padding: 0 8px;
-            box-sizing: border-box;
-        }
-        .left-rail-nav .nav-link {
-            display: block;
-            padding: 10px 16px;
-            border-radius: 0 16px 16px 0;
-            background: rgba(255, 255, 255, 0.06);
-            color: var(--color-tertiary-text);
-            text-decoration: none;
-            font-weight: 600;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            transition: background 0.2s ease;
-        }
-        .left-rail-nav .nav-link:hover {
-            background: rgba(255, 255, 255, 0.12);
-        }
-        .left-rail-nav .nav-link.active {
-            background: rgba(255, 255, 255, 0.24);
-            color: #ffffff;
-        }
         
         /* ===== PAGE HEADER / HERO ===== */
         .header-hero {
-            width: 100%;
-            margin-left: 0;
-            box-sizing: border-box;
+            width: 100vw;
             position: relative;
-            transform: none;
+            left: 50%;
+            transform: translateX(-50%);
             padding: 32px 0 26px 0;
             background: linear-gradient(90deg, #00152E 0%, #003566 50%, #00152E 100%);
             border-bottom: 2px solid #001f3f;
@@ -2088,12 +2030,12 @@ def inject_global_css():
             color: var(--color-tertiary-text);
             overflow: hidden;
             padding: 10px 0;
-            width: 100%;
-            margin-left: 0;
+            width: 100vw;
             position: relative;
+            left: 50%;
+            margin-left: -50vw;
             border-top: 1px solid var(--color-secondary-bg);
             border-bottom: 1px solid var(--color-secondary-bg);
-            box-sizing: border-box;
         }
         .ticker-tape-inner {
             display: inline-flex;
@@ -2207,7 +2149,7 @@ def inject_global_css():
         }
 
         /* ======================================================
-            SCREENER / ANALYSIS COMMAND CENTER (Google x Apple x JPM)
+           SCREENER / ANALYSIS COMMAND CENTER (Google x Apple x JPM)
         =======================================================*/
         .analysis-shell {
             margin-top: 8px;
@@ -2526,42 +2468,6 @@ def inject_global_css():
         </style>
         """,
         unsafe_allow_html=True,
-        
-    )
-MAIN_NAV_PAGES = [
-    ("Home", "Home"),
-    ("Screener", "Screener"),
-    ("Valuation", "Valuation"),
-    ("Research", "Research"),
-    ("Theses", "Theses"),
-]
-
-def get_active_page() -> str:
-    params = st.experimental_get_query_params()
-    page = params.get("page", ["Home"])[0]
-    valid_slugs = {slug for _, slug in MAIN_NAV_PAGES}
-    if page not in valid_slugs:
-        page = "Home"
-    return page
-
-def render_left_rail(active_page: str):
-    links = []
-    for label, slug in MAIN_NAV_PAGES:
-        slug_param = slug
-        active_class = "active" if slug_param == active_page else ""
-        links.append(
-            f'<a class="nav-link {active_class}" href="?page={slug_param}">{label}</a>'
-        )
-    nav_html = "\n".join(links)
-    st.markdown(
-        f"""
-        <div class="left-rail">
-            <div class="left-rail-nav">
-                {nav_html}
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
     )
 
 
@@ -2603,8 +2509,6 @@ def render_dashboard():
         </div>
         """
         st.markdown(full_ticker_html, unsafe_allow_html=True)
-
-    st.markdown('<div class="core-content-shell">', unsafe_allow_html=True)
 
     # ============================
     # ROW 1: Market Snapshot (TITLE + MACRO CARDS)
@@ -2816,7 +2720,6 @@ def render_dashboard():
     else:
         st.write("No recent broad-market headlines available.")
 
-    st.markdown("</div>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 #UX for Analysis Page
@@ -3654,30 +3557,48 @@ def main():
 
     # Global CSS
     inject_global_css()
-    active_page = get_active_page()
-    render_left_rail(active_page)
 
-    if active_page == "Home":
+    # ---------- TABS AS MAIN NAV (TOP LEFT) ----------
+    tab_home, tab_screener, tab_val, tab_research, tab_theses = st.tabs(
+        ["Home", "Screener", "Valuation", "Research", "Theses"]
+    )
+
+    # ---------- HOME ----------
+    with tab_home:
+    # ---- Big Hero Header ----
         st.markdown(
-            """
-            <div class="header-hero">
-                <div class="page-header">
-                    <h1 class="page-title">Equity Research Tool</h1>
-                    <p class="page-subtitle">Fricano Capital Research</p>
-                    <p class="page-mini-desc"></p>
-                </div>
+        """
+        <div class="header-hero">
+            <div class="page-header">
+                <h1 class="page-title">Equity Research Tool</h1>
+                <p class="page-subtitle">Fricano Capital Research</p>
+                <p class="page-mini-desc">
+                </p>
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+        # ---- The Ticker + Rest of Page ----
         render_dashboard()
-    elif active_page == "Screener":
+
+
+    # ---------- SCREENER ----------
+    with tab_screener:
         render_analysis_page()
-    elif active_page == "Valuation":
+
+    # ---------- VALUATION ----------
+    with tab_val:
         render_valuation_page()
-    elif active_page == "Research":
+
+    # ---------- RESEARCH ----------
+    with tab_research:
         render_research_page()
-    elif active_page == "Theses":
+
+    
+    # ---------- THESES ----------
+    # This part was missing from your main function
+    with tab_theses:
         render_theses_page()
 
 

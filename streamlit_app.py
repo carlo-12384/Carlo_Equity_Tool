@@ -2544,11 +2544,9 @@ def inject_global_css():
         .main-shell {
             width: calc(100vw - 220px);
             margin-left: 220px;
-            padding: 16px 36px 40px;
+            padding: 0;
             min-height: 100vh;
             box-sizing: border-box;
-            position: relative;
-            z-index: 0;
         }
 
         .main-content-wrapper {
@@ -2994,7 +2992,7 @@ def render_analysis_page():
 
     heatmap_fig = build_metric_heatmap_figure(res)
     if heatmap_fig:
-        heatmap_wrapper = "<div class='heatmap-wrapper'>"
+    heatmap_wrapper = "<div class='heatmap-wrapper'>"
     if heatmap_fig:
         st.markdown(
             f"""

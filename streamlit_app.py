@@ -1958,6 +1958,8 @@ def inject_global_css():
         /* ===== PAGE HEADER / HERO ===== */
         .header-hero {
             width: 100%;
+            margin-left: 0;
+            box-sizing: border-box;
             position: relative;
             transform: none;
             padding: 32px 0 26px 0;
@@ -2087,6 +2089,7 @@ def inject_global_css():
             overflow: hidden;
             padding: 10px 0;
             width: 100%;
+            margin-left: 0;
             position: relative;
             border-top: 1px solid var(--color-secondary-bg);
             border-bottom: 1px solid var(--color-secondary-bg);

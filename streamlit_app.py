@@ -1876,7 +1876,8 @@ def inject_global_css():
             margin-left: var(--left-rail-width) !important;
             width: calc(100% - var(--left-rail-width)) !important;
             max-width: 100% !important;
-            padding: 0 !important;
+            /* **MODIFIED HERE** to add horizontal buffer padding */
+            padding: 0 var(--content-buffer) !important; 
             margin-top: 0 !important;
             display: block;
             box-sizing: border-box;
@@ -1885,7 +1886,11 @@ def inject_global_css():
             width: 70%;
             max-width: var(--content-max-width);
             margin: 0 auto;
-            padding: 25px var(--content-buffer);
+            /* Note: This padding is now redundant for the sides 
+                     if the container padding is used, but keep it 
+                     if you want to *center* the content within the 
+                     padded block-container area. */
+            padding: 25px 0; /* Changed from var(--content-buffer) to 0 */
             box-sizing: border-box;
         }
         div[data-testid="stAppViewContainer"] {
@@ -2205,7 +2210,7 @@ def inject_global_css():
         }
 
         /* ======================================================
-           SCREENER / ANALYSIS COMMAND CENTER (Google x Apple x JPM)
+            SCREENER / ANALYSIS COMMAND CENTER (Google x Apple x JPM)
         =======================================================*/
         .analysis-shell {
             margin-top: 8px;
@@ -2525,14 +2530,6 @@ def inject_global_css():
         """,
         unsafe_allow_html=True,
     )
-
-MAIN_NAV_PAGES = [
-    ("Home", "Home"),
-    ("Screener", "Screener"),
-    ("Valuation", "Valuation"),
-    ("Research", "Research"),
-    ("Theses", "Theses"),
-]
 
 def get_active_page() -> str:
     params = st.experimental_get_query_params()

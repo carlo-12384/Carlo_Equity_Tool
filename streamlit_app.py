@@ -2035,10 +2035,10 @@ def inject_global_css():
         
         /* ===== PAGE HEADER / HERO ===== */
         .header-hero {
-            width: 100vw;
+            width: calc(100vw - var(--sidebar-width));
             position: relative;
-            left: 50%;
-            transform: translateX(-50%);
+            left: var(--sidebar-width);
+            transform: none;
             padding: 32px 0 26px 0;
             background: linear-gradient(90deg, #00152E 0%, #003566 50%, #00152E 100%);
             border-bottom: 2px solid #001f3f;
@@ -2165,10 +2165,10 @@ def inject_global_css():
             color: var(--color-tertiary-text);
             overflow: hidden;
             padding: 10px 0;
-            width: 100vw;
+            width: calc(100vw - var(--sidebar-width));
             position: relative;
-            left: 50%;
-            margin-left: -50vw;
+            left: var(--sidebar-width);
+            margin-left: 0;
             border-top: 1px solid var(--color-secondary-bg);
             border-bottom: 1px solid var(--color-secondary-bg);
         }
@@ -3727,7 +3727,7 @@ def main():
         page_title="Equity Research Tool",
         page_icon="📊",
         layout="wide",
-        initial_sidebar_state="collapsed",
+        initial_sidebar_state="expanded",
     )
 
     # Load DM Serif Display for the title

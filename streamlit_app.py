@@ -684,27 +684,7 @@ def render_global_header_and_kpis():
         unsafe_allow_html=True,
     )
 
-    # --- KPI STRIP UNDER TITLE ---
-    kpi_data = get_dashboard_kpis()
-    if kpi_data:
-        st.markdown("<div class='header-kpi-container'>", unsafe_allow_html=True)
-        cols = st.columns(len(kpi_data))
-        for col, item in zip(cols, kpi_data):
-            with col:
-                change_class = "positive" if item["change_val"] >= 0 else "negative"
-                st.markdown(
-                    f"""
-                    <div class="header-kpi-card">
-                        <div class="header-kpi-label">{item['label']}</div>
-                        <div class="header-kpi-value">{item['value_str']}</div>
-                        <div class="header-kpi-change {change_class}">
-                            {item['change_str']}
-                        </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-        st.markdown("</div>", unsafe_allow_html=True)
+    # KPIs intentionally removed from header; they live in the boxes below.
 
     
 @st.cache_data(ttl=300)
@@ -2485,16 +2465,25 @@ def inject_global_css():
             margin-bottom: 12px;
             overflow: hidden;
         }
-        .left-nav {
+        .left-nav-shell {
             position: sticky;
-            top: 30px;
+            top: 24px;
             background: linear-gradient(180deg, #021026, #0b1f3d);
-            color: #f8fafc;
             border-radius: 18px;
-            padding: 24px 20px;
+            padding: 22px;
             border: 1px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 24px 70px rgba(2, 6, 23, 0.6);
-            min-height: 320px;
+            min-height: 360px;
+            color: #f8fafc;
+        }
+        .left-nav {
+            background: transparent;
+            color: #f8fafc;
+            padding: 0;
+            border-radius: 0;
+            border: none;
+            box-shadow: none;
+            min-height: auto;
             display: flex;
             flex-direction: column;
             gap: 12px;
@@ -2964,7 +2953,7 @@ def render_analysis_page():
 
     heatmap_fig = build_metric_heatmap_figure(res)
     if heatmap_fig:
-        heatmap_wrapper = "<div class='heatmap-wrapper'>"
+    heatmap_wrapper = "<div class='heatmap-wrapper'>"
     if heatmap_fig:
         st.markdown(
             f"""
@@ -3672,12 +3661,18 @@ def main():
     col_nav, col_main = st.columns([0.18, 0.82])
 
     with col_nav:
-        st.markdown("<div class='left-nav-label'>Navigation</div>", unsafe_allow_html=True)
-        nav_html = "<div class='left-nav'>"
+        nav_html = """
+        <div class='left-nav-shell'>
+            <div class='left-nav-label'>Navigation</div>
+            <div class='left-nav'>
+        """
         for item in NAV_ITEMS:
             active = "active" if item == st.session_state.nav_section else ""
             nav_html += f"<a class='nav-btn {active}' href='?nav={item}'>{item}</a>"
-        nav_html += "</div>"
+        nav_html += """
+            </div>
+        </div>
+        """
         st.markdown(nav_html, unsafe_allow_html=True)
 
     with col_main:

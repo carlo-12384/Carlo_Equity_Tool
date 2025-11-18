@@ -10,7 +10,6 @@ from datetime import datetime
 import streamlit as st
 import json
 import plotly.graph_objects as go # --- NEW --- Import Plotly
-from urllib.parse import urlencode
 
 
 # -------------------- CONFIG / LOGGING --------------------
@@ -1852,7 +1851,6 @@ def inject_global_css():
             --color-dark-card-bg: #020617;
             --color-dark-card-text: #E5E7EB;
             --color-dark-card-border: #1F2937;
-            --sidebar-width: 250px;
         }
         
         /* ===== GLOBAL LAYOUT ===== */
@@ -1870,184 +1868,14 @@ def inject_global_css():
             padding: 0 !important;
         }
         div.block-container {
-            margin-left: var(--sidebar-width) !important;
-            width: calc(100% - var(--sidebar-width)) !important;
-            padding-top: 0 !important;
-            margin-top: 0 !important;
-            padding-left: 0 !important;
-            padding-right: 0 !important;
-            display: flex;
-            justify-content: center;
+            padding-top: 0rem !important;
+            margin-top: -20px !important;
         }
         div[data-testid="stAppViewContainer"] {
             padding-top: 0 !important;
         }
         h1, h2, h3, h4, h5, h6 {
             color: var(--color-primary-text) !important;
-        }
-
-        section[data-testid="stSidebar"] {
-            width: var(--sidebar-width);
-            min-width: var(--sidebar-width);
-            max-width: var(--sidebar-width);
-            position: fixed;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            padding: 0;
-            margin: 0;
-            border: none;
-            background: #020617;
-            box-shadow: 4px 0 20px rgba(2, 6, 23, 0.65);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            z-index: 30;
-        }
-
-        section[data-testid="stSidebar"] > div {
-            padding: 0;
-        }
-
-        .sidebar-brand {
-            padding: 32px 24px 16px;
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-        .sidebar-brand-icon {
-            width: 46px;
-            height: 46px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, rgba(14,165,233,0.25), rgba(14,165,233,0.8));
-            color: #fff;
-            font-weight: 700;
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            letter-spacing: 0.15em;
-        }
-        .sidebar-brand-title {
-            font-size: 1rem;
-            font-weight: 700;
-            color: #E5E7EB;
-            letter-spacing: 0.04em;
-            margin: 0;
-        }
-        .sidebar-brand-sub {
-            margin: 0;
-            color: rgba(229,231,235,0.65);
-            font-size: 0.75rem;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-        }
-
-        .sidebar-nav-title {
-            margin: 0;
-            padding: 0 24px;
-            font-size: 0.8rem;
-            letter-spacing: 0.3em;
-            text-transform: uppercase;
-            color: rgba(229,231,235,0.5);
-        }
-
-        .sidebar-chip-stack {
-            margin: 12px 0 0;
-            padding: 0 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        section[data-testid="stSidebar"] div[data-testid="stForm"] {
-            padding: 0 24px;
-            margin-top: 8px;
-        }
-        .sidebar-chip {
-            display: flex;
-            border-radius: 12px;
-            border: 1px solid transparent;
-            padding: 12px 16px;
-            background: rgba(255,255,255,0.04);
-            transition: background 0.15s ease, transform 0.15s ease, border 0.15s ease;
-            font-size: 0.95rem;
-            font-weight: 700;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: #E5E7EB;
-            width: 100%;
-            text-align: left;
-            cursor: pointer;
-            text-decoration: none;
-        }
-        .sidebar-chip:hover {
-            background: rgba(59,130,246,0.18);
-            transform: translateX(2px);
-        }
-        .sidebar-chip.active {
-            background: linear-gradient(145deg, rgba(14,165,233,0.12), rgba(14,165,233,0.35));
-            border-color: rgba(14,165,233,0.9);
-            color: #f8fafc;
-            box-shadow: 0 0 0 1px rgba(14,165,233,0.5);
-        }
-
-        .sidebar-divider {
-            border-top: 1px solid rgba(255,255,255,0.08);
-            margin: 0 24px;
-        }
-        .sidebar-divider.thin {
-            margin-top: 0;
-        }
-
-        .sidebar-footer {
-            padding: 16px 24px 28px;
-            font-size: 0.75rem;
-            color: rgba(229,231,235,0.65);
-            letter-spacing: 0.16em;
-            text-transform: uppercase;
-        }
-
-        @media (max-width: 1100px) {
-            section[data-testid="stSidebar"] {
-                width: 220px;
-                min-width: 220px;
-            }
-            div.block-container {
-                margin-left: 220px !important;
-                width: calc(100% - 220px) !important;
-            }
-        }
-
-        @media (max-width: 900px) {
-            section[data-testid="stSidebar"] {
-                position: relative;
-                width: 100%;
-                min-width: 100%;
-                max-width: 100%;
-                height: auto;
-                flex-direction: column;
-                box-shadow: none;
-                border-bottom: 1px solid rgba(255,255,255,0.08);
-            }
-            div.block-container {
-                margin-left: 0 !important;
-                width: 100% !important;
-                padding-left: 1.5rem !important;
-                padding-right: 1.5rem !important;
-            }
-        }
-        div[data-testid="stAppViewContainer"] > .main {
-            padding-left: 0 !important;
-            padding-right: 0 !important;
-        }
-        div[data-testid="stAppViewContainer"] > .main > div {
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding-left: 28px;
-            padding-right: 28px;
-            box-sizing: border-box;
         }
 
         /* =================================================
@@ -3703,72 +3531,6 @@ def render_theses_page():
         st.dataframe(df_theses, use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
-
-NAV_PAGES = ["Home", "Screener", "Valuation", "Research", "Theses"]
-
-def render_sidebar_nav():
-    if "sidebar_nav" not in st.session_state:
-        st.session_state.sidebar_nav = NAV_PAGES[0]
-
-    params = st.experimental_get_query_params()
-    nav_override = params.get("nav", [None])[0]
-    if nav_override in NAV_PAGES:
-        st.session_state.sidebar_nav = nav_override
-    if st.session_state.sidebar_nav not in NAV_PAGES:
-        st.session_state.sidebar_nav = NAV_PAGES[0]
-    st.session_state.active_page = st.session_state.sidebar_nav
-
-    with st.sidebar:
-        st.markdown(
-            """
-            <div class="sidebar-brand">
-                <div class="sidebar-brand-icon">FC</div>
-                <div>
-                    <p class="sidebar-brand-title">Fricano</p>
-                    <p class="sidebar-brand-sub">Equity Research</p>
-                </div>
-            </div>
-            <p class="sidebar-nav-title">Navigate</p>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        stack_html = "<div class='sidebar-chip-stack'>"
-        for page in NAV_PAGES:
-            link_params = {k: list(v) for k, v in params.items()}
-            link_params["nav"] = [page]
-            href = f"?{urlencode(link_params, doseq=True)}"
-            active_class = " active" if page == st.session_state.sidebar_nav else ""
-            stack_html += f"<a href=\"{href}\" class='sidebar-chip{active_class}'>{page}</a>"
-        stack_html += "</div>"
-        st.markdown(stack_html, unsafe_allow_html=True)
-
-        st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
-        st.markdown(
-            """
-            <div class='sidebar-chip-styles'>
-                <span>Sidebar Menu Chips</span>
-                <span>Navigation Chips</span>
-                <span>Vertical Pills</span>
-                <span>Navigation Capsules</span>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        st.markdown(
-            f"<div class='sidebar-footer'>Updated {datetime.now().strftime('%b %d, %Y')}</div>",
-            unsafe_allow_html=True,
-        )
-
-    current_nav_param = params.get("nav", [None])[0]
-    if current_nav_param != st.session_state.sidebar_nav:
-        updated_params = {k: list(v) for k, v in params.items()}
-        updated_params["nav"] = [st.session_state.sidebar_nav]
-        st.experimental_set_query_params(**updated_params)
-
-    return st.session_state.sidebar_nav
-
 # ======================================================================
 # MAIN APP
 # ======================================================================
@@ -3780,7 +3542,7 @@ def main():
         page_title="Equity Research Tool",
         page_icon="📊",
         layout="wide",
-        initial_sidebar_state="expanded",
+        initial_sidebar_state="collapsed",
     )
 
     # Load DM Serif Display for the title
@@ -3796,31 +3558,47 @@ def main():
     # Global CSS
     inject_global_css()
 
-    # ---------- CUSTOM LEFT NAV ----------
-    active_page = render_sidebar_nav()
+    # ---------- TABS AS MAIN NAV (TOP LEFT) ----------
+    tab_home, tab_screener, tab_val, tab_research, tab_theses = st.tabs(
+        ["Home", "Screener", "Valuation", "Research", "Theses"]
+    )
 
-    if active_page == "Home":
+    # ---------- HOME ----------
+    with tab_home:
+    # ---- Big Hero Header ----
         st.markdown(
-            """
-            <div class="header-hero">
-                <div class="page-header">
-                    <h1 class="page-title">Equity Research Tool</h1>
-                    <p class="page-subtitle">Fricano Capital Research</p>
-                    <p class="page-mini-desc">
-                    </p>
-                </div>
+        """
+        <div class="header-hero">
+            <div class="page-header">
+                <h1 class="page-title">Equity Research Tool</h1>
+                <p class="page-subtitle">Fricano Capital Research</p>
+                <p class="page-mini-desc">
+                </p>
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+        # ---- The Ticker + Rest of Page ----
         render_dashboard()
-    elif active_page == "Screener":
+
+
+    # ---------- SCREENER ----------
+    with tab_screener:
         render_analysis_page()
-    elif active_page == "Valuation":
+
+    # ---------- VALUATION ----------
+    with tab_val:
         render_valuation_page()
-    elif active_page == "Research":
+
+    # ---------- RESEARCH ----------
+    with tab_research:
         render_research_page()
-    elif active_page == "Theses":
+
+    
+    # ---------- THESES ----------
+    # This part was missing from your main function
+    with tab_theses:
         render_theses_page()
 
 

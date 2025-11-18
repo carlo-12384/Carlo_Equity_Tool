@@ -1874,7 +1874,9 @@ def inject_global_css():
              padding-right: 0px !important;
         }
 
-        /* 2. CRITICAL FIX: Ensure the Streamlit Main content wrapper claims space next to left rail */
+        /* ... inside your <style> block ... */
+
+        /* 1. Ensure Streamlit's main content wrapper claims space next to left rail (fixed) */
         .main .block-container {
             padding: 0 !important;
             margin-left: var(--left-rail-width) !important;
@@ -1883,6 +1885,17 @@ def inject_global_css():
             margin-top: 0 !important;
             display: block;
             box-sizing: border-box;
+        }
+
+        /* 2. CRITICAL FIX: Target the internal wrapper for the first few elements on the page. 
+           This is often the final piece of padding holding your headers away from the edges. */
+        .main [data-testid="stVerticalBlock"] > div:nth-child(1) > div:nth-child(1),
+        .main [data-testid="stVerticalBlock"] > div:nth-child(2) > div:nth-child(1) {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+
+        /* ... the rest of your CSS, including .core-content-shell definition, remains ... */
         }
 
         /* 3. CRITICAL FIX: Target the internal column/block wrapper holding the elements */
@@ -2086,6 +2099,8 @@ def inject_global_css():
         """,
         unsafe_allow_html=True,
     )
+    
+        
 def get_active_page() -> str:
     params = st.experimental_get_query_params()
     page = params.get("page", ["Home"])[0]

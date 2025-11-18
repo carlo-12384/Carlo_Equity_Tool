@@ -1840,13 +1840,13 @@ def inject_global_css():
         <style>
         /* ===== COLOR PALETTE ===== */
         :root {
-            --color-primary-bg: #001f3f;
-            --color-secondary-bg: #F5EAAA;
-            --color-page-bg: #FFFFFF;
+            --color-primary-bg: #001f3f;    /* Dark Navy Blue */
+            --color-secondary-bg: #F5EAAA; /* Khaki */
+            --color-page-bg: #FFFFFF;      /* White */
             
-            --color-primary-text: #001f3f;
-            --color-secondary-text: #F5EAAA;
-            --color-tertiary-text: #FFFFFF;
+            --color-primary-text: #001f3f;    /* Dark Navy Blue */
+            --color-secondary-text: #F5EAAA; /* Khaki */
+            --color-tertiary-text: #FFFFFF;  /* White */
             
             --color-dark-card-bg: #020617;
             --color-dark-card-text: #E5E7EB;
@@ -1856,91 +1856,37 @@ def inject_global_css():
             --content-buffer: 0.25in;
         }
         
-        /* ===== GLOBAL LAYOUT & CRITICAL FIXES ===== */
+        /* ===== GLOBAL LAYOUT ===== */
         html, body, .stApp {
             background: var(--color-page-bg) !important;
             color: var(--color-primary-text) !important;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
             margin: 0 !important;
             padding: 0 !important;
             overflow-x: hidden;
             min-height: 100%;
         }
-        
-        /* 1. CRITICAL FIX: Target the main application container (stAppViewContainer) */
-        /* This forces the ENTIRE app viewable area to start exactly after the left rail 
-           and removes any padding that might be added to the sides. */
-        #root > div:nth-child(1) > div[data-testid="stAppViewContainer"] > div {
-             padding-left: 0px !important;
-             padding-right: 0px !important;
-        }
-
-        /* ... inside your <style> block ... */
-
-        /* 1. Ensure Streamlit's main content wrapper claims space next to left rail (fixed) */
-        .main .block-container {
+        header[data-testid="stHeader"] {
+            background: transparent !important;
+            height: 0 !important;
+            min-height: 0 !important;
             padding: 0 !important;
+        }
+        div.block-container {
             margin-left: var(--left-rail-width) !important;
             width: calc(100% - var(--left-rail-width)) !important;
             max-width: 100% !important;
+            padding: 0 !important;
             margin-top: 0 !important;
             display: block;
             box-sizing: border-box;
         }
-
-        /* 2. CRITICAL FIX: Target the internal wrapper for the first few elements on the page. 
-           This is often the final piece of padding holding your headers away from the edges. */
-        .main [data-testid="stVerticalBlock"] > div:nth-child(1) > div:nth-child(1),
-        .main [data-testid="stVerticalBlock"] > div:nth-child(2) > div:nth-child(1) {
-            padding-left: 0 !important;
-            padding-right: 0 !important;
-        }
-
-        /* ... the rest of your CSS, including .core-content-shell definition, remains ... */
-        }
-
-        /* 3. CRITICAL FIX: Target the internal column/block wrapper holding the elements */
-        .main [data-testid="stVerticalBlock"] > div:first-child > div {
-            padding: 0 !important;
-            margin: 0 !important;
-            width: 100% !important;
-            max-width: none !important;
-        }
-
-        /* Content that needs the buffer re-introduced */
         .core-content-shell {
             width: 100%;
             max-width: var(--content-max-width);
             margin: 0 auto;
             padding: 0 var(--content-buffer);
             box-sizing: border-box;
-        }
-
-        /* Left Rail (Fixed) */
-        .left-rail {
-            position: fixed;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            width: var(--left-rail-width);
-            background: linear-gradient(180deg, #010915 0%, #04122a 60%, #000610 100%);
-            box-shadow: 3px 0 20px rgba(1, 5, 20, 0.65);
-            z-index: 1000;
-        }
-        
-        /* 4. Target Elements (Force Full Width) */
-        .header-hero, .ticker-tape-container {
-            width: 100%;
-            margin: 0;
-            box-sizing: border-box;
-            position: relative;
-        }
-        
-        /* --- Other existing CSS below (mostly utility, less disruptive) --- */
-        header[data-testid="stHeader"] {
-            background: transparent !important;
-            height: 0 !important;
-            min-height: 0 !important;
-            padding: 0 !important;
         }
         div[data-testid="stAppViewContainer"] {
             padding-top: 0 !important;
@@ -1949,7 +1895,9 @@ def inject_global_css():
             color: var(--color-primary-text) !important;
         }
 
-        /* BUTTON TEXT FIX */
+        /* =================================================
+        BUTTON TEXT FIX
+        ================================================= */
         button[data-testid="stButton"] {
             color: #FFFFFF !important;
         }
@@ -1966,44 +1914,16 @@ def inject_global_css():
         div[data-testid="stInfo"] p {
              color: #001f3f !important;
         }
-        
-        /* ===== PAGE HEADER / HERO ===== */
-        .page-header {
-            max-width: 1100px;
-            margin: 0 auto;
-            text-align: center;
+        .left-rail {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: var(--left-rail-width);
+            background: linear-gradient(180deg, #010915 0%, #04122a 60%, #000610 100%);
+            box-shadow: 3px 0 20px rgba(1, 5, 20, 0.65);
+            z-index: 1000;
         }
-        .header-hero {
-            transform: none;
-            padding: 32px 0 26px 0;
-            background: linear-gradient(90deg, #00152E 0%, #003566 50%, #00152E 100%);
-            border-bottom: 2px solid #001f3f;
-            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.15);
-        }
-        .page-title {
-            font-family: 'DM Serif Display', serif;
-            font-size: 3rem;
-            font-weight: 500;
-            color: var(--color-tertiary-text) !important;
-            margin-bottom: 0.2rem;
-            letter-spacing: -0.03em;
-        }
-        .page-subtitle {
-            font-size: 1rem;
-            font-weight: 500;
-            color: rgba(229, 231, 235, 0.9);
-            margin: 0;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-        }
-        .page-mini-desc {
-            font-size: 0.9rem;
-            color: rgba(229, 231, 235, 0.9);
-            margin-top: 0.4rem;
-        }
-
-
-        /* Left Rail Navigation */
         .left-rail-nav {
             position: absolute;
             top: 130px;
@@ -2034,20 +1954,146 @@ def inject_global_css():
             background: rgba(255, 255, 255, 0.24);
             color: #ffffff;
         }
+        
+        /* ===== PAGE HEADER / HERO ===== */
+        .header-hero {
+            width: 100%;
+            margin-left: 0;
+            box-sizing: border-box;
+            position: relative;
+            transform: none;
+            padding: 32px 0 26px 0;
+            background: linear-gradient(90deg, #00152E 0%, #003566 50%, #00152E 100%);
+            border-bottom: 2px solid #001f3f;
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.15);
+        }
+        .page-header {
+            max-width: 1100px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .page-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 3rem;
+            font-weight: 500;
+            color: var(--color-tertiary-text) !important;
+            margin-bottom: 0.2rem;
+            letter-spacing: -0.03em;
+        }
+        .page-subtitle {
+            font-size: 1rem;
+            font-weight: 500;
+            color: rgba(229, 231, 235, 0.9);
+            margin: 0;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+        .page-mini-desc {
+            font-size: 0.9rem;
+            color: rgba(229, 231, 235, 0.9);
+            margin-top: 0.4rem;
+        }
+
+        /* ===== CARD UI ===== */
+        .hero-card {
+            background: var(--color-primary-bg);
+            border-radius: 16px;
+            padding: 24px 28px;
+            margin-top: 16px;
+            margin-bottom: 16px;
+            border: 1px solid var(--color-secondary-bg);
+        }
+        .hero-card .hero-title, .hero-card .hero-subtitle {
+             color: var(--color-tertiary-text) !important;
+        }
+        
+        .section-card {
+            background: var(--color-page-bg);
+            border-radius: 16px;
+            padding: 18px 20px;
+            margin-top: 18px;
+            margin-bottom: 18px;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
+                        0 2px 4px -2px rgba(0, 0, 0, 0.05);
+        }
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--color-primary-text);
+            margin-bottom: 12px;
+        }
+
+        /* ===== METRIC CARD STYLING (VIX, USD, etc.) ===== */
+        .metric-card-box {
+            background: #f8fafc !important;
+            border-radius: 12px;
+            padding: 14px 18px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+            border: 1px solid #e2e8f0;
+            height: 100%;
+        }
+        .metric-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #001f3f !important;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            margin-bottom: 4px;
+            opacity: 0.85;
+        }
+        .metric-value-custom {
+            color: #001f3f !important;
+            font-weight: 700 !important;
+            font-size: 26px !important;
+            line-height: 1.3;
+            margin-bottom: 4px;
+        }
+        .metric-delta-custom span {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .metric-delta-custom.positive span {
+            color: #047857 !important;
+            background-color: #D1FAE5;
+        }
+        .metric-delta-custom.negative span {
+            color: #991B1B !important;
+            background-color: #FEE2E2;
+        }
+
+        /* ===== TABS FIX ===== */
+        button[data-testid="stTab"] {
+            color: #4B5563 !important;
+            font-weight: 600 !important;
+            opacity: 0.7 !important;
+        }
+        button[data-testid="stTab"][aria-selected="true"] {
+            color: var(--color-primary-text) !important;
+            opacity: 1 !important;
+        }
+        div[data-baseweb="tab-highlight"] {
+            background-color: var(--color-primary-text) !important; 
+        }
 
         /* ===== TICKER TAPE ===== */
         @keyframes scroll-left {
             from { transform: translateX(0); }
-            to   { transform: translateX(-25%); }
+            to   { transform: translateX(-25%); }
         }
         .ticker-tape-container {
             background: var(--color-primary-bg);
             color: var(--color-tertiary-text);
             overflow: hidden;
             padding: 10px 0;
+            width: 100%;
+            margin-left: 0;
             position: relative;
             border-top: 1px solid var(--color-secondary-bg);
             border-bottom: 1px solid var(--color-secondary-bg);
+            box-sizing: border-box;
         }
         .ticker-tape-inner {
             display: inline-flex;
@@ -2087,20 +2133,409 @@ def inject_global_css():
             color: #FF2E2E !important;
             font-weight: 600;
         }
-        
-        /* The remaining styles are all inside .core-content-shell and do not interfere */
-        .hero-card, .section-card, .metric-card-box, .index-chart-card, 
-        .analysis-shell, .market-summary-card, .mini-card {
-            /* These should all keep their internal padding and width constraints */
-            box-sizing: border-box;
+
+        /* ===== INDEX SNAPSHOT CARDS ===== */
+        .index-chart-card {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
+                        0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+        }
+        .index-chart-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--color-primary-text);
+            margin-bottom: 8px;
+        }
+        .index-chart-price {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--color-primary-text);
+            margin-right: 10px;
+            display: block; 
+            margin-bottom: 4px;
+            line-height: 1.2;
+        }
+        .index-chart-change {
+            font-size: 0.95rem;
+            font-weight: 600;
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+        .index-chart-change.positive {
+            color: #047857; 
+            background-color: #D1FAE5;
+        }
+        .index-chart-change.negative {
+            color: #991B1B; 
+            background-color: #FEE2E2;
+        }
+        .index-metric-list {
+            margin-top: 16px;
+            border-top: 1px solid #E2E8F0;
+            padding-top: 12px;
+            flex-grow: 1; 
+        }
+        .index-metric-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem; 
+            color: #374151; 
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+        .index-metric-label {
+            font-weight: 500;
+            color: #4B5563;
+        }
+        .index-metric-value {
+            font-weight: 600;
+            color: var(--color-primary-text); 
+            text-align: right;
+            padding-left: 8px; 
+        }
+
+        /* ===== VALUATION PAGE INPUTS ===== */
+        div[data-testid="stNumberInput"] input {
+             color: #001f3f !important;
+        }
+
+        /* ======================================================
+            SCREENER / ANALYSIS COMMAND CENTER (Google x Apple x JPM)
+        =======================================================*/
+        .analysis-shell {
+            margin-top: 8px;
+            margin-bottom: 8px;
+        }
+
+        .analysis-gradient {
+            background: radial-gradient(circle at top left, #0B1120 0%, #020617 38%, #020617 100%);
+            border-radius: 20px;
+            padding: 18px 20px 20px 20px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            box-shadow:
+                0 24px 60px rgba(15, 23, 42, 0.45),
+                0 0 0 1px rgba(15, 23, 42, 0.5) inset;
+        }
+
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+            gap: 18px;
+            align-items: stretch;
+        }
+
+        .command-card {
+            background: linear-gradient(140deg, #020617 0%, #020617 40%, #020617 100%);
+            border-radius: 16px;
+            padding: 16px 18px 18px 18px;
+            border: 1px solid rgba(148, 163, 184, 0.5);
+            color: var(--color-dark-card-text);
+            position: relative;
+            overflow: hidden;
+        }
+        .command-card::before {
+            content: "";
+            position: absolute;
+            inset: -80px;
+            background: radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 55%);
+            opacity: 0.9;
+            pointer-events: none;
+        }
+        .command-inner {
+            position: relative;
+            z-index: 1;
+        }
+        .command-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+        .command-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #E5E7EB;
+        }
+        .command-pill {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.6);
+            color: #E5E7EB;
+            background: linear-gradient(145deg, rgba(15, 23, 42, 0.7), rgba(17, 24, 39, 0.9));
+        }
+        .command-subtitle {
+            font-size: 0.85rem;
+            color: #9CA3AF;
+            margin-bottom: 14px;
+        }
+        .command-steps {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 10px;
+            font-size: 0.78rem;
+            color: #9CA3AF;
+        }
+        .command-step {
+            padding: 4px 9px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            background: radial-gradient(circle at top left, rgba(148, 163, 184, 0.18), rgba(15, 23, 42, 0.9));
+        }
+        .command-step.active {
+            border-color: #FACC15;
+            background: radial-gradient(circle at top left, rgba(250, 204, 21, 0.25), rgba(15, 23, 42, 0.95));
+            color: #FEF3C7;
+        }
+        .command-input-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: #9CA3AF;
+            margin-bottom: 4px;
+        }
+        .command-footnote {
+            margin-top: 6px;
+            font-size: 0.75rem;
+            color: #6B7280;
+        }
+
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+        .module-card {
+            background: radial-gradient(circle at top left, rgba(30, 64, 175, 0.35), rgba(15, 23, 42, 1));
+            border-radius: 14px;
+            padding: 10px 11px 11px 11px;
+            border: 1px solid rgba(148, 163, 184, 0.45);
+            color: #E5E7EB;
+            font-size: 0.8rem;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .module-chip-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.76rem;
+            color: #9CA3AF;
+        }
+        .module-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: #22C55E;
+            box-shadow: 0 0 12px rgba(34, 197, 94, 0.9);
+        }
+        .module-title {
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: #F9FAFB;
+        }
+        .module-desc {
+            font-size: 0.76rem;
+            color: #9CA3AF;
+        }
+        .module-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 3px;
+        }
+        .module-tag {
+            font-size: 0.7rem;
+            padding: 3px 7px;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            color: #E5E7EB;
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        .empty-state-pro {
+            margin-top: 14px;
+            border-radius: 14px;
+            padding: 12px 14px;
+            background: rgba(239, 246, 255, 0.96);
+            border: 1px dashed rgba(148, 163, 184, 0.8);
+            font-size: 0.86rem;
+            color: #0F172A;
+        }
+        .empty-state-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .empty-state-list {
+            margin: 0;
+            padding-left: 1.2rem;
+            font-size: 0.85rem;
+        }
+        .empty-state-list li {
+            margin-bottom: 2px;
+        }
+
+        /* Smaller screens: stack analysis grid */
+        @media (max-width: 900px) {
+            .analysis-grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
+        }
+
+        .analysis-hero {
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            background: linear-gradient(120deg, #111827, #1F2937);
+            color: #F8FAFC;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+        }
+        .analysis-hero h2 {
+            margin: 0;
+            font-size: 2rem;
+            letter-spacing: -0.02em;
+        }
+        .analysis-hero p {
+            margin: 4px 0 0;
+            color: rgba(248, 250, 252, 0.78);
+        }
+        .analysis-hero-meta {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            color: rgba(248, 250, 252, 0.65);
+        }
+        .analysis-empty {
+            border-radius: 16px;
+            padding: 28px;
+            background: rgba(15, 23, 42, 0.08);
+            text-align: center;
+            border: 1px solid rgba(15, 23, 42, 0.12);
+        }
+        .analysis-empty-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+        }
+        .metric-card-slim {
+            padding: 18px 16px;
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            background: rgba(255, 255, 255, 0.8);
+            min-height: 90px;
+        }
+        .metric-card-slim .metric-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: #475569;
+            margin-bottom: 8px;
+        }
+        .metric-card-slim .metric-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+        .simplified-overview {
+            margin-top: 12px;
+            margin-bottom: 18px;
+        }
+        .market-summary-card {
+            background: #F8FAFC;
+            border-radius: 16px;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+        }
+        .market-summary-header {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin: 0;
+            padding: 14px 18px;
+            background: linear-gradient(120deg, #0b3d91, #0f172a);
+            color: #fff;
+            border-radius: 16px 16px 0 0;
+            letter-spacing: 0.04em;
+        }
+        .market-summary-body {
+            padding: 20px 24px 28px;
+        }
+        .market-summary-body p {
+            margin-bottom: 12px;
+            line-height: 1.5;
+            color: #0F172A;
+        }
+        .mini-card-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .mini-card {
+            background: #FFFFFF;
+            border-radius: 14px;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+        }
+        .mini-card-header {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0;
+            padding: 12px 16px;
+            background: linear-gradient(120deg, #0b3d91, #0f172a);
+            color: #fff;
+            border-radius: 14px 14px 0 0;
+            letter-spacing: 0.08em;
+        }
+        .mini-card-content {
+            padding: 16px;
+        }
+        .mini-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .mini-list-item {
+            font-size: 0.95rem;
+            color: #334155;
+            display: flex;
+            justify-content: space-between;
+        }
+        .mini-list-item span:first-child {
+            font-weight: 600;
+            color: #0F172A;
         }
 
         </style>
         """,
         unsafe_allow_html=True,
-    )
-    
         
+    )
+MAIN_NAV_PAGES = [
+    ("Home", "Home"),
+    ("Screener", "Screener"),
+    ("Valuation", "Valuation"),
+    ("Research", "Research"),
+    ("Theses", "Theses"),
+]
+
 def get_active_page() -> str:
     params = st.experimental_get_query_params()
     page = params.get("page", ["Home"])[0]

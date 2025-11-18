@@ -2576,10 +2576,6 @@ def inject_global_css():
 
 # --- Wall Street esque Price Bar ---
 def render_dashboard():
-    inject_global_css()
-
-    render_global_header_and_kpis()
-
     # --- Get data for Ticker Tape AND Index Cards ---
     index_data = get_live_index_data()
     macro_data = get_global_macro_data()
@@ -2989,7 +2985,7 @@ def render_analysis_page():
 
     heatmap_fig = build_metric_heatmap_figure(res)
     if heatmap_fig:
-        heatmap_wrapper = "<div class='heatmap-wrapper'>"
+    heatmap_wrapper = "<div class='heatmap-wrapper'>"
     if heatmap_fig:
         st.markdown(
             f"""
@@ -3681,7 +3677,6 @@ def main():
     if "top_nav_page" not in st.session_state:
         st.session_state.top_nav_page = "Dashboard"
 
-    st.markdown("<div class='layout-shell'>", unsafe_allow_html=True)
     col_nav, col_main = st.columns([0.9, 5.1], gap="small")
 
     with col_nav:
@@ -3701,7 +3696,8 @@ def main():
 
         def nav_item(label: str, key: str, page_name: str):
             active = st.session_state.top_nav_page == page_name
-            class_attr = f" class='side-nav-item-active'" if active else ""
+            wrapper_class = "side-nav-item-active" if active else ""
+            class_attr = f" class='{wrapper_class}'" if wrapper_class else ""
             st.markdown(f"<div{class_attr}>", unsafe_allow_html=True)
             if st.button(label, key=key):
                 st.session_state.top_nav_page = page_name
@@ -3715,6 +3711,7 @@ def main():
         nav_item("Watchlist", "nav_watchlist", "Watchlist")
 
         st.markdown("</div>", unsafe_allow_html=True)
+
         st.markdown(
             "<div class='side-nav-footer'>FRICANO CAPITAL RESEARCH</div>",
             unsafe_allow_html=True,
@@ -3726,6 +3723,7 @@ def main():
 
         page = st.session_state.top_nav_page
         if page == "Dashboard":
+            render_global_header_and_kpis()
             render_dashboard()
         elif page == "Analysis":
             render_analysis_page()
@@ -3739,7 +3737,6 @@ def main():
             render_watchlist_page()
 
         st.markdown("</div>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
 # This block MUST be at the end of the file

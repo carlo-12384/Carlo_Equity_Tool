@@ -1866,7 +1866,15 @@ def inject_global_css():
             min-height: 100%;
         }
         
-        /* 1. Ensure Streamlit's main content wrapper claims space next to left rail (fixed) */
+        /* 1. CRITICAL FIX: Target the main application container (stAppViewContainer) */
+        /* This forces the ENTIRE app viewable area to start exactly after the left rail 
+           and removes any padding that might be added to the sides. */
+        #root > div:nth-child(1) > div[data-testid="stAppViewContainer"] > div {
+             padding-left: 0px !important;
+             padding-right: 0px !important;
+        }
+
+        /* 2. CRITICAL FIX: Ensure the Streamlit Main content wrapper claims space next to left rail */
         .main .block-container {
             padding: 0 !important;
             margin-left: var(--left-rail-width) !important;
@@ -1877,8 +1885,7 @@ def inject_global_css():
             box-sizing: border-box;
         }
 
-        /* 2. 💡 CRITICAL FIX: Target the internal wrapper for the header (st.container/st.markdown). 
-           This element often holds the final internal padding/margin. */
+        /* 3. CRITICAL FIX: Target the internal column/block wrapper holding the elements */
         .main [data-testid="stVerticalBlock"] > div:first-child > div {
             padding: 0 !important;
             margin: 0 !important;
@@ -1906,16 +1913,16 @@ def inject_global_css():
             box-shadow: 3px 0 20px rgba(1, 5, 20, 0.65);
             z-index: 1000;
         }
-
-        /* ===== TARGET ELEMENTS (NO MARGIN/PADDING) ===== */
+        
+        /* 4. Target Elements (Force Full Width) */
         .header-hero, .ticker-tape-container {
             width: 100%;
             margin: 0;
             box-sizing: border-box;
             position: relative;
         }
-
-        /* --- Other existing CSS below (unchanged, but necessary) --- */
+        
+        /* --- Other existing CSS below (mostly utility, less disruptive) --- */
         header[data-testid="stHeader"] {
             background: transparent !important;
             height: 0 !important;
@@ -2079,7 +2086,6 @@ def inject_global_css():
         """,
         unsafe_allow_html=True,
     )
-
 def get_active_page() -> str:
     params = st.experimental_get_query_params()
     page = params.get("page", ["Home"])[0]

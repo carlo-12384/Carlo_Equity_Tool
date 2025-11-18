@@ -2467,14 +2467,15 @@ def inject_global_css():
         }
         .left-nav-shell {
             position: sticky;
-            top: 24px;
+            top: 0;
             background: linear-gradient(180deg, #021026, #0b1f3d);
-            border-radius: 18px;
-            padding: 22px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 0 0 32px 0;
+            padding: 22px 18px;
+            border: none;
             box-shadow: 0 24px 70px rgba(2, 6, 23, 0.6);
-            min-height: 360px;
+            min-height: calc(100vh - 32px);
             color: #f8fafc;
+            margin-left: -10px;
         }
         .left-nav {
             background: transparent;
@@ -2484,9 +2485,43 @@ def inject_global_css():
             border: none;
             box-shadow: none;
             min-height: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+        }
+        .left-nav .stRadio {
+            margin: 0;
+        }
+        .left-nav .stRadio > div {
+            gap: 0;
+            display: block;
+        }
+        .left-nav .stRadio > div > label {
+            border: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 0;
+            padding: 10px 0;
+            margin: 0;
+            background: transparent;
+            color: #f8fafc;
+            font-weight: 600;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            display: block;
+            width: 100%;
+            text-align: left;
+        }
+        .left-nav .stRadio > div > label:last-child {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .left-nav .stRadio > div > label div {
+            margin: 0;
+        }
+        .left-nav .stRadio button {
+            display: none;
+        }
+        .left-nav .stRadio [aria-checked="true"] + label {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.12);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.7);
         }
         .left-nav-label {
             font-weight: 600;
@@ -2953,7 +2988,7 @@ def render_analysis_page():
 
     heatmap_fig = build_metric_heatmap_figure(res)
     if heatmap_fig:
-        heatmap_wrapper = "<div class='heatmap-wrapper'>"
+    heatmap_wrapper = "<div class='heatmap-wrapper'>"
     if heatmap_fig:
         st.markdown(
             f"""
@@ -3651,29 +3686,24 @@ def main():
     if "nav_section" not in st.session_state:
         st.session_state.nav_section = "Dashboard"
 
-    params = st.experimental_get_query_params()
-    nav_param = params.get("nav", [None])[0]
-    if nav_param in NAV_ITEMS:
-        st.session_state.nav_section = nav_param
-
     st.session_state.active_section = st.session_state.nav_section
+
+    nav_index = NAV_ITEMS.index(st.session_state.nav_section) if st.session_state.nav_section in NAV_ITEMS else 0
 
     col_nav, col_main = st.columns([0.18, 0.82])
 
     with col_nav:
-        nav_html = """
-        <div class='left-nav-shell'>
-            <div class='left-nav-label'>Navigation</div>
-            <div class='left-nav'>
-        """
-        for item in NAV_ITEMS:
-            active = "active" if item == st.session_state.nav_section else ""
-            nav_html += f"<a class='nav-btn {active}' href='?nav={item}'>{item}</a>"
-        nav_html += """
-            </div>
-        </div>
-        """
-        st.markdown(nav_html, unsafe_allow_html=True)
+        st.markdown("<div class='left-nav-shell'>", unsafe_allow_html=True)
+        st.markdown("<div class='left-nav-label'>Navigation</div>", unsafe_allow_html=True)
+        selected = st.radio(
+            "",
+            NAV_ITEMS,
+            index=nav_index,
+            key="nav_section",
+            label_visibility="collapsed",
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
+        st.session_state.active_section = selected
 
     with col_main:
         if st.session_state.active_section == "Dashboard":

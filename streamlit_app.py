@@ -668,25 +668,6 @@ def get_macro_indicator_cards():
     return cards
 
 
-def render_global_header_and_kpis():
-    # --- BLUE HERO TITLE ---
-    st.markdown(
-        """
-        <div class="header-hero">
-            <div class="page-header">
-                <h1 class="page-title">Equity Research Tool</h1>
-                <p class="page-subtitle">Fricano Capital Research</p>
-                <p class="page-mini-desc">
-                </p>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # KPIs intentionally removed from header; they live in the boxes below.
-
-    
 @st.cache_data(ttl=300)
 def get_index_card_metrics(ticker: str):
     """
@@ -1851,9 +1832,6 @@ def inject_global_css():
         }
         div.block-container {
             padding-top: 0rem !important;
-            margin-top: -20px !important;
-            padding-left: 0 !important;
-            padding-right: 0 !important;
         }
         div[data-testid="stAppViewContainer"] {
             padding-top: 0 !important;
@@ -2474,15 +2452,19 @@ def inject_global_css():
         }
 
         .side-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 220px;
-            min-height: 100vh;
+            height: 100vh;
             background: linear-gradient(180deg, #020617 0%, #0b1120 40%, #020617 100%);
             border-radius: 0 32px 32px 0;
             box-shadow: 0 0 40px rgba(15, 23, 42, 0.35);
             padding: 24px 22px 28px;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: space-between; /* header + buttons at top, footer at bottom */
+            z-index: 1000;
         }
 
         .side-nav-header {
@@ -2561,6 +2543,10 @@ def inject_global_css():
         .main-shell {
             flex: 1;
             padding-left: 28px;
+        }
+
+        .main-content-wrapper {
+            margin-left: 240px;
         }
         .index-chart-card:hover {
             transform: translateY(-6px);
@@ -2985,7 +2971,7 @@ def render_analysis_page():
 
     heatmap_fig = build_metric_heatmap_figure(res)
     if heatmap_fig:
-        heatmap_wrapper = "<div class='heatmap-wrapper'>"
+    heatmap_wrapper = "<div class='heatmap-wrapper'>"
     if heatmap_fig:
         st.markdown(
             f"""
@@ -3719,11 +3705,20 @@ def main():
         st.markdown("</div>", unsafe_allow_html=True)
 
     with col_main:
-        st.markdown("<div class='main-shell'>", unsafe_allow_html=True)
+        st.markdown("<div class='main-content-wrapper'>", unsafe_allow_html=True)
+
+        st.markdown(
+            """
+            <div class="hero-card" style="margin-top:0;">
+                <div class="hero-title">Equity Research Tool</div>
+                <div class="hero-subtitle">Fricano Capital Research</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
         page = st.session_state.top_nav_page
         if page == "Dashboard":
-            render_global_header_and_kpis()
             render_dashboard()
         elif page == "Analysis":
             render_analysis_page()

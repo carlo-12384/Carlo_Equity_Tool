@@ -1871,19 +1871,36 @@ def inject_global_css():
         html, body, .stApp {
             overflow-x: hidden;
         }
+        <style>
+        /* ... existing CSS ... */
+
+        /* --- CHANGE: Main content block fixes for centering and margin --- */
         div.block-container {
+            /* Overwrite Streamlit's default container behavior */
             margin-left: var(--sidebar-width) !important;
             width: calc(100% - var(--sidebar-width)) !important;
             padding-top: 0 !important;
             margin-top: 0 !important;
             padding-left: 32px !important;
             padding-right: 32px !important;
-            display: flex;
-            justify-content: center;
+            /* Remove centering from this container as the nested div handles it */
+            display: block; 
+            max-width: none !important; /* Allow the content wrapper to define width */
         }
-        div[data-testid="stAppViewContainer"] {
-            padding-top: 0 !important;
+        
+        /* This is the key change for *fixed width and centering* on the right side */
+        div[data-testid="stAppViewContainer"] > .main > div {
+            width: 100%;
+            /* Set a maximum width for content and center it */
+            max-width: 1100px; /* Reduced to 1100px for better centering */
+            margin: 0 auto;
+            /* Adjust padding to account for the space left by block-container above */
+            padding-left: 0px !important; 
+            padding-right: 0px !important;
+            box-sizing: border-box;
         }
+        
+        /* ... existing CSS ... */
         h1, h2, h3, h4, h5, h6 {
             color: var(--color-primary-text) !important;
         }

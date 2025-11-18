@@ -1,5 +1,4 @@
-First MVP for Side NAV
-    # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """Carlo Equity Tool — Streamlit App (Blocks-style UI)"""
 
 import os, time, math, logging, textwrap, datetime as dt

@@ -1951,36 +1951,33 @@ def inject_global_css():
             color: rgba(229,231,235,0.5);
         }
 
-        section[data-testid="stSidebar"] div[data-testid="stRadio"] > div {
+        section[data-testid="stSidebar"] div[data-testid="stForm"] {
+            padding: 0 24px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            padding: 0 24px;
+            gap: 12px;
+            margin-top: 8px;
         }
-        section[data-testid="stSidebar"] input[type="radio"] {
-            display: none;
-        }
-        section[data-testid="stSidebar"] [role="radio"] {
+        .sidebar-chip {
             border-radius: 12px;
             border: 1px solid transparent;
             padding: 12px 16px;
             background: rgba(255,255,255,0.04);
             transition: background 0.15s ease, transform 0.15s ease, border 0.15s ease;
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            gap: 8px;
             font-size: 0.95rem;
             font-weight: 700;
             letter-spacing: 0.18em;
             text-transform: uppercase;
             color: #E5E7EB;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
         }
-        section[data-testid="stSidebar"] [role="radio"]:hover {
+        .sidebar-chip:hover {
             background: rgba(59,130,246,0.18);
             transform: translateX(2px);
         }
-        section[data-testid="stSidebar"] [role="radio"][aria-checked="true"] {
+        .sidebar-chip.active {
             background: linear-gradient(145deg, rgba(14,165,233,0.12), rgba(14,165,233,0.35));
             border-color: rgba(14,165,233,0.9);
             color: #f8fafc;
@@ -2001,17 +1998,6 @@ def inject_global_css():
             color: rgba(229,231,235,0.65);
             letter-spacing: 0.16em;
             text-transform: uppercase;
-        }
-        .sidebar-chip-styles {
-            padding: 0 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            font-size: 0.68rem;
-            letter-spacing: 0.24em;
-            text-transform: uppercase;
-            color: rgba(229,231,235,0.45);
-            margin-bottom: 8px;
         }
 
         @media (max-width: 1100px) {
@@ -3720,6 +3706,12 @@ def render_sidebar_nav():
     if st.session_state.sidebar_nav not in NAV_PAGES:
         st.session_state.sidebar_nav = NAV_PAGES[0]
 
+    params = st.experimental_get_query_params()
+    nav_override = params.get("nav", [None])[0]
+    if nav_override in NAV_PAGES:
+        st.session_state.sidebar_nav = nav_override
+        st.session_state.active_page = nav_override
+
     with st.sidebar:
         st.markdown(
             """
@@ -3735,13 +3727,14 @@ def render_sidebar_nav():
             unsafe_allow_html=True,
         )
 
-        selected = st.radio(
-            "",
-            NAV_PAGES,
-            index=NAV_PAGES.index(st.session_state.sidebar_nav),
-            key="sidebar_nav",
-            label_visibility="collapsed",
-        )
+        chips = []
+        for page in NAV_PAGES:
+            active_class = " active" if page == st.session_state.sidebar_nav else ""
+            chips.append(
+                f"<button type='submit' name='nav' value='{page}' class='sidebar-chip{active_class}'>{page}</button>"
+            )
+        form_html = "<form action='' method='get'>" + "".join(chips) + "</form>"
+        st.markdown(form_html, unsafe_allow_html=True)
 
         st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
         st.markdown(
@@ -3761,8 +3754,7 @@ def render_sidebar_nav():
             unsafe_allow_html=True,
         )
 
-    st.session_state.active_page = selected
-    return selected
+    return st.session_state.sidebar_nav
 
 # ======================================================================
 # MAIN APP

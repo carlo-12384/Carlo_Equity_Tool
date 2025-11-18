@@ -10,6 +10,7 @@ from datetime import datetime
 import streamlit as st
 import json
 import plotly.graph_objects as go # --- NEW --- Import Plotly
+from urllib.parse import urlencode
 
 
 # -------------------- CONFIG / LOGGING --------------------
@@ -1951,14 +1952,20 @@ def inject_global_css():
             color: rgba(229,231,235,0.5);
         }
 
-        section[data-testid="stSidebar"] div[data-testid="stForm"] {
+        .sidebar-chip-stack {
+            margin: 12px 0 0;
             padding: 0 24px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 8px;
+        }
+
+        section[data-testid="stSidebar"] div[data-testid="stForm"] {
+            padding: 0 24px;
             margin-top: 8px;
         }
         .sidebar-chip {
+            display: flex;
             border-radius: 12px;
             border: 1px solid transparent;
             padding: 12px 16px;
@@ -1972,6 +1979,7 @@ def inject_global_css():
             width: 100%;
             text-align: left;
             cursor: pointer;
+            text-decoration: none;
         }
         .sidebar-chip:hover {
             background: rgba(59,130,246,0.18);
@@ -3699,18 +3707,16 @@ def render_theses_page():
 NAV_PAGES = ["Home", "Screener", "Valuation", "Research", "Theses"]
 
 def render_sidebar_nav():
-    if "active_page" not in st.session_state:
-        st.session_state.active_page = NAV_PAGES[0]
     if "sidebar_nav" not in st.session_state:
-        st.session_state.sidebar_nav = NAV_PAGES[0]
-    if st.session_state.sidebar_nav not in NAV_PAGES:
         st.session_state.sidebar_nav = NAV_PAGES[0]
 
     params = st.experimental_get_query_params()
     nav_override = params.get("nav", [None])[0]
     if nav_override in NAV_PAGES:
         st.session_state.sidebar_nav = nav_override
-        st.session_state.active_page = nav_override
+    if st.session_state.sidebar_nav not in NAV_PAGES:
+        st.session_state.sidebar_nav = NAV_PAGES[0]
+    st.session_state.active_page = st.session_state.sidebar_nav
 
     with st.sidebar:
         st.markdown(
@@ -3727,14 +3733,15 @@ def render_sidebar_nav():
             unsafe_allow_html=True,
         )
 
-        chips = []
+        stack_html = "<div class='sidebar-chip-stack'>"
         for page in NAV_PAGES:
+            link_params = {k: list(v) for k, v in params.items()}
+            link_params["nav"] = [page]
+            href = f"?{urlencode(link_params, doseq=True)}"
             active_class = " active" if page == st.session_state.sidebar_nav else ""
-            chips.append(
-                f"<button type='submit' name='nav' value='{page}' class='sidebar-chip{active_class}'>{page}</button>"
-            )
-        form_html = "<form action='' method='get'>" + "".join(chips) + "</form>"
-        st.markdown(form_html, unsafe_allow_html=True)
+            stack_html += f"<a href=\"{href}\" class='sidebar-chip{active_class}'>{page}</a>"
+        stack_html += "</div>"
+        st.markdown(stack_html, unsafe_allow_html=True)
 
         st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
         st.markdown(
@@ -3753,6 +3760,12 @@ def render_sidebar_nav():
             f"<div class='sidebar-footer'>Updated {datetime.now().strftime('%b %d, %Y')}</div>",
             unsafe_allow_html=True,
         )
+
+    current_nav_param = params.get("nav", [None])[0]
+    if current_nav_param != st.session_state.sidebar_nav:
+        updated_params = {k: list(v) for k, v in params.items()}
+        updated_params["nav"] = [st.session_state.sidebar_nav]
+        st.experimental_set_query_params(**updated_params)
 
     return st.session_state.sidebar_nav
 

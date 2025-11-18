@@ -668,6 +668,45 @@ def get_macro_indicator_cards():
     return cards
 
 
+def render_global_header_and_kpis():
+    # --- BLUE HERO TITLE ---
+    st.markdown(
+        """
+        <div class="header-hero">
+            <div class="page-header">
+                <h1 class="page-title">Equity Research Tool</h1>
+                <p class="page-subtitle">Fricano Capital Research</p>
+                <p class="page-mini-desc">
+                </p>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # --- KPI STRIP UNDER TITLE ---
+    kpi_data = get_dashboard_kpis()
+    if kpi_data:
+        st.markdown("<div class='header-kpi-container'>", unsafe_allow_html=True)
+        cols = st.columns(len(kpi_data))
+        for col, item in zip(cols, kpi_data):
+            with col:
+                change_class = "positive" if item["change_val"] >= 0 else "negative"
+                st.markdown(
+                    f"""
+                    <div class="header-kpi-card">
+                        <div class="header-kpi-label">{item['label']}</div>
+                        <div class="header-kpi-value">{item['value_str']}</div>
+                        <div class="header-kpi-change {change_class}">
+                            {item['change_str']}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    
 @st.cache_data(ttl=300)
 def get_index_card_metrics(ticker: str):
     """
@@ -1526,8 +1565,6 @@ def build_metric_heatmap_figure(res: Dict[str, Any]):
         margin=dict(l=4, r=4, t=20, b=4),
         plot_bgcolor="rgba(0,0,0,0)",
         paper_bgcolor="rgba(0,0,0,0)",
-        xaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.4)", zeroline=False, showticklabels=False),
-        yaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.4)", zeroline=False, showticklabels=False),
         height=260,
     )
     return fig
@@ -1814,11 +1851,12 @@ def inject_global_css():
             --color-dark-card-bg: #020617;
             --color-dark-card-text: #E5E7EB;
             --color-dark-card-border: #1F2937;
+            --sidebar-width: 250px;
         }
         
         /* ===== GLOBAL LAYOUT ===== */
         html, body, .stApp {
-            background: linear-gradient(90deg, #021026 0%, #021026 22%, #f4f7fb 22%, #ffffff 100%) !important;
+            background: var(--color-page-bg) !important;
             color: var(--color-primary-text) !important;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
             margin: 0 !important;
@@ -1831,15 +1869,170 @@ def inject_global_css():
             padding: 0 !important;
         }
         div.block-container {
-            padding: 0 !important;
-            margin: 0 !important;
-            max-width: none !important;
+            margin-left: var(--sidebar-width) !important;
+            width: calc(100% - var(--sidebar-width)) !important;
+            padding-top: 0 !important;
+            margin-top: 0 !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
         }
         div[data-testid="stAppViewContainer"] {
             padding-top: 0 !important;
         }
         h1, h2, h3, h4, h5, h6 {
             color: var(--color-primary-text) !important;
+        }
+
+        section[data-testid="stSidebar"] {
+            width: var(--sidebar-width);
+            min-width: var(--sidebar-width);
+            max-width: var(--sidebar-width);
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            padding: 0;
+            margin: 0;
+            border: none;
+            background: #020617;
+            box-shadow: 4px 0 20px rgba(2, 6, 23, 0.65);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 30;
+        }
+
+        section[data-testid="stSidebar"] > div {
+            padding: 0;
+        }
+
+        .sidebar-brand {
+            padding: 32px 24px 16px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .sidebar-brand-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(14,165,233,0.25), rgba(14,165,233,0.8));
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            letter-spacing: 0.15em;
+        }
+        .sidebar-brand-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #E5E7EB;
+            letter-spacing: 0.04em;
+            margin: 0;
+        }
+        .sidebar-brand-sub {
+            margin: 0;
+            color: rgba(229,231,235,0.65);
+            font-size: 0.75rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+
+        .sidebar-nav-title {
+            margin: 0;
+            padding: 0 24px;
+            font-size: 0.8rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: rgba(229,231,235,0.5);
+        }
+
+        section[data-testid="stSidebar"] div[data-testid="stRadio"] > div {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 0 24px;
+        }
+        section[data-testid="stSidebar"] input[type="radio"] {
+            display: none;
+        }
+        section[data-testid="stSidebar"] [role="radio"] {
+            border-radius: 12px;
+            border: 1px solid transparent;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.04);
+            transition: background 0.15s ease, transform 0.15s ease, border 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 8px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #E5E7EB;
+        }
+        section[data-testid="stSidebar"] [role="radio"]:hover {
+            background: rgba(59,130,246,0.18);
+            transform: translateX(2px);
+        }
+        section[data-testid="stSidebar"] [role="radio"][aria-checked="true"] {
+            background: linear-gradient(145deg, rgba(14,165,233,0.12), rgba(14,165,233,0.35));
+            border-color: rgba(14,165,233,0.9);
+            color: #f8fafc;
+            box-shadow: 0 0 0 1px rgba(14,165,233,0.5);
+        }
+
+        .sidebar-divider {
+            border-top: 1px solid rgba(255,255,255,0.08);
+            margin: 0 24px;
+        }
+        .sidebar-divider.thin {
+            margin-top: 0;
+        }
+
+        .sidebar-footer {
+            padding: 16px 24px 28px;
+            font-size: 0.75rem;
+            color: rgba(229,231,235,0.65);
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 1100px) {
+            section[data-testid="stSidebar"] {
+                width: 220px;
+                min-width: 220px;
+            }
+            div.block-container {
+                margin-left: 220px !important;
+                width: calc(100% - 220px) !important;
+            }
+        }
+
+        @media (max-width: 900px) {
+            section[data-testid="stSidebar"] {
+                position: relative;
+                width: 100%;
+                min-width: 100%;
+                max-width: 100%;
+                height: auto;
+                flex-direction: column;
+                box-shadow: none;
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+            }
+            div.block-container {
+                margin-left: 0 !important;
+                width: 100% !important;
+                padding-left: 1.5rem !important;
+                padding-right: 1.5rem !important;
+            }
+        }
+        div[data-testid="stAppViewContainer"] > .main {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
         }
 
         /* =================================================
@@ -1864,15 +2057,14 @@ def inject_global_css():
         
         /* ===== PAGE HEADER / HERO ===== */
         .header-hero {
-            width: 100%;
+            width: 100vw;
             position: relative;
-            left: 0;
-            transform: none;
-            padding: 42px 0 32px 0;
-            background: #001a40;
-            border-bottom: 2px solid #0f172a;
-            box-shadow: 0 15px 35px rgba(15, 23, 42, 0.45);
-            z-index: 10;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 32px 0 26px 0;
+            background: linear-gradient(90deg, #00152E 0%, #003566 50%, #00152E 100%);
+            border-bottom: 2px solid #001f3f;
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.15);
         }
         .page-header {
             max-width: 1100px;
@@ -1883,7 +2075,7 @@ def inject_global_css():
             font-family: 'DM Serif Display', serif;
             font-size: 3rem;
             font-weight: 500;
-            color: #ffffff !important;
+            color: var(--color-tertiary-text) !important;
             margin-bottom: 0.2rem;
             letter-spacing: -0.03em;
         }
@@ -1918,15 +2110,11 @@ def inject_global_css():
             background: var(--color-page-bg);
             border-radius: 16px;
             padding: 18px 20px;
-            margin-top: 12px;
-            margin-bottom: 12px;
+            margin-top: 18px;
+            margin-bottom: 18px;
             border: 1px solid #E2E8F0;
-            box-shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .section-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 18px 50px rgba(15, 23, 42, 0.12);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
+                        0 2px 4px -2px rgba(0, 0, 0, 0.05);
         }
         .section-title {
             font-size: 1.25rem;
@@ -1995,16 +2183,16 @@ def inject_global_css():
             to   { transform: translateX(-25%); }
         }
         .ticker-tape-container {
-            background: #001528;
-            color: #f8fafc;
+            background: var(--color-primary-bg);
+            color: var(--color-tertiary-text);
             overflow: hidden;
             padding: 10px 0;
-            width: 100%;
+            width: 100vw;
             position: relative;
-            left: 0;
-            margin-left: 0;
-            border-top: 1px solid rgba(255, 255, 255, 0.08);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            left: 50%;
+            margin-left: -50vw;
+            border-top: 1px solid var(--color-secondary-bg);
+            border-bottom: 1px solid var(--color-secondary-bg);
         }
         .ticker-tape-inner {
             display: inline-flex;
@@ -2047,15 +2235,15 @@ def inject_global_css():
 
         /* ===== INDEX SNAPSHOT CARDS ===== */
         .index-chart-card {
-            background: #f8fafc;
+            background: #FFFFFF;
             border: 1px solid #E2E8F0;
             border-radius: 12px;
             padding: 18px 20px;
             margin-bottom: 16px;
-            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
+                        0 2px 4px -2px rgba(0, 0, 0, 0.05);
             display: flex;
             flex-direction: column;
-            transition: transform 0.25s ease, box-shadow 0.25s ease, border 0.25s ease;
         }
         .index-chart-title {
             font-size: 1rem;
@@ -2433,132 +2621,6 @@ def inject_global_css():
             font-weight: 600;
             color: #0F172A;
         }
-        .mini-card, .metric-card-box, .heatmap-wrapper {
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .mini-card:hover, .metric-card-box:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 18px 40px rgba(15, 23, 42, 0.15);
-        }
-        .heatmap-wrapper {
-            border-radius: 16px;
-            border: 1px solid #E2E8F0;
-            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.12);
-            margin-bottom: 12px;
-            overflow: hidden;
-        }
-        /* ===== LEFT SIDE NAV (PRO STYLE) ===== */
-        .layout-shell {
-            min-height: 100vh;
-        }
-
-        .side-nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 220px;
-            height: 100vh;
-            background: linear-gradient(180deg, #020617 0%, #0b1120 40%, #020617 100%);
-            border-radius: 0 32px 32px 0;
-            box-shadow: 0 0 40px rgba(15, 23, 42, 0.35);
-            padding: 24px 22px 28px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            z-index: 1000;
-        }
-
-        .side-nav-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 24px;
-        }
-
-        .side-nav-logo {
-            width: 32px;
-            height: 32px;
-            border-radius: 999px;
-            background: radial-gradient(circle at 30% 20%, #38bdf8, #0ea5e9 45%, #1d4ed8 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            font-weight: 700;
-            color: #e5f4ff;
-        }
-
-        .side-nav-title {
-            font-size: 14px;
-            font-weight: 600;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            color: #94a3b8;
-        }
-
-        .side-nav-links {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            margin-top: 0;
-        }
-
-        .side-nav .stButton {
-            width: 100%;
-        }
-
-        .side-nav .stButton > button {
-            width: 100%;
-            justify-content: flex-start;
-            border-radius: 999px;
-            border: none;
-            padding: 7px 12px;
-            font-size: 13px;
-            font-weight: 500;
-            background: transparent;
-            color: #e5f4ff;
-            box-shadow: none;
-        }
-
-        .side-nav .stButton > button:hover {
-            background: rgba(148, 163, 184, 0.25);
-            color: #ffffff;
-        }
-
-        /* active state: we’ll add a class through markdown wrapper */
-        .side-nav-item-active .stButton > button {
-            background: radial-gradient(circle at 0% 0%, #38bdf8 0%, #2563eb 70%);
-            color: #ffffff !important;
-            box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.25);
-        }
-
-        .side-nav-footer {
-            font-size: 11px;
-            letter-spacing: 0.16em;
-            text-transform: uppercase;
-            color: #64748b;
-            opacity: 0.8;
-        }
-
-        /* make main content sit nicely to the right */
-        .main-shell {
-            width: calc(100vw - 220px);
-            margin-left: 220px;
-            padding: 0;
-            min-height: 100vh;
-            box-sizing: border-box;
-        }
-
-        .main-content-wrapper {
-            width: 100%;
-            margin: 0;
-            padding: 0;
-        }
-        .index-chart-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 26px 50px rgba(15, 23, 42, 0.25);
-            border-color: rgba(14, 165, 233, 0.4);
-        }
 
         </style>
         """,
@@ -2566,23 +2628,10 @@ def inject_global_css():
     )
 
 
-def render_global_header_and_kpis():
-    st.markdown(
-        """
-        <div class="header-hero">
-            <div class="page-header">
-                <h1 class="page-title">Equity Research Tool</h1>
-                <p class="page-subtitle">Fricano Capital Research</p>
-                <p class="page-mini-desc">
-                </p>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
 # --- Wall Street esque Price Bar ---
 def render_dashboard():
+    inject_global_css()
+
     # --- Get data for Ticker Tape AND Index Cards ---
     index_data = get_live_index_data()
     macro_data = get_global_macro_data()
@@ -2735,7 +2784,7 @@ def render_dashboard():
     # ============================
     # ROW 4: Summary + Econ + Smart Money
     # ============================
-    left_col, right_col = st.columns([8, 4])
+    left_col, right_col = st.columns([1.4, 1])
 
     with left_col:
         summary_text = generate_market_summary(
@@ -2831,18 +2880,6 @@ def render_dashboard():
     st.markdown("</div>", unsafe_allow_html=True)
 
 #UX for Analysis Page
-
-def render_watchlist_page():
-    st.markdown(
-        """
-        <div class="section-card">
-            <div class="section-title">Watchlist (coming soon)</div>
-            <p>Feature coming soon — keep track of names you monitor most.</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
 
 def render_analysis_page():
     inject_global_css()
@@ -2992,20 +3029,16 @@ def render_analysis_page():
 
     heatmap_fig = build_metric_heatmap_figure(res)
     if heatmap_fig:
-        heatmap_wrapper = "<div class='heatmap-wrapper'>"
-    if heatmap_fig:
         st.markdown(
-            f"""
+            """
             <div class="section-card simplified-overview">
                 <div class="section-title">Metric Heatmap</div>
-            </div>
             """,
             unsafe_allow_html=True,
         )
-        st.markdown("<div class='heatmap-wrapper'>", unsafe_allow_html=True)
         st.plotly_chart(heatmap_fig, use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
         st.caption("Colored tiles compare your name versus peers. Green = strength, red = relative weakness.")
+        st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown(
         """
@@ -3655,6 +3688,49 @@ def render_theses_page():
         st.dataframe(df_theses, use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
+
+NAV_PAGES = ["Home", "Screener", "Valuation", "Research", "Theses"]
+
+def render_sidebar_nav():
+    if "active_page" not in st.session_state:
+        st.session_state.active_page = NAV_PAGES[0]
+    if "sidebar_nav" not in st.session_state:
+        st.session_state.sidebar_nav = NAV_PAGES[0]
+    if st.session_state.sidebar_nav not in NAV_PAGES:
+        st.session_state.sidebar_nav = NAV_PAGES[0]
+
+    with st.sidebar:
+        st.markdown(
+            """
+            <div class="sidebar-brand">
+                <div class="sidebar-brand-icon">FC</div>
+                <div>
+                    <p class="sidebar-brand-title">Fricano</p>
+                    <p class="sidebar-brand-sub">Equity Research</p>
+                </div>
+            </div>
+            <p class="sidebar-nav-title">Navigate</p>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        selected = st.radio(
+            "",
+            NAV_PAGES,
+            index=NAV_PAGES.index(st.session_state.sidebar_nav),
+            key="sidebar_nav",
+            label_visibility="collapsed",
+        )
+
+        st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div class='sidebar-footer'>Updated {datetime.now().strftime('%b %d, %Y')}</div>",
+            unsafe_allow_html=True,
+        )
+
+    st.session_state.active_page = selected
+    return selected
+
 # ======================================================================
 # MAIN APP
 # ======================================================================
@@ -3666,7 +3742,7 @@ def main():
         page_title="Equity Research Tool",
         page_icon="📊",
         layout="wide",
-        initial_sidebar_state="collapsed",
+        initial_sidebar_state="expanded",
     )
 
     # Load DM Serif Display for the title
@@ -3679,68 +3755,35 @@ def main():
         unsafe_allow_html=True,
     )
 
+    # Global CSS
     inject_global_css()
 
-    if "top_nav_page" not in st.session_state:
-        st.session_state.top_nav_page = "Dashboard"
+    # ---------- CUSTOM LEFT NAV ----------
+    active_page = render_sidebar_nav()
 
-    st.markdown("<div class='layout-shell'>", unsafe_allow_html=True)
-
-    st.markdown("<div class='side-nav'>", unsafe_allow_html=True)
-    st.markdown(
-        """
-        <div class="side-nav-header">
-            <div class="side-nav-logo">F</div>
-            <div class="side-nav-title">Navigation</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.markdown("<div class='side-nav-links'>", unsafe_allow_html=True)
-
-    def nav_item(label: str, key: str, page_name: str):
-        active = st.session_state.top_nav_page == page_name
-        wrapper_class = "side-nav-item-active" if active else ""
-        class_attr = f" class='{wrapper_class}'" if wrapper_class else ""
-        st.markdown(f"<div{class_attr}>", unsafe_allow_html=True)
-        if st.button(label, key=key):
-            st.session_state.top_nav_page = page_name
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    nav_item("Dashboard", "nav_dashboard", "Dashboard")
-    nav_item("Screener", "nav_screener", "Analysis")
-    nav_item("Valuation", "nav_valuation", "Valuation")
-    nav_item("Research", "nav_research", "Research")
-    nav_item("Theses", "nav_theses", "Theses")
-    nav_item("Watchlist", "nav_watchlist", "Watchlist")
-
-    st.markdown("</div>", unsafe_allow_html=True)
-    st.markdown(
-        "<div class='side-nav-footer'>FRICANO CAPITAL RESEARCH</div>",
-        unsafe_allow_html=True,
-    )
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown("<div class='main-shell'>", unsafe_allow_html=True)
-    st.markdown("<div class='main-content-wrapper'>", unsafe_allow_html=True)
-
-    page = st.session_state.top_nav_page
-    if page == "Dashboard":
-        render_global_header_and_kpis()
+    if active_page == "Home":
+        st.markdown(
+            """
+            <div class="header-hero">
+                <div class="page-header">
+                    <h1 class="page-title">Equity Research Tool</h1>
+                    <p class="page-subtitle">Fricano Capital Research</p>
+                    <p class="page-mini-desc">
+                    </p>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         render_dashboard()
-    elif page == "Analysis":
+    elif active_page == "Screener":
         render_analysis_page()
-    elif page == "Research":
-        render_research_page()
-    elif page == "Valuation":
+    elif active_page == "Valuation":
         render_valuation_page()
-    elif page == "Theses":
+    elif active_page == "Research":
+        render_research_page()
+    elif active_page == "Theses":
         render_theses_page()
-    elif page == "Watchlist":
-        render_watchlist_page()
-
-    st.markdown("</div></div></div>", unsafe_allow_html=True)
 
 
 # This block MUST be at the end of the file

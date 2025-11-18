@@ -2529,7 +2529,15 @@ def inject_global_css():
         </style>
         """,
         unsafe_allow_html=True,
+        
     )
+MAIN_NAV_PAGES = [
+    ("Home", "Home"),
+    ("Screener", "Screener"),
+    ("Valuation", "Valuation"),
+    ("Research", "Research"),
+    ("Theses", "Theses"),
+]
 
 def get_active_page() -> str:
     params = st.experimental_get_query_params()

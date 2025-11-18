@@ -2467,102 +2467,100 @@ def inject_global_css():
             margin-bottom: 12px;
             overflow: hidden;
         }
-        .left-nav-shell {
-            position: sticky;
-            top: 0;
-            background: linear-gradient(180deg, #021026, #0b1f3d);
-            border-radius: 0 0 32px 0;
-            padding: 22px 18px;
-            border: none;
-            box-shadow: 0 24px 70px rgba(2, 6, 23, 0.6);
-            min-height: calc(100vh - 32px);
-            color: #f8fafc;
-            margin-left: -10px;
+        /* ===== LEFT SIDE NAV (PRO STYLE) ===== */
+        .layout-shell {
+            display: flex;
+            align-items: stretch;
         }
-        .left-nav {
-            background: transparent;
-            color: #f8fafc;
-            padding: 0;
-            border-radius: 0;
-            border: none;
-            box-shadow: none;
-            min-height: auto;
+
+        .side-nav {
+            width: 220px;
+            min-height: 100vh;
+            background: linear-gradient(180deg, #020617 0%, #0b1120 40%, #020617 100%);
+            border-radius: 0 32px 32px 0;
+            box-shadow: 0 0 40px rgba(15, 23, 42, 0.35);
+            padding: 24px 22px 28px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
-        .left-nav .stRadio {
-            margin: 0;
+
+        .side-nav-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 24px;
         }
-        .left-nav .stRadio > div {
-            gap: 0;
-            display: block;
+
+        .side-nav-logo {
+            width: 32px;
+            height: 32px;
+            border-radius: 999px;
+            background: radial-gradient(circle at 30% 20%, #38bdf8, #0ea5e9 45%, #1d4ed8 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 700;
+            color: #e5f4ff;
         }
-        .left-nav .stRadio > div > label {
-            border: none;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 0;
-            padding: 10px 0;
-            margin: 0;
-            background: transparent;
-            color: #f8fafc;
-            font-weight: 600;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            display: block;
-            width: 100%;
-            padding-left: 0;
-            text-align: left;
-        }
-        .left-nav .stRadio > div > label:last-child {
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        .left-nav .stRadio > div > label div {
-            margin: 0;
-        }
-        .left-nav .stRadio button {
-            display: none;
-        }
-        .left-nav .stRadio [aria-checked="true"] + label {
-            color: #fff;
-            background: rgba(255, 255, 255, 0.12);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.7);
-        }
-        .left-nav-label {
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.2em;
-            font-size: 0.75rem;
-            margin-bottom: 12px;
-            color: #e5e7eb !important;
-        }
-        .left-nav .nav-btn {
-            display: block;
-            padding: 12px 18px;
-            margin-bottom: 6px;
-            border-radius: 12px;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            text-decoration: none;
-            color: #f8fafc;
+
+        .side-nav-title {
+            font-size: 14px;
             font-weight: 600;
             letter-spacing: 0.12em;
             text-transform: uppercase;
-            transition: all 0.2s ease;
+            color: #94a3b8;
         }
-        .left-nav .nav-btn:hover {
-            background: rgba(255, 255, 255, 0.16);
-        }
-        .left-nav .nav-btn.active {
-            background: linear-gradient(135deg, rgba(14, 165, 233, 0.4), rgba(59, 130, 246, 0.4));
-            border-color: rgba(37, 99, 235, 0.6);
-            color: #fff;
-            box-shadow: 0 10px 30px rgba(14, 165, 233, 0.3);
-        }
-        .content-shell {
+
+        .side-nav-links {
             display: flex;
-            gap: 16px;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 8px;
         }
-        .content-grid {
+
+        .side-nav .stButton {
             width: 100%;
+        }
+
+        .side-nav .stButton > button {
+            width: 100%;
+            justify-content: flex-start;
+            border-radius: 999px;
+            border: none;
+            padding: 7px 12px;
+            font-size: 13px;
+            font-weight: 500;
+            background: transparent;
+            color: #cbd5f5;
+            box-shadow: none;
+        }
+
+        .side-nav .stButton > button:hover {
+            background: rgba(148, 163, 184, 0.14);
+            color: #e2e8f0;
+        }
+
+        /* active state: we’ll add a class through markdown wrapper */
+        .side-nav-item-active .stButton > button {
+            background: radial-gradient(circle at 0% 0%, #38bdf8 0%, #2563eb 70%);
+            color: #ffffff !important;
+            box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.25);
+        }
+
+        .side-nav-footer {
+            font-size: 11px;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: #64748b;
+            opacity: 0.8;
+        }
+
+        /* make main content sit nicely to the right */
+        .main-shell {
+            flex: 1;
+            padding-left: 28px;
         }
         .index-chart-card:hover {
             transform: translateY(-6px);
@@ -3660,9 +3658,6 @@ def render_theses_page():
 # ======================================================================
 # MAIN APP
 # ======================================================================
-NAV_ITEMS = ["Dashboard", "Screener", "Research", "Valuation", "Theses", "Watchlist"]
-
-
 def main():
     st.set_page_config(
         page_title="Equity Research Tool",
@@ -3683,44 +3678,66 @@ def main():
 
     inject_global_css()
 
-    if "active_section" not in st.session_state:
-        st.session_state.active_section = "Dashboard"
+    if "top_nav_page" not in st.session_state:
+        st.session_state.top_nav_page = "Dashboard"
 
-    if "nav_section" not in st.session_state:
-        st.session_state.nav_section = "Dashboard"
-
-    st.session_state.active_section = st.session_state.nav_section
-
-    nav_index = NAV_ITEMS.index(st.session_state.nav_section) if st.session_state.nav_section in NAV_ITEMS else 0
-
-    col_nav, col_main = st.columns([0.18, 0.82])
+    col_nav, col_main = st.columns([0.9, 5.1], gap="small")
 
     with col_nav:
-        st.markdown("<div class='left-nav-shell'>", unsafe_allow_html=True)
-        st.markdown("<div class='left-nav-label'>Navigation</div>", unsafe_allow_html=True)
-        selected = st.radio(
-            "",
-            NAV_ITEMS,
-            index=nav_index,
-            key="nav_section",
-            label_visibility="collapsed",
+        st.markdown("<div class='side-nav'>", unsafe_allow_html=True)
+
+        st.markdown(
+            """
+            <div class="side-nav-header">
+                <div class="side-nav-logo">F</div>
+                <div class="side-nav-title">Navigation</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        st.markdown("<div class='side-nav-links'>", unsafe_allow_html=True)
+
+        def nav_item(label: str, key: str, page_name: str):
+            active = st.session_state.top_nav_page == page_name
+            class_attr = f" class='side-nav-item-active'" if active else ""
+            st.markdown(f"<div{class_attr}>", unsafe_allow_html=True)
+            if st.button(label, key=key):
+                st.session_state.top_nav_page = page_name
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        nav_item("Dashboard", "nav_dashboard", "Dashboard")
+        nav_item("Screener", "nav_screener", "Analysis")
+        nav_item("Valuation", "nav_valuation", "Valuation")
+        nav_item("Research", "nav_research", "Research")
+        nav_item("Theses", "nav_theses", "Theses")
+        nav_item("Watchlist", "nav_watchlist", "Watchlist")
+
+        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown(
+            "<div class='side-nav-footer'>FRICANO CAPITAL RESEARCH</div>",
+            unsafe_allow_html=True,
         )
         st.markdown("</div>", unsafe_allow_html=True)
-        st.session_state.active_section = selected
 
     with col_main:
-        if st.session_state.active_section == "Dashboard":
+        st.markdown("<div class='main-shell'>", unsafe_allow_html=True)
+
+        page = st.session_state.top_nav_page
+        if page == "Dashboard":
             render_dashboard()
-        elif st.session_state.active_section == "Screener":
+        elif page == "Analysis":
             render_analysis_page()
-        elif st.session_state.active_section == "Research":
+        elif page == "Research":
             render_research_page()
-        elif st.session_state.active_section == "Valuation":
+        elif page == "Valuation":
             render_valuation_page()
-        elif st.session_state.active_section == "Theses":
+        elif page == "Theses":
             render_theses_page()
-        elif st.session_state.active_section == "Watchlist":
+        elif page == "Watchlist":
             render_watchlist_page()
+
+        st.markdown("</div>", unsafe_allow_html=True)
 
 
 # This block MUST be at the end of the file

@@ -1887,13 +1887,15 @@ def inject_global_css():
         }
 
         section[data-testid="stSidebar"] {
-            width: var(--sidebar-width);
-            min-width: var(--sidebar-width);
-            max-width: var(--sidebar-width);
+            display: none !important;
+        }
+
+        .custom-sidebar {
             position: fixed;
             top: 0;
             left: 0;
             bottom: 0;
+            width: var(--sidebar-width);
             padding: 0;
             margin: 0;
             border: none;
@@ -1903,10 +1905,6 @@ def inject_global_css():
             flex-direction: column;
             justify-content: space-between;
             z-index: 30;
-        }
-
-        section[data-testid="stSidebar"] > div {
-            padding: 0;
         }
 
         .sidebar-brand {
@@ -2009,7 +2007,7 @@ def inject_global_css():
         }
 
         @media (max-width: 1100px) {
-            section[data-testid="stSidebar"] {
+            .custom-sidebar {
                 width: 220px;
                 min-width: 220px;
             }
@@ -2020,7 +2018,7 @@ def inject_global_css():
         }
 
         @media (max-width: 900px) {
-            section[data-testid="stSidebar"] {
+            .custom-sidebar {
                 position: relative;
                 width: 100%;
                 min-width: 100%;
@@ -3718,9 +3716,11 @@ def render_sidebar_nav():
         st.session_state.sidebar_nav = NAV_PAGES[0]
     st.session_state.active_page = st.session_state.sidebar_nav
 
-    with st.sidebar:
-        st.markdown(
-            """
+    base_params = {k: list(v) for k, v in params.items() if k != "nav"}
+
+    stack_html = "<div class='custom-sidebar'>"
+    stack_html += """
+        <div>
             <div class="sidebar-brand">
                 <div class="sidebar-brand-icon">FC</div>
                 <div>
@@ -3729,43 +3729,31 @@ def render_sidebar_nav():
                 </div>
             </div>
             <p class="sidebar-nav-title">Navigate</p>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        stack_html = "<div class='sidebar-chip-stack'>"
-        for page in NAV_PAGES:
-            link_params = {k: list(v) for k, v in params.items()}
-            link_params["nav"] = [page]
-            href = f"?{urlencode(link_params, doseq=True)}"
-            active_class = " active" if page == st.session_state.sidebar_nav else ""
-            stack_html += f"<a href=\"{href}\" class='sidebar-chip{active_class}'>{page}</a>"
-        stack_html += "</div>"
-        st.markdown(stack_html, unsafe_allow_html=True)
-
-        st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
-        st.markdown(
-            """
+    """
+    stack_html += "<div class='sidebar-chip-stack'>"
+    for page in NAV_PAGES:
+        link_params = {k: list(v) for k, v in base_params.items()}
+        link_params["nav"] = [page]
+        href = f"?{urlencode(link_params, doseq=True)}"
+        active_class = " active" if page == st.session_state.sidebar_nav else ""
+        stack_html += f"<a href=\"{href}\" class='sidebar-chip{active_class}'>{page}</a>"
+    stack_html += "</div>"
+    stack_html += "</div>"
+    stack_html += """
+        <div>
+            <div class='sidebar-divider'></div>
             <div class='sidebar-chip-styles'>
                 <span>Sidebar Menu Chips</span>
                 <span>Navigation Chips</span>
                 <span>Vertical Pills</span>
                 <span>Navigation Capsules</span>
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
+            <div class='sidebar-footer'>Updated """ + datetime.now().strftime('%b %d, %Y') + """</div>
+        </div>
+    """
+    stack_html += "</div>"
 
-        st.markdown(
-            f"<div class='sidebar-footer'>Updated {datetime.now().strftime('%b %d, %Y')}</div>",
-            unsafe_allow_html=True,
-        )
-
-    current_nav_param = params.get("nav", [None])[0]
-    if current_nav_param != st.session_state.sidebar_nav:
-        updated_params = {k: list(v) for k, v in params.items()}
-        updated_params["nav"] = [st.session_state.sidebar_nav]
-        st.experimental_set_query_params(**updated_params)
+    st.markdown(stack_html, unsafe_allow_html=True)
 
     return st.session_state.sidebar_nav
 

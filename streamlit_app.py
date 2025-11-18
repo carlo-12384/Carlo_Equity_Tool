@@ -1852,6 +1852,8 @@ def inject_global_css():
             --color-dark-card-text: #E5E7EB;
             --color-dark-card-border: #1F2937;
             --left-rail-width: 2in;
+            --content-max-width: 1180px;
+            --content-buffer: clamp(20px, 2vw, 48px);
         }
         
         /* ===== GLOBAL LAYOUT ===== */
@@ -1861,6 +1863,8 @@ def inject_global_css():
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
             margin: 0 !important;
             padding: 0 !important;
+            overflow-x: hidden;
+            min-height: 100%;
         }
         header[data-testid="stHeader"] {
             background: transparent !important;
@@ -1871,11 +1875,17 @@ def inject_global_css():
         div.block-container {
             margin-left: var(--left-rail-width) !important;
             width: calc(100% - var(--left-rail-width)) !important;
-            padding-top: 0 !important;
+            max-width: 100% !important;
+            padding: 0 !important;
             margin-top: 0 !important;
-            padding-left: clamp(24px, 2vw, 48px) !important;
-            padding-right: clamp(24px, 2vw, 48px) !important;
             display: block;
+            box-sizing: border-box;
+        }
+        .core-content-shell {
+            width: 100%;
+            max-width: var(--content-max-width);
+            margin: 0 auto;
+            padding: 0 var(--content-buffer);
             box-sizing: border-box;
         }
         div[data-testid="stAppViewContainer"] {
@@ -1917,9 +1927,8 @@ def inject_global_css():
         
         /* ===== PAGE HEADER / HERO ===== */
         .header-hero {
-            width: calc(100vw - var(--left-rail-width));
+            width: 100%;
             position: relative;
-            left: var(--left-rail-width);
             transform: none;
             padding: 32px 0 26px 0;
             background: linear-gradient(90deg, #00152E 0%, #003566 50%, #00152E 100%);
@@ -2047,12 +2056,12 @@ def inject_global_css():
             color: var(--color-tertiary-text);
             overflow: hidden;
             padding: 10px 0;
-            width: calc(100vw - var(--left-rail-width));
+            width: 100%;
             position: relative;
-            left: var(--left-rail-width);
-            margin-left: 0;
+            margin: 0;
             border-top: 1px solid var(--color-secondary-bg);
             border-bottom: 1px solid var(--color-secondary-bg);
+            box-sizing: border-box;
         }
         .ticker-tape-inner {
             display: inline-flex;
@@ -2535,6 +2544,8 @@ def render_dashboard():
         """
         st.markdown(full_ticker_html, unsafe_allow_html=True)
 
+    st.markdown('<div class="core-content-shell">', unsafe_allow_html=True)
+
     # ============================
     # ROW 1: Market Snapshot (TITLE + MACRO CARDS)
     # ============================
@@ -2745,6 +2756,7 @@ def render_dashboard():
     else:
         st.write("No recent broad-market headlines available.")
 
+    st.markdown("</div>", unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
 #UX for Analysis Page

@@ -1962,14 +1962,24 @@ def inject_global_css():
         
         /* ===== PAGE HEADER / HERO ===== */
         .header-hero {
-            width: calc(100% - var(--left-rail-width));
+            width: 100%;
             position: relative;
-            left: var(--left-rail-width);
             transform: none;
             padding: 32px 0 26px 0;
             background: linear-gradient(90deg, #00152E 0%, #003566 50%, #00152E 100%);
             border-bottom: 2px solid #001f3f;
             box-shadow: 0 6px 14px rgba(15, 23, 42, 0.15);
+            /* ---------------------------------
+               *** ADD/MODIFY THESE LINES ***
+               Counteract the 0.25in left padding of block-container:
+               Shift left by the buffer value.
+            */
+            margin-left: calc(-1 * var(--content-buffer)) !important;
+            /* Counteract the combined 0.5in (left + right) padding: 
+               Make it span the full container width plus the removed padding space.
+            */
+            width: calc(100% + (2 * var(--content-buffer))) !important;
+            /* --------------------------------- */
         }
         .page-header {
             max-width: 1100px;
@@ -2092,12 +2102,18 @@ def inject_global_css():
             color: var(--color-tertiary-text);
             overflow: hidden;
             padding: 10px 0;
-            width: calc(100% - var(--left-rail-width));
-            margin-left: var(--left-rail-width);
             position: relative;
+            margin: 0;
             border-top: 1px solid var(--color-secondary-bg);
             border-bottom: 1px solid var(--color-secondary-bg);
             box-sizing: border-box;
+        /* ---------------------------------
+           *** ADD/MODIFY THESE LINES ***
+           Apply the same correction as .header-hero
+        */
+        margin-left: calc(-1 * var(--content-buffer)) !important;
+        width: calc(100% + (2 * var(--content-buffer))) !important;
+        /* --------------------------------- */
         }
         .ticker-tape-inner {
             display: inline-flex;

@@ -1876,21 +1876,16 @@ def inject_global_css():
             margin-left: var(--left-rail-width) !important;
             width: calc(100% - var(--left-rail-width)) !important;
             max-width: 100% !important;
-            /* **MODIFIED HERE** to add horizontal buffer padding */
-            padding: 0 var(--content-buffer) !important; 
+            padding: 0 !important;
             margin-top: 0 !important;
             display: block;
             box-sizing: border-box;
         }
         .core-content-shell {
-            width: 70%;
+            width: 100%;
             max-width: var(--content-max-width);
             margin: 0 auto;
-            /* Note: This padding is now redundant for the sides 
-                     if the container padding is used, but keep it 
-                     if you want to *center* the content within the 
-                     padded block-container area. */
-            padding: 25px 0; /* Changed from var(--content-buffer) to 0 */
+            padding: 0 var(--content-buffer);
             box-sizing: border-box;
         }
         div[data-testid="stAppViewContainer"] {

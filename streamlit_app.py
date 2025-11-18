@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from functools import lru_cache
 from typing import List, Dict, Any
 from datetime import datetime
+from urllib.parse import urlencode
 import streamlit as st
 import json
 import plotly.graph_objects as go # --- NEW --- Import Plotly
@@ -1923,8 +1924,49 @@ def inject_global_css():
             background: linear-gradient(180deg, #010915 0%, #04122a 60%, #000610 100%);
             box-shadow: 3px 0 20px rgba(1, 5, 20, 0.65);
             z-index: 1000;
+            padding-top: clamp(18px, 3vw, 32px);
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
         }
-        
+        .nav-panel {
+            margin-top: clamp(6px, 1vw, 14px);
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+            padding: 0 12px;
+            box-sizing: border-box;
+        }
+        .nav-button {
+            display: block;
+            width: 100%;
+            text-align: center;
+            padding: 10px 14px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            background: transparent;
+            color: #F8FAFC;
+            font-weight: 600;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            text-decoration: none;
+            transition: background 200ms ease, border-color 200ms ease, box-shadow 200ms ease;
+        }
+        .nav-button.active {
+            background: rgba(14, 165, 233, 0.95);
+            border-color: rgba(14, 165, 233, 0.95);
+            box-shadow: 0 0 16px rgba(14, 165, 233, 0.45);
+            color: #0f172a;
+        }
+        .nav-button:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        .nav-button:focus-visible {
+            outline: 2px solid rgba(14, 165, 233, 0.95);
+            outline-offset: 2px;
+        }
+
         /* ===== PAGE HEADER / HERO ===== */
         .header-hero {
             width: 100%;
@@ -2496,10 +2538,50 @@ def inject_global_css():
         unsafe_allow_html=True,
     )
 
-def render_left_rail():
+NAV_TABS = [
+    {"slug": "home", "label": "Home"},
+    {"slug": "screener", "label": "Screener"},
+    {"slug": "valuation", "label": "Valuation"},
+    {"slug": "research", "label": "Research"},
+    {"slug": "theses", "label": "Theses"},
+]
+NAV_TAB_SLUGS = {tab["slug"] for tab in NAV_TABS}
+DEFAULT_TAB_SLUG = NAV_TABS[0]["slug"]
+
+def _get_active_tab_slug() -> str:
+    params = st.experimental_get_query_params()
+    raw_slug = params.get("tab", [DEFAULT_TAB_SLUG])[0]
+    slug = str(raw_slug).lower()
+    return slug if slug in NAV_TAB_SLUGS else DEFAULT_TAB_SLUG
+
+def _build_nav_href(target_slug: str) -> str:
+    params = {k: v for k, v in st.experimental_get_query_params().items() if k != "tab"}
+    params["tab"] = target_slug
+    query_string = urlencode(params, doseq=True)
+    return f"?{query_string}" if query_string else ""
+
+def render_left_rail(active_tab_slug: str):
+    nav_items = []
+    for tab in NAV_TABS:
+        classes = "nav-button"
+        if tab["slug"] == active_tab_slug:
+            classes += " active"
+
+        href = _build_nav_href(tab["slug"])
+        nav_items.append(
+            f'<a class="{classes}" href="{href}">'
+            f'{tab["label"]}'
+            f'</a>'
+        )
+
+    nav_html = "".join(nav_items)
     st.markdown(
-        """
-        <div class="left-rail"></div>
+        f"""
+        <div class="left-rail">
+            <div class="nav-panel">
+                {nav_html}
+            </div>
+        </div>
         """,
         unsafe_allow_html=True,
     )
@@ -3594,49 +3676,31 @@ def main():
 
     # Global CSS
     inject_global_css()
-    render_left_rail()
+    active_tab_slug = _get_active_tab_slug()
+    render_left_rail(active_tab_slug)
 
-    # ---------- TABS AS MAIN NAV (TOP LEFT) ----------
-    tab_home, tab_screener, tab_val, tab_research, tab_theses = st.tabs(
-        ["Home", "Screener", "Valuation", "Research", "Theses"]
-    )
-
-    # ---------- HOME ----------
-    with tab_home:
-    # ---- Big Hero Header ----
+    if active_tab_slug == "home":
         st.markdown(
-        """
-        <div class="header-hero">
-            <div class="page-header">
-                <h1 class="page-title">Equity Research Tool</h1>
-                <p class="page-subtitle">Fricano Capital Research</p>
-                <p class="page-mini-desc">
-                </p>
+            """
+            <div class="header-hero">
+                <div class="page-header">
+                    <h1 class="page-title">Equity Research Tool</h1>
+                    <p class="page-subtitle">Fricano Capital Research</p>
+                    <p class="page-mini-desc">
+                    </p>
+                </div>
             </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-        # ---- The Ticker + Rest of Page ----
+            """,
+            unsafe_allow_html=True,
+        )
         render_dashboard()
-
-
-    # ---------- SCREENER ----------
-    with tab_screener:
+    elif active_tab_slug == "screener":
         render_analysis_page()
-
-    # ---------- VALUATION ----------
-    with tab_val:
+    elif active_tab_slug == "valuation":
         render_valuation_page()
-
-    # ---------- RESEARCH ----------
-    with tab_research:
+    elif active_tab_slug == "research":
         render_research_page()
-
-    
-    # ---------- THESES ----------
-    # This part was missing from your main function
-    with tab_theses:
+    elif active_tab_slug == "theses":
         render_theses_page()
 
 

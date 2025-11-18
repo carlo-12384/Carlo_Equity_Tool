@@ -1910,6 +1910,7 @@ def inject_global_css():
             background: #001a40;
             border-bottom: 2px solid #0f172a;
             box-shadow: 0 15px 35px rgba(15, 23, 42, 0.45);
+            z-index: 10;
         }
         .page-header {
             max-width: 1100px;
@@ -2084,15 +2085,15 @@ def inject_global_css():
 
         /* ===== INDEX SNAPSHOT CARDS ===== */
         .index-chart-card {
-            background: #FFFFFF;
+            background: #f8fafc;
             border: 1px solid #E2E8F0;
             border-radius: 12px;
             padding: 18px 20px;
             margin-bottom: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05),
-                        0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08);
             display: flex;
             flex-direction: column;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border 0.25s ease;
         }
         .index-chart-title {
             font-size: 1rem;
@@ -2502,40 +2503,35 @@ def inject_global_css():
             margin-bottom: 12px;
             color: #e5e7eb !important;
         }
-        .stRadio > div > label {
+        .left-nav div[data-testid="stRadio"] {
+            margin-top: 8px;
+        }
+        .left-nav div[data-testid="stRadio"] label {
             width: 100%;
             display: block;
-            margin-bottom: 8px;
-        }
-        .stRadio button {
-            width: 100%;
-            text-align: left;
+            margin-bottom: 0;
             padding: 12px 16px;
-            border-radius: 12px;
-            border: 1px solid transparent;
-            background: #f8fafc;
-            font-weight: 600;
-            color: #0f172a;
-            letter-spacing: 0.05em;
-        }
-        .stRadio button:hover {
-            border-color: #c7d2fe;
-            background: #eef2ff;
-        }
-        .stRadio button[aria-pressed="true"] {
-            border-color: #0ea5e9;
-            background: linear-gradient(120deg, #0ea5e9, #0b84d7);
-            color: #fff;
-        }
-        .left-nav .stRadio button {
-            background: transparent;
-            border-color: rgba(255, 255, 255, 0.2);
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.05);
             color: #f8fafc;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
         }
-        .left-nav .stRadio button[aria-pressed="true"] {
-            background: rgba(255, 255, 255, 0.1);
+        .left-nav div[data-testid="stRadio"] label:hover {
+            background: rgba(255, 255, 255, 0.18);
+        }
+        .left-nav div[data-testid="stRadio"] input {
+            display: none;
+        }
+        .left-nav div[data-testid="stRadio"] input:checked + div,
+        .left-nav div[data-testid="stRadio"] input:checked ~ div {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(14, 165, 233, 0.3));
             border-color: rgba(248, 250, 252, 0.6);
-            box-shadow: 0 0 0 2px rgba(248, 250, 252, 0.4);
+            color: #f8fafc;
+            box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.35);
         }
         .content-shell {
             display: flex;
@@ -2543,6 +2539,11 @@ def inject_global_css():
         }
         .content-grid {
             width: 100%;
+        }
+        .index-chart-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 26px 50px rgba(15, 23, 42, 0.25);
+            border-color: rgba(14, 165, 233, 0.4);
         }
 
         </style>
@@ -2964,7 +2965,7 @@ def render_analysis_page():
 
     heatmap_fig = build_metric_heatmap_figure(res)
     if heatmap_fig:
-        heatmap_wrapper = "<div class='heatmap-wrapper'>"
+    heatmap_wrapper = "<div class='heatmap-wrapper'>"
     if heatmap_fig:
         st.markdown(
             f"""

@@ -1832,7 +1832,7 @@ def inject_global_css():
         }
         div.block-container {
             padding-top: 0rem !important;
-            padding-left: 240px !important;
+            padding-left: 0 !important;
             margin-left: 0 !important;
         }
         div[data-testid="stAppViewContainer"] {
@@ -2449,15 +2449,14 @@ def inject_global_css():
         }
         /* ===== LEFT SIDE NAV (PRO STYLE) ===== */
         .layout-shell {
-            display: flex;
-            align-items: stretch;
+            min-height: 100vh;
         }
 
         .side-nav {
             position: fixed;
             top: 0;
             left: 0;
-            width: 200px;
+            width: 220px;
             height: 100vh;
             background: linear-gradient(180deg, #020617 0%, #0b1120 40%, #020617 100%);
             border-radius: 0 32px 32px 0;
@@ -2465,7 +2464,7 @@ def inject_global_css():
             padding: 24px 22px 28px;
             display: flex;
             flex-direction: column;
-            justify-content: space-between; /* header + buttons at top, footer at bottom */
+            justify-content: space-between;
             z-index: 1000;
         }
 
@@ -2543,12 +2542,17 @@ def inject_global_css():
 
         /* make main content sit nicely to the right */
         .main-shell {
-            flex: 1;
-            padding-left: 28px;
+            width: calc(100vw - 220px);
+            margin-left: 220px;
+            padding: 34px 40px 48px;
+            min-height: 100vh;
+            box-sizing: border-box;
         }
 
         .main-content-wrapper {
-            margin-left: 240px;
+            width: 100%;
+            margin: 0;
+            padding: 0;
         }
         .index-chart-card:hover {
             transform: translateY(-6px);
@@ -3680,66 +3684,63 @@ def main():
     if "top_nav_page" not in st.session_state:
         st.session_state.top_nav_page = "Dashboard"
 
-    col_nav, col_main = st.columns([0.9, 5.1], gap="small")
+    st.markdown("<div class='layout-shell'>", unsafe_allow_html=True)
 
-    with col_nav:
-        st.markdown("<div class='side-nav'>", unsafe_allow_html=True)
+    st.markdown("<div class='side-nav'>", unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class="side-nav-header">
+            <div class="side-nav-logo">F</div>
+            <div class="side-nav-title">Navigation</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-        st.markdown(
-            """
-            <div class="side-nav-header">
-                <div class="side-nav-logo">F</div>
-                <div class="side-nav-title">Navigation</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+    st.markdown("<div class='side-nav-links'>", unsafe_allow_html=True)
 
-        st.markdown("<div class='side-nav-links'>", unsafe_allow_html=True)
-
-        def nav_item(label: str, key: str, page_name: str):
-            active = st.session_state.top_nav_page == page_name
-            wrapper_class = "side-nav-item-active" if active else ""
-            class_attr = f" class='{wrapper_class}'" if wrapper_class else ""
-            st.markdown(f"<div{class_attr}>", unsafe_allow_html=True)
-            if st.button(label, key=key):
-                st.session_state.top_nav_page = page_name
-            st.markdown("</div>", unsafe_allow_html=True)
-
-        nav_item("Dashboard", "nav_dashboard", "Dashboard")
-        nav_item("Screener", "nav_screener", "Analysis")
-        nav_item("Valuation", "nav_valuation", "Valuation")
-        nav_item("Research", "nav_research", "Research")
-        nav_item("Theses", "nav_theses", "Theses")
-        nav_item("Watchlist", "nav_watchlist", "Watchlist")
-
+    def nav_item(label: str, key: str, page_name: str):
+        active = st.session_state.top_nav_page == page_name
+        wrapper_class = "side-nav-item-active" if active else ""
+        class_attr = f" class='{wrapper_class}'" if wrapper_class else ""
+        st.markdown(f"<div{class_attr}>", unsafe_allow_html=True)
+        if st.button(label, key=key):
+            st.session_state.top_nav_page = page_name
         st.markdown("</div>", unsafe_allow_html=True)
 
-        st.markdown(
-            "<div class='side-nav-footer'>FRICANO CAPITAL RESEARCH</div>",
-            unsafe_allow_html=True,
-        )
-        st.markdown("</div>", unsafe_allow_html=True)
+    nav_item("Dashboard", "nav_dashboard", "Dashboard")
+    nav_item("Screener", "nav_screener", "Analysis")
+    nav_item("Valuation", "nav_valuation", "Valuation")
+    nav_item("Research", "nav_research", "Research")
+    nav_item("Theses", "nav_theses", "Theses")
+    nav_item("Watchlist", "nav_watchlist", "Watchlist")
 
-    with col_main:
-        st.markdown("<div class='main-content-wrapper'>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='side-nav-footer'>FRICANO CAPITAL RESEARCH</div>",
+        unsafe_allow_html=True,
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
 
-        page = st.session_state.top_nav_page
-        if page == "Dashboard":
-            render_global_header_and_kpis()
-            render_dashboard()
-        elif page == "Analysis":
-            render_analysis_page()
-        elif page == "Research":
-            render_research_page()
-        elif page == "Valuation":
-            render_valuation_page()
-        elif page == "Theses":
-            render_theses_page()
-        elif page == "Watchlist":
-            render_watchlist_page()
+    st.markdown("<div class='main-shell'>", unsafe_allow_html=True)
+    st.markdown("<div class='main-content-wrapper'>", unsafe_allow_html=True)
 
-        st.markdown("</div>", unsafe_allow_html=True)
+    page = st.session_state.top_nav_page
+    if page == "Dashboard":
+        render_global_header_and_kpis()
+        render_dashboard()
+    elif page == "Analysis":
+        render_analysis_page()
+    elif page == "Research":
+        render_research_page()
+    elif page == "Valuation":
+        render_valuation_page()
+    elif page == "Theses":
+        render_theses_page()
+    elif page == "Watchlist":
+        render_watchlist_page()
+
+    st.markdown("</div></div></div>", unsafe_allow_html=True)
 
 
 # This block MUST be at the end of the file

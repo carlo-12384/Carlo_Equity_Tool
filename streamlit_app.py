@@ -1856,7 +1856,7 @@ def inject_global_css():
             --content-buffer: 0.25in;
         }
         
-        /* ===== GLOBAL LAYOUT ===== */
+        /* ===== GLOBAL LAYOUT (FIXED BLOCK-CONTAINER MARGIN) ===== */
         html, body, .stApp {
             background: var(--color-page-bg) !important;
             color: var(--color-primary-text) !important;
@@ -1872,6 +1872,7 @@ def inject_global_css():
             min-height: 0 !important;
             padding: 0 !important;
         }
+        /* The main Streamlit content block has a large left margin to account for the left-rail */
         div.block-container {
             margin-left: var(--left-rail-width) !important;
             width: calc(100% - var(--left-rail-width)) !important;
@@ -1881,6 +1882,7 @@ def inject_global_css():
             display: block;
             box-sizing: border-box;
         }
+        /* Content below the header and ticker gets the correct inner padding */
         .core-content-shell {
             width: 100%;
             max-width: var(--content-max-width);
@@ -1896,8 +1898,42 @@ def inject_global_css():
         }
 
         /* =================================================
-        BUTTON TEXT FIX
-        ================================================= */
+        * === FIX: TITLE BAR AND TICKER BAR FULL WIDTH ===
+        * We are overriding the padding/margin of the outer-most
+        * Streamlit container, `div.block-container`, for these two elements.
+        * This allows them to span the full width of the viewable content area
+        * (which starts at the right of the nav bar).
+        * ================================================= */
+        .header-hero {
+            /* These styles were already good for spanning the container width */
+            width: 100%;
+            margin-left: 0;
+            box-sizing: border-box;
+            position: relative;
+            transform: none;
+            padding: 32px 0 26px 0;
+            background: linear-gradient(90deg, #00152E 0%, #003566 50%, #00152E 100%);
+            border-bottom: 2px solid #001f3f;
+            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.15);
+        }
+        .ticker-tape-container {
+            /* These styles were already good for spanning the container width */
+            background: var(--color-primary-bg);
+            color: var(--color-tertiary-text);
+            overflow: hidden;
+            padding: 10px 0;
+            width: 100%;
+            margin-left: 0;
+            position: relative;
+            border-top: 1px solid var(--color-secondary-bg);
+            border-bottom: 1px solid var(--color-secondary-bg);
+            box-sizing: border-box;
+        }
+        /* =================================================
+        * === END FIX ===
+        * ================================================= */
+
+        /* BUTTON TEXT FIX */
         button[data-testid="stButton"] {
             color: #FFFFFF !important;
         }
@@ -1956,17 +1992,6 @@ def inject_global_css():
         }
         
         /* ===== PAGE HEADER / HERO ===== */
-        .header-hero {
-            width: 100%;
-            margin-left: 0;
-            box-sizing: border-box;
-            position: relative;
-            transform: none;
-            padding: 32px 0 26px 0;
-            background: linear-gradient(90deg, #00152E 0%, #003566 50%, #00152E 100%);
-            border-bottom: 2px solid #001f3f;
-            box-shadow: 0 6px 14px rgba(15, 23, 42, 0.15);
-        }
         .page-header {
             max-width: 1100px;
             margin: 0 auto;
@@ -2081,19 +2106,7 @@ def inject_global_css():
         /* ===== TICKER TAPE ===== */
         @keyframes scroll-left {
             from { transform: translateX(0); }
-            to   { transform: translateX(-25%); }
-        }
-        .ticker-tape-container {
-            background: var(--color-primary-bg);
-            color: var(--color-tertiary-text);
-            overflow: hidden;
-            padding: 10px 0;
-            width: 100%;
-            margin-left: 0;
-            position: relative;
-            border-top: 1px solid var(--color-secondary-bg);
-            border-bottom: 1px solid var(--color-secondary-bg);
-            box-sizing: border-box;
+            to   { transform: translateX(-25%); }
         }
         .ticker-tape-inner {
             display: inline-flex;
@@ -2526,15 +2539,7 @@ def inject_global_css():
         </style>
         """,
         unsafe_allow_html=True,
-        
     )
-MAIN_NAV_PAGES = [
-    ("Home", "Home"),
-    ("Screener", "Screener"),
-    ("Valuation", "Valuation"),
-    ("Research", "Research"),
-    ("Theses", "Theses"),
-]
 
 def get_active_page() -> str:
     params = st.experimental_get_query_params()

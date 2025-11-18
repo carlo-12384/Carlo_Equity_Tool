@@ -1868,13 +1868,16 @@ def inject_global_css():
             min-height: 0 !important;
             padding: 0 !important;
         }
+        html, body, .stApp {
+            overflow-x: hidden;
+        }
         div.block-container {
             margin-left: var(--sidebar-width) !important;
             width: calc(100% - var(--sidebar-width)) !important;
             padding-top: 0 !important;
             margin-top: 0 !important;
-            padding-left: 16px !important;
-            padding-right: 16px !important;
+            padding-left: 32px !important;
+            padding-right: 32px !important;
             display: flex;
             justify-content: center;
         }

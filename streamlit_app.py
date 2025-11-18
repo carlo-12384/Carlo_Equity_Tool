@@ -1888,48 +1888,6 @@ def inject_global_css():
             padding: 0 var(--content-buffer);
             box-sizing: border-box;
         }
-        div[data-testid="stTabs"]:first-of-type {
-            position: relative;
-            margin-left: var(--left-rail-width) !important;
-            width: calc(100% - var(--left-rail-width)) !important;
-        }
-        div[data-testid="stTabs"]:first-of-type > div:first-child {
-            position: fixed !important;
-            top: 16px;
-            left: 0;
-            width: var(--left-rail-width);
-            height: auto;
-            display: flex;
-            flex-direction: column;
-            align-items: stretch;
-            gap: 4px;
-            padding: 12px 0;
-            background: transparent;
-            z-index: 1100;
-            box-sizing: border-box;
-        }
-        div[data-testid="stTabs"]:first-of-type > div:first-child button[data-testid="stTab"] {
-            justify-content: flex-start;
-            text-align: left;
-            width: 100% !important;
-            border-radius: 0 16px 16px 0;
-            padding: 10px 18px;
-            background: transparent;
-            color: #cbd5f5;
-            font-weight: 600;
-            border: none;
-        }
-        div[data-testid="stTabs"]:first-of-type > div:first-child button[data-testid="stTab"][aria-selected="true"] {
-            color: #ffffff;
-            background: rgba(255, 255, 255, 0.16);
-        }
-        div[data-testid="stTabs"]:first-of-type > div:first-child button[data-testid="stTab"]:hover {
-            background: rgba(255, 255, 255, 0.08);
-        }
-        div[data-testid="stTabs"]:first-of-type > div:nth-child(n+2) {
-            margin-top: 0 !important;
-            padding-top: 0 !important;
-        }
         div[data-testid="stAppViewContainer"] {
             padding-top: 0 !important;
         }
@@ -1965,6 +1923,36 @@ def inject_global_css():
             background: linear-gradient(180deg, #010915 0%, #04122a 60%, #000610 100%);
             box-shadow: 3px 0 20px rgba(1, 5, 20, 0.65);
             z-index: 1000;
+        }
+        .left-rail-nav {
+            position: absolute;
+            top: 130px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 0 8px;
+            box-sizing: border-box;
+        }
+        .left-rail-nav .nav-link {
+            display: block;
+            padding: 10px 16px;
+            border-radius: 0 16px 16px 0;
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--color-tertiary-text);
+            text-decoration: none;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            transition: background 0.2s ease;
+        }
+        .left-rail-nav .nav-link:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .left-rail-nav .nav-link.active {
+            background: rgba(255, 255, 255, 0.24);
+            color: #ffffff;
         }
         
         /* ===== PAGE HEADER / HERO ===== */
@@ -2538,10 +2526,38 @@ def inject_global_css():
         unsafe_allow_html=True,
     )
 
-def render_left_rail():
+MAIN_NAV_PAGES = [
+    ("Home", "Home"),
+    ("Screener", "Screener"),
+    ("Valuation", "Valuation"),
+    ("Research", "Research"),
+    ("Theses", "Theses"),
+]
+
+def get_active_page() -> str:
+    params = st.experimental_get_query_params()
+    page = params.get("page", ["Home"])[0]
+    valid_slugs = {slug for _, slug in MAIN_NAV_PAGES}
+    if page not in valid_slugs:
+        page = "Home"
+    return page
+
+def render_left_rail(active_page: str):
+    links = []
+    for label, slug in MAIN_NAV_PAGES:
+        slug_param = slug
+        active_class = "active" if slug_param == active_page else ""
+        links.append(
+            f'<a class="nav-link {active_class}" href="?page={slug_param}">{label}</a>'
+        )
+    nav_html = "\n".join(links)
     st.markdown(
-        """
-        <div class="left-rail"></div>
+        f"""
+        <div class="left-rail">
+            <div class="left-rail-nav">
+                {nav_html}
+            </div>
+        </div>
         """,
         unsafe_allow_html=True,
     )
@@ -3636,49 +3652,30 @@ def main():
 
     # Global CSS
     inject_global_css()
-    render_left_rail()
+    active_page = get_active_page()
+    render_left_rail(active_page)
 
-    # ---------- TABS AS MAIN NAV (TOP LEFT) ----------
-    tab_home, tab_screener, tab_val, tab_research, tab_theses = st.tabs(
-        ["Home", "Screener", "Valuation", "Research", "Theses"]
-    )
-
-    # ---------- HOME ----------
-    with tab_home:
-    # ---- Big Hero Header ----
+    if active_page == "Home":
         st.markdown(
-        """
-        <div class="header-hero">
-            <div class="page-header">
-                <h1 class="page-title">Equity Research Tool</h1>
-                <p class="page-subtitle">Fricano Capital Research</p>
-                <p class="page-mini-desc">
-                </p>
+            """
+            <div class="header-hero">
+                <div class="page-header">
+                    <h1 class="page-title">Equity Research Tool</h1>
+                    <p class="page-subtitle">Fricano Capital Research</p>
+                    <p class="page-mini-desc"></p>
+                </div>
             </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-        # ---- The Ticker + Rest of Page ----
+            """,
+            unsafe_allow_html=True,
+        )
         render_dashboard()
-
-
-    # ---------- SCREENER ----------
-    with tab_screener:
+    elif active_page == "Screener":
         render_analysis_page()
-
-    # ---------- VALUATION ----------
-    with tab_val:
+    elif active_page == "Valuation":
         render_valuation_page()
-
-    # ---------- RESEARCH ----------
-    with tab_research:
+    elif active_page == "Research":
         render_research_page()
-
-    
-    # ---------- THESES ----------
-    # This part was missing from your main function
-    with tab_theses:
+    elif active_page == "Theses":
         render_theses_page()
 
 

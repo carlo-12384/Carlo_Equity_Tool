@@ -1890,18 +1890,20 @@ def inject_global_css():
         }
         div[data-testid="stTabs"]:first-of-type {
             position: relative;
+            margin-left: var(--left-rail-width) !important;
+            width: calc(100% - var(--left-rail-width)) !important;
         }
         div[data-testid="stTabs"]:first-of-type > div:first-child {
-            position: fixed;
-            top: 10px;
+            position: fixed !important;
+            top: 16px;
             left: 0;
             width: var(--left-rail-width);
             height: auto;
             display: flex;
             flex-direction: column;
             align-items: stretch;
-            gap: 6px;
-            padding: 16px 0;
+            gap: 4px;
+            padding: 12px 0;
             background: transparent;
             z-index: 1100;
             box-sizing: border-box;
@@ -1909,20 +1911,24 @@ def inject_global_css():
         div[data-testid="stTabs"]:first-of-type > div:first-child button[data-testid="stTab"] {
             justify-content: flex-start;
             text-align: left;
-            width: 100%;
+            width: 100% !important;
             border-radius: 0 16px 16px 0;
-            padding: 8px 18px;
+            padding: 10px 18px;
             background: transparent;
             color: #cbd5f5;
             font-weight: 600;
+            border: none;
         }
         div[data-testid="stTabs"]:first-of-type > div:first-child button[data-testid="stTab"][aria-selected="true"] {
             color: #ffffff;
             background: rgba(255, 255, 255, 0.16);
         }
-        div[data-testid="stTabs"]:first-of-type > div:nth-child(2) {
-            margin-top: 0;
-            padding-top: 0;
+        div[data-testid="stTabs"]:first-of-type > div:first-child button[data-testid="stTab"]:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+        div[data-testid="stTabs"]:first-of-type > div:nth-child(n+2) {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
         }
         div[data-testid="stAppViewContainer"] {
             padding-top: 0 !important;

@@ -1962,8 +1962,9 @@ def inject_global_css():
         
         /* ===== PAGE HEADER / HERO ===== */
         .header-hero {
-            width: 100%;
+            width: calc(100% - var(--left-rail-width));
             position: relative;
+            left: var(--left-rail-width);
             transform: none;
             padding: 32px 0 26px 0;
             background: linear-gradient(90deg, #00152E 0%, #003566 50%, #00152E 100%);
@@ -2091,9 +2092,9 @@ def inject_global_css():
             color: var(--color-tertiary-text);
             overflow: hidden;
             padding: 10px 0;
-            width: 100%;
+            width: calc(100% - var(--left-rail-width));
+            margin-left: var(--left-rail-width);
             position: relative;
-            margin: 0;
             border-top: 1px solid var(--color-secondary-bg);
             border-bottom: 1px solid var(--color-secondary-bg);
             box-sizing: border-box;

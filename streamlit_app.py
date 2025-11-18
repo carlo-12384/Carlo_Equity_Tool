@@ -1831,9 +1831,9 @@ def inject_global_css():
             padding: 0 !important;
         }
         div.block-container {
-            padding-top: 0rem !important;
-            padding-left: 0 !important;
-            margin-left: 0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: none !important;
         }
         div[data-testid="stAppViewContainer"] {
             padding-top: 0 !important;
@@ -2992,7 +2992,7 @@ def render_analysis_page():
 
     heatmap_fig = build_metric_heatmap_figure(res)
     if heatmap_fig:
-        heatmap_wrapper = "<div class='heatmap-wrapper'>"
+    heatmap_wrapper = "<div class='heatmap-wrapper'>"
     if heatmap_fig:
         st.markdown(
             f"""

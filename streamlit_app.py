@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Carlo Equity Tool — Streamlit App (Blocks-style UI)"""
+"""Carlo Equity Tool – Streamlit App (Blocks-style UI)"""
 
 import os, time, math, logging, textwrap, datetime as dt
 import requests, pandas as pd, numpy as np, yfinance as yf

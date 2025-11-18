@@ -1866,29 +1866,32 @@ def inject_global_css():
             overflow-x: hidden;
             min-height: 100%;
         }
-        header[data-testid="stHeader"] {
-            background: transparent !important;
-            height: 0 !important;
-            min-height: 0 !important;
+        
+        /* 💡 CRITICAL FIX: Ensure the Streamlit Main content block has NO inner padding. */
+        .main .block-container {
             padding: 0 !important;
-        }
-        /* The main Streamlit content block has a large left margin to account for the left-rail */
-        div.block-container {
             margin-left: var(--left-rail-width) !important;
             width: calc(100% - var(--left-rail-width)) !important;
             max-width: 100% !important;
-            padding: 0 !important;
             margin-top: 0 !important;
             display: block;
             box-sizing: border-box;
         }
-        /* Content below the header and ticker gets the correct inner padding */
+
+        /* The core-content-shell is used to re-introduce padding/buffer for the rest of the content */
         .core-content-shell {
             width: 100%;
             max-width: var(--content-max-width);
             margin: 0 auto;
             padding: 0 var(--content-buffer);
             box-sizing: border-box;
+        }
+
+        header[data-testid="stHeader"] {
+            background: transparent !important;
+            height: 0 !important;
+            min-height: 0 !important;
+            padding: 0 !important;
         }
         div[data-testid="stAppViewContainer"] {
             padding-top: 0 !important;
@@ -1898,16 +1901,13 @@ def inject_global_css():
         }
 
         /* =================================================
-        * === FIX: TITLE BAR AND TICKER BAR FULL WIDTH ===
-        * We are overriding the padding/margin of the outer-most
-        * Streamlit container, `div.block-container`, for these two elements.
-        * This allows them to span the full width of the viewable content area
-        * (which starts at the right of the nav bar).
+        * === TARGET ELEMENTS (FORCE FULL WIDTH) ===
+        * These elements are set to 100% width and rely on the parent
+        * '.main .block-container' having zero padding, which we fixed above.
         * ================================================= */
         .header-hero {
-            /* These styles were already good for spanning the container width */
             width: 100%;
-            margin-left: 0;
+            margin: 0; /* Ensure no margin interferes */
             box-sizing: border-box;
             position: relative;
             transform: none;
@@ -1916,40 +1916,30 @@ def inject_global_css():
             border-bottom: 2px solid #001f3f;
             box-shadow: 0 6px 14px rgba(15, 23, 42, 0.15);
         }
+        .page-header {
+            /* This section is *inside* .header-hero and is centered. Leave it as is. */
+            max-width: 1100px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
         .ticker-tape-container {
-            /* These styles were already good for spanning the container width */
+            width: 100%;
+            margin: 0; /* Ensure no margin interferes */
             background: var(--color-primary-bg);
             color: var(--color-tertiary-text);
             overflow: hidden;
             padding: 10px 0;
-            width: 100%;
-            margin-left: 0;
             position: relative;
             border-top: 1px solid var(--color-secondary-bg);
             border-bottom: 1px solid var(--color-secondary-bg);
             box-sizing: border-box;
         }
         /* =================================================
-        * === END FIX ===
+        * === END TARGET ELEMENTS ===
         * ================================================= */
 
-        /* BUTTON TEXT FIX */
-        button[data-testid="stButton"] {
-            color: #FFFFFF !important;
-        }
-        div[data-testid="stButton"] p {
-             color: #FFFFFF !important;
-        }
-
-        /* ===== INFO BOX ===== */
-        div[data-testid="stInfo"] {
-            background-color: #E6F6FF !important; 
-            border: 1px solid #B0E0FF !important; 
-            color: #001f3f !important;
-        }
-        div[data-testid="stInfo"] p {
-             color: #001f3f !important;
-        }
+        /* Left Rail (No Change needed) */
         .left-rail {
             position: fixed;
             top: 0;
@@ -1991,34 +1981,25 @@ def inject_global_css():
             color: #ffffff;
         }
         
-        /* ===== PAGE HEADER / HERO ===== */
-        .page-header {
-            max-width: 1100px;
-            margin: 0 auto;
-            text-align: center;
+        /* --- General Streamlit Component Styling Below --- (Untouched) */
+
+        /* BUTTON TEXT FIX */
+        button[data-testid="stButton"] {
+            color: #FFFFFF !important;
         }
-        .page-title {
-            font-family: 'DM Serif Display', serif;
-            font-size: 3rem;
-            font-weight: 500;
-            color: var(--color-tertiary-text) !important;
-            margin-bottom: 0.2rem;
-            letter-spacing: -0.03em;
-        }
-        .page-subtitle {
-            font-size: 1rem;
-            font-weight: 500;
-            color: rgba(229, 231, 235, 0.9);
-            margin: 0;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-        }
-        .page-mini-desc {
-            font-size: 0.9rem;
-            color: rgba(229, 231, 235, 0.9);
-            margin-top: 0.4rem;
+        div[data-testid="stButton"] p {
+             color: #FFFFFF !important;
         }
 
+        /* ===== INFO BOX ===== */
+        div[data-testid="stInfo"] {
+            background-color: #E6F6FF !important; 
+            border: 1px solid #B0E0FF !important; 
+            color: #001f3f !important;
+        }
+        div[data-testid="stInfo"] p {
+             color: #001f3f !important;
+        }
         /* ===== CARD UI ===== */
         .hero-card {
             background: var(--color-primary-bg);

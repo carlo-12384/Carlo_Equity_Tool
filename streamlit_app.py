@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from functools import lru_cache
 from typing import List, Dict, Any
 from datetime import datetime
+from urllib.parse import urlencode
 import streamlit as st
 import json
 import plotly.graph_objects as go # --- NEW --- Import Plotly
@@ -1851,7 +1852,7 @@ def inject_global_css():
             --color-dark-card-bg: #020617;
             --color-dark-card-text: #E5E7EB;
             --color-dark-card-border: #1F2937;
-            --sidebar-width: 250px;
+            --sidebar-width: 270px;
         }
         
         /* ===== GLOBAL LAYOUT ===== */
@@ -1868,31 +1869,20 @@ def inject_global_css():
             min-height: 0 !important;
             padding: 0 !important;
         }
-        html, body, .stApp {
-            overflow-x: hidden;
-        }
         div.block-container {
             margin-left: var(--sidebar-width) !important;
             width: calc(100% - var(--sidebar-width)) !important;
             padding-top: 0 !important;
             margin-top: 0 !important;
-            padding-left: clamp(20px, 2vw, 48px) !important;
-            padding-right: clamp(20px, 2vw, 48px) !important;
+            padding-left: clamp(24px, 2.5vw, 48px) !important;
+            padding-right: clamp(20px, 2.5vw, 48px) !important;
             display: block;
             box-sizing: border-box;
         }
-        div[data-testid="stAppViewContainer"] {
-            padding-top: 0 !important;
-        }
-        h1, h2, h3, h4, h5, h6 {
-            color: var(--color-primary-text) !important;
-        }
-
         section[data-testid="stSidebar"],
         div[data-testid="stSidebar"] {
             width: var(--sidebar-width);
             min-width: var(--sidebar-width);
-            max-width: var(--sidebar-width);
             position: fixed;
             top: 0;
             left: 0;
@@ -1900,8 +1890,8 @@ def inject_global_css():
             padding: 0;
             margin: 0;
             border: none;
-            background: linear-gradient(180deg, #020617 0%, #081b33 60%, #021024 100%);
-            box-shadow: 4px 0 26px rgba(2, 6, 23, 0.75);
+            background: linear-gradient(180deg, #020617 0%, #081b33 55%, #031022 100%);
+            box-shadow: 6px 0 30px rgba(2, 6, 23, 0.65);
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -1909,7 +1899,6 @@ def inject_global_css():
             color: #E5E7EB;
             overflow-y: auto;
         }
-
         .sidebar-brand {
             padding: 32px 24px 16px;
             display: flex;
@@ -1943,16 +1932,14 @@ def inject_global_css():
             letter-spacing: 0.18em;
             text-transform: uppercase;
         }
-
         .sidebar-nav-title {
             margin: 0;
             padding: 0 24px;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             letter-spacing: 0.3em;
             text-transform: uppercase;
             color: rgba(229,231,235,0.5);
         }
-
         .sidebar-chip-stack {
             margin: 12px 0 0;
             padding: 0 24px;
@@ -1960,17 +1947,16 @@ def inject_global_css():
             flex-direction: column;
             gap: 8px;
         }
-
         .sidebar-chip {
             display: flex;
             border-radius: 12px;
             border: 1px solid transparent;
-            padding: 12px 16px;
+            padding: 12px 18px;
             background: rgba(255,255,255,0.04);
             transition: background 0.15s ease, transform 0.15s ease, border 0.15s ease;
             font-size: 0.95rem;
             font-weight: 700;
-            letter-spacing: 0.18em;
+            letter-spacing: 0.1em;
             text-transform: uppercase;
             color: #E5E7EB;
             width: 100%;
@@ -1988,15 +1974,10 @@ def inject_global_css():
             color: #f8fafc;
             box-shadow: 0 0 0 1px rgba(14,165,233,0.5);
         }
-
         .sidebar-divider {
             border-top: 1px solid rgba(255,255,255,0.08);
             margin: 0 24px;
         }
-        .sidebar-divider.thin {
-            margin-top: 0;
-        }
-
         .sidebar-footer {
             padding: 16px 24px 28px;
             font-size: 0.75rem;
@@ -2004,41 +1985,13 @@ def inject_global_css():
             letter-spacing: 0.16em;
             text-transform: uppercase;
         }
+        section[data-testid="stSidebar"] .stRadio,
+        div[data-testid="stSidebar"] .stRadio {
+            width: 100%;
+        }
         div[data-testid="stSidebar"] label,
         div[data-testid="stSidebar"] p {
             color: #E5E7EB !important;
-        }
-
-        @media (max-width: 1100px) {
-            section[data-testid="stSidebar"],
-            div[data-testid="stSidebar"] {
-                width: 220px;
-                min-width: 220px;
-            }
-            div.block-container {
-                margin-left: 220px !important;
-                width: calc(100% - 220px) !important;
-            }
-        }
-
-        @media (max-width: 900px) {
-            section[data-testid="stSidebar"],
-            div[data-testid="stSidebar"] {
-                position: relative;
-                width: 100%;
-                min-width: 100%;
-                max-width: 100%;
-                height: auto;
-                flex-direction: column;
-                box-shadow: none;
-                border-bottom: 1px solid rgba(255,255,255,0.08);
-            }
-            div.block-container {
-                margin-left: 0 !important;
-                width: 100% !important;
-                padding-left: 1.5rem !important;
-                padding-right: 1.5rem !important;
-            }
         }
         div[data-testid="stAppViewContainer"] > .main {
             margin: 0 auto;
@@ -2046,15 +1999,18 @@ def inject_global_css():
             max-width: 1200px;
             padding-left: 0 !important;
             padding-right: 0 !important;
-            padding-bottom: 40px;
         }
         div[data-testid="stAppViewContainer"] > .main > div {
             width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding-left: 40px;
-            padding-right: 40px;
+            padding-left: 0;
+            padding-right: 0;
             box-sizing: border-box;
+        }
+        div[data-testid="stAppViewContainer"] {
+            padding-top: 0 !important;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--color-primary-text) !important;
         }
 
         /* =================================================
@@ -3710,7 +3666,7 @@ def render_theses_page():
         st.dataframe(df_theses, use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
-
+# ---------- SIDEBAR NAV ----------
 NAV_PAGES = ["Home", "Screener", "Valuation", "Research", "Theses"]
 
 def render_sidebar_nav():
@@ -3724,6 +3680,8 @@ def render_sidebar_nav():
     if st.session_state.sidebar_nav not in NAV_PAGES:
         st.session_state.sidebar_nav = NAV_PAGES[0]
 
+    selected = st.session_state.sidebar_nav
+
     with st.sidebar:
         st.markdown(
             """
@@ -3734,46 +3692,28 @@ def render_sidebar_nav():
                     <p class="sidebar-brand-sub">Equity Research</p>
                 </div>
             </div>
-            <p class="sidebar-nav-title">Navigate</p>
             """,
             unsafe_allow_html=True,
         )
-        index = NAV_PAGES.index(st.session_state.sidebar_nav) if st.session_state.sidebar_nav in NAV_PAGES else 0
-        selected = st.radio(
-            "",
-            NAV_PAGES,
-            index=index,
-            label_visibility="collapsed",
-            key="nav_radio",
-        )
+
+        nav_html = ['<div class="sidebar-nav-title">Navigate</div>', '<div class="sidebar-chip-stack">']
+        for page in NAV_PAGES:
+            link_params = {k: v[:] for k, v in params.items()}
+            link_params["nav"] = [page]
+            href = "?" + urlencode(link_params, doseq=True)
+            classes = "sidebar-chip"
+            if page == selected:
+                classes += " active"
+            nav_html.append(f'<a class="{classes}" href="{href}">{page}</a>')
+        nav_html.append("</div>")
+        st.markdown("".join(nav_html), unsafe_allow_html=True)
         st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
-        st.markdown(
-            """
-            <div class='sidebar-chip-styles'>
-                <span>Sidebar Menu Chips</span>
-                <span>Navigation Chips</span>
-                <span>Vertical Pills</span>
-                <span>Navigation Capsules</span>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
         st.markdown(
             f"<div class='sidebar-footer'>Updated {datetime.now().strftime('%b %d, %Y')}</div>",
             unsafe_allow_html=True,
         )
 
-    if selected not in NAV_PAGES:
-        selected = NAV_PAGES[0]
-    st.session_state.sidebar_nav = selected
     st.session_state.active_page = selected
-
-    current_nav_param = params.get("nav", [None])[0]
-    if current_nav_param != selected:
-        updated_params = {k: list(v) for k, v in params.items()}
-        updated_params["nav"] = [selected]
-        st.experimental_set_query_params(**updated_params)
-
     return selected
 
 # ======================================================================
@@ -3787,7 +3727,7 @@ def main():
         page_title="Equity Research Tool",
         page_icon="📊",
         layout="wide",
-        initial_sidebar_state="expanded",
+        initial_sidebar_state="collapsed",
     )
 
     # Load DM Serif Display for the title
@@ -3803,7 +3743,6 @@ def main():
     # Global CSS
     inject_global_css()
 
-    # ---------- CUSTOM LEFT NAV ----------
     active_page = render_sidebar_nav()
 
     if active_page == "Home":

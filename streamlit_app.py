@@ -2507,38 +2507,28 @@ def inject_global_css():
             margin-bottom: 12px;
             color: #e5e7eb !important;
         }
-        .left-nav div[data-testid="stRadio"] {
-            margin-top: 8px;
-        }
-        .left-nav div[data-testid="stRadio"] label {
-            width: 100%;
+        .left-nav .nav-btn {
             display: block;
-            margin-bottom: 0;
-            padding: 12px 16px;
-            border-radius: 14px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            background: rgba(255, 255, 255, 0.05);
+            padding: 12px 18px;
+            margin-bottom: 6px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-decoration: none;
             color: #f8fafc;
             font-weight: 600;
-            letter-spacing: 0.08em;
+            letter-spacing: 0.12em;
             text-transform: uppercase;
             transition: all 0.2s ease;
         }
-        .left-nav div[data-testid="stRadio"] label > div {
-            color: #f8fafc !important;
+        .left-nav .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.16);
         }
-        .left-nav div[data-testid="stRadio"] label:hover {
-            background: rgba(255, 255, 255, 0.18);
-        }
-        .left-nav div[data-testid="stRadio"] input {
-            display: none;
-        }
-        .left-nav div[data-testid="stRadio"] input:checked + div,
-        .left-nav div[data-testid="stRadio"] input:checked ~ div {
-            background: linear-gradient(135deg, rgba(34, 197, 94, 0.35), rgba(14, 165, 233, 0.4));
-            border-color: transparent;
-            color: #0f172a;
-            box-shadow: 0 0 0 2px rgba(248, 250, 252, 0.4);
+        .left-nav .nav-btn.active {
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.4), rgba(59, 130, 246, 0.4));
+            border-color: rgba(37, 99, 235, 0.6);
+            color: #fff;
+            box-shadow: 0 10px 30px rgba(14, 165, 233, 0.3);
         }
         .content-shell {
             display: flex;
@@ -2562,6 +2552,8 @@ def inject_global_css():
 # --- Wall Street esque Price Bar ---
 def render_dashboard():
     inject_global_css()
+
+    render_global_header_and_kpis()
 
     # --- Get data for Ticker Tape AND Index Cards ---
     index_data = get_live_index_data()
@@ -2972,7 +2964,7 @@ def render_analysis_page():
 
     heatmap_fig = build_metric_heatmap_figure(res)
     if heatmap_fig:
-        heatmap_wrapper = "<div class='heatmap-wrapper'>"
+    heatmap_wrapper = "<div class='heatmap-wrapper'>"
     if heatmap_fig:
         st.markdown(
             f"""
@@ -3670,19 +3662,23 @@ def main():
     if "nav_section" not in st.session_state:
         st.session_state.nav_section = "Dashboard"
 
-    nav_index = NAV_ITEMS.index(st.session_state.nav_section) if st.session_state.nav_section in NAV_ITEMS else 0
+    params = st.experimental_get_query_params()
+    nav_param = params.get("nav", [None])[0]
+    if nav_param in NAV_ITEMS:
+        st.session_state.nav_section = nav_param
+
+    st.session_state.active_section = st.session_state.nav_section
+
     col_nav, col_main = st.columns([0.18, 0.82])
 
     with col_nav:
         st.markdown("<div class='left-nav-label'>Navigation</div>", unsafe_allow_html=True)
-        selected = st.radio(
-            "",
-            NAV_ITEMS,
-            index=nav_index,
-            key="nav_section",
-            label_visibility="collapsed",
-        )
-        st.session_state.active_section = selected
+        nav_html = "<div class='left-nav'>"
+        for item in NAV_ITEMS:
+            active = "active" if item == st.session_state.nav_section else ""
+            nav_html += f"<a class='nav-btn {active}' href='?nav={item}'>{item}</a>"
+        nav_html += "</div>"
+        st.markdown(nav_html, unsafe_allow_html=True)
 
     with col_main:
         if st.session_state.active_section == "Dashboard":

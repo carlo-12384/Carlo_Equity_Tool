@@ -1882,7 +1882,7 @@ def inject_global_css():
             box-sizing: border-box;
         }
         .core-content-shell {
-            width: 100%;
+            width: 93%;
             max-width: var(--content-max-width);
             margin: 0 auto;
             padding: 0 var(--content-buffer);

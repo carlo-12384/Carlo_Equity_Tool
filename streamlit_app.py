@@ -1837,7 +1837,7 @@ def inject_global_css():
         
         /* ===== GLOBAL LAYOUT ===== */
         html, body, .stApp {
-            background: linear-gradient(180deg, #f4f7fb 0%, #ffffff 80%) !important;
+            background: linear-gradient(90deg, #021026 0%, #021026 22%, #f4f7fb 22%, #ffffff 100%) !important;
             color: var(--color-primary-text) !important;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
             margin: 0 !important;
@@ -1852,6 +1852,8 @@ def inject_global_css():
         div.block-container {
             padding-top: 0rem !important;
             margin-top: -20px !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
         }
         div[data-testid="stAppViewContainer"] {
             padding-top: 0 !important;
@@ -2507,6 +2509,7 @@ def inject_global_css():
             text-transform: uppercase;
             display: block;
             width: 100%;
+            padding-left: 0;
             text-align: left;
         }
         .left-nav .stRadio > div > label:last-child {
@@ -2988,7 +2991,7 @@ def render_analysis_page():
 
     heatmap_fig = build_metric_heatmap_figure(res)
     if heatmap_fig:
-        heatmap_wrapper = "<div class='heatmap-wrapper'>"
+    heatmap_wrapper = "<div class='heatmap-wrapper'>"
     if heatmap_fig:
         st.markdown(
             f"""

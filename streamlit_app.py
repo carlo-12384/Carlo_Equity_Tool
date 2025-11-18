@@ -2001,6 +2001,23 @@ def inject_global_css():
             text-transform: uppercase;
         }
 
+        .show-sidebar-wrapper {
+            position: fixed;
+            top: 12px;
+            left: 12px;
+            z-index: 40;
+        }
+        .show-sidebar-wrapper button {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.25);
+            color: #E5E7EB;
+            border-radius: 999px;
+            padding: 0.4rem 1rem;
+            font-size: 0.85rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+        }
+
         @media (max-width: 1100px) {
             section[data-testid="stSidebar"] {
                 width: 220px;
@@ -3691,13 +3708,32 @@ def render_theses_page():
 
 NAV_PAGES = ["Home", "Screener", "Valuation", "Research", "Theses"]
 
+def apply_sidebar_visibility(hidden: bool):
+    style = (
+        "<style id='custom-sidebar-visibility'>"
+        "section[data-testid='stSidebar'] {"
+        f"transform: translateX({'-260px' if hidden else '0'}) !important;"
+        "}"
+        "div.block-container {"
+        f"margin-left: {'0' if hidden else 'var(--sidebar-width)'} !important;"
+        f"width: {'100%' if hidden else 'calc(100% - var(--sidebar-width))'} !important;"
+        "}"
+        "</style>"
+    )
+    st.markdown(style, unsafe_allow_html=True)
+
+
 def render_sidebar_nav():
     if "active_page" not in st.session_state:
         st.session_state.active_page = NAV_PAGES[0]
     if "sidebar_nav" not in st.session_state:
         st.session_state.sidebar_nav = NAV_PAGES[0]
+    if "sidebar_hidden" not in st.session_state:
+        st.session_state.sidebar_hidden = False
     if st.session_state.sidebar_nav not in NAV_PAGES:
         st.session_state.sidebar_nav = NAV_PAGES[0]
+
+    apply_sidebar_visibility(st.session_state.sidebar_hidden)
 
     with st.sidebar:
         st.markdown(
@@ -3723,6 +3759,10 @@ def render_sidebar_nav():
         )
 
         st.markdown("<div class='sidebar-divider'></div>", unsafe_allow_html=True)
+        if not st.session_state.sidebar_hidden:
+            if st.button("Hide navigation", key="hide_sidebar"):
+                st.session_state.sidebar_hidden = True
+
         st.markdown(
             f"<div class='sidebar-footer'>Updated {datetime.now().strftime('%b %d, %Y')}</div>",
             unsafe_allow_html=True,
@@ -3760,6 +3800,12 @@ def main():
 
     # ---------- CUSTOM LEFT NAV ----------
     active_page = render_sidebar_nav()
+
+    if st.session_state.sidebar_hidden:
+        st.markdown('<div class="show-sidebar-wrapper">', unsafe_allow_html=True)
+        if st.button("Show navigation", key="show_sidebar"):
+            st.session_state.sidebar_hidden = False
+        st.markdown('</div>', unsafe_allow_html=True)
 
     if active_page == "Home":
         st.markdown(

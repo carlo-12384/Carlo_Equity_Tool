@@ -2488,12 +2488,16 @@ def inject_global_css():
         .left-nav {
             position: sticky;
             top: 30px;
-            background: #0b1f3d;
+            background: linear-gradient(180deg, #021026, #0b1f3d);
             color: #f8fafc;
             border-radius: 18px;
-            padding: 24px 16px;
+            padding: 24px 20px;
             border: 1px solid rgba(255, 255, 255, 0.2);
-            box-shadow: 0 20px 45px rgba(2, 6, 23, 0.55);
+            box-shadow: 0 24px 70px rgba(2, 6, 23, 0.6);
+            min-height: 320px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
         .left-nav-label {
             font-weight: 600;
@@ -2520,6 +2524,9 @@ def inject_global_css():
             text-transform: uppercase;
             transition: all 0.2s ease;
         }
+        .left-nav div[data-testid="stRadio"] label > div {
+            color: #f8fafc !important;
+        }
         .left-nav div[data-testid="stRadio"] label:hover {
             background: rgba(255, 255, 255, 0.18);
         }
@@ -2528,10 +2535,10 @@ def inject_global_css():
         }
         .left-nav div[data-testid="stRadio"] input:checked + div,
         .left-nav div[data-testid="stRadio"] input:checked ~ div {
-            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(14, 165, 233, 0.3));
-            border-color: rgba(248, 250, 252, 0.6);
-            color: #f8fafc;
-            box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.35);
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.35), rgba(14, 165, 233, 0.4));
+            border-color: transparent;
+            color: #0f172a;
+            box-shadow: 0 0 0 2px rgba(248, 250, 252, 0.4);
         }
         .content-shell {
             display: flex;
@@ -2965,7 +2972,7 @@ def render_analysis_page():
 
     heatmap_fig = build_metric_heatmap_figure(res)
     if heatmap_fig:
-        heatmap_wrapper = "<div class='heatmap-wrapper'>"
+    heatmap_wrapper = "<div class='heatmap-wrapper'>"
     if heatmap_fig:
         st.markdown(
             f"""

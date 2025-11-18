@@ -1838,7 +1838,7 @@ def inject_global_css():
     st.markdown(
         """
         <style>
-        /* ===== COLOR PALETTE (UNCHANGED) ===== */
+        /* ===== COLOR PALETTE ===== */
         :root {
             --color-primary-bg: #001f3f;    /* Dark Navy Blue */
             --color-secondary-bg: #F5EAAA; /* Khaki */
@@ -1854,111 +1854,7 @@ def inject_global_css():
             --sidebar-width: 250px;
         }
         
-        /* =======================================================
-        * FIX 1: LEFT NAV BAR (Sidebar) - Dark Background & Text Color
-        * ======================================================= */
-        
-        /* 1. Set the fixed position and dark background for the sidebar */
-        section[data-testid="stSidebar"] {
-            width: var(--sidebar-width);
-            min-width: var(--sidebar-width);
-            max-width: var(--sidebar-width);
-            position: fixed;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            padding: 0;
-            margin: 0;
-            border: none;
-            /* Force the dark background */
-            background-color: #020617 !important; 
-            box-shadow: 4px 0 20px rgba(2, 6, 23, 0.65);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            z-index: 30;
-        }
-
-        /* 2. Force all text, labels, and widget elements inside the sidebar to be light */
-        section[data-testid="stSidebar"] * {
-            color: var(--color-dark-card-text) !important;
-        }
-        
-        /* 3. Style the st.radio widget (the navigation) specifically */
-        .stRadio > label {
-            /* Make space for the active indicator (dot) and give padding */
-            padding: 8px 16px;
-            margin: 4px 0;
-            border-radius: 8px;
-            transition: background-color 0.15s ease;
-            cursor: pointer;
-        }
-        
-        .stRadio > label:hover {
-            background-color: rgba(255, 255, 255, 0.08);
-        }
-
-        /* Highlight the background of the selected radio item */
-        .stRadio div[aria-checked="true"] > label {
-            background-color: rgba(14,165,233,0.2) !important; /* Light blue highlight */
-            border-left: 4px solid #0E9DA5;
-            font-weight: 700;
-            padding-left: 12px; /* Adjust padding for the border */
-            color: #f8fafc !important; /* Ensure selected text is bright white */
-        }
-        
-        /* Change the radio button dot color (unselected) */
-        .stRadio div[role="radio"] div:first-child {
-            border-color: #E5E7EB !important; 
-        }
-
-        /* Change the radio button dot color (selected) */
-        .stRadio div[role="radio"][aria-checked="true"] div:first-child {
-            background-color: #0E9DA5 !important; /* Selected dot fill */
-            border-color: #0E9DA5 !important; /* Selected dot border */
-        }
-
-        /* Ensure custom text elements retain the custom dark theme colors */
-        .sidebar-brand-title {
-            color: #E5E7EB !important;
-        }
-        .sidebar-brand-sub {
-            color: rgba(229,231,235,0.65) !important;
-        }
-
-
-        /* =======================================================
-        * FIX 2: MAIN CONTENT AREA - Centering and Fixed Width
-        * ======================================================= */
-
-        /* 1. Target the outer Streamlit block container wrapper */
-        div.block-container {
-            /* Overrides the user's previous custom width, keeping sidebar margin */
-            margin-left: var(--sidebar-width) !important;
-            width: calc(100% - var(--sidebar-width)) !important;
-            padding-top: 0 !important;
-            margin-top: 0 !important;
-            padding-left: 32px !important;
-            padding-right: 32px !important;
-            /* Disable internal centering/flex to let inner div handle it */
-            display: block;
-            max-width: none !important;
-        }
-
-        /* 2. Target the main content wrapper inside the app view container */
-        div[data-testid="stAppViewContainer"] > .main > div {
-            width: 100%;
-            /* Set a fixed maximum width for content and center it */
-            max-width: 1100px; 
-            margin: 0 auto;
-            
-            /* Remove the conflicting padding from the previous rule */
-            padding-left: 0px !important; 
-            padding-right: 0px !important;
-            box-sizing: border-box;
-        }
-        
-        /* ===== GLOBAL LAYOUT (Other essential overrides) ===== */
+        /* ===== GLOBAL LAYOUT ===== */
         html, body, .stApp {
             background: var(--color-page-bg) !important;
             color: var(--color-primary-text) !important;
@@ -1975,17 +1871,147 @@ def inject_global_css():
         html, body, .stApp {
             overflow-x: hidden;
         }
+        div.block-container {
+            margin-left: var(--sidebar-width) !important;
+            width: calc(100% - var(--sidebar-width)) !important;
+            padding-top: 0 !important;
+            margin-top: 0 !important;
+            padding-left: clamp(20px, 2vw, 48px) !important;
+            padding-right: clamp(20px, 2vw, 48px) !important;
+            display: block;
+            box-sizing: border-box;
+        }
         div[data-testid="stAppViewContainer"] {
             padding-top: 0 !important;
         }
         h1, h2, h3, h4, h5, h6 {
             color: var(--color-primary-text) !important;
         }
-        
-        /* ... (rest of your existing CSS, e.g., media queries, hero-card styles, etc. remain here) ... */
-        
+
+        section[data-testid="stSidebar"],
+        div[data-testid="stSidebar"] {
+            width: var(--sidebar-width);
+            min-width: var(--sidebar-width);
+            max-width: var(--sidebar-width);
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            padding: 0;
+            margin: 0;
+            border: none;
+            background: linear-gradient(180deg, #020617 0%, #081b33 60%, #021024 100%);
+            box-shadow: 4px 0 26px rgba(2, 6, 23, 0.75);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 30;
+            color: #E5E7EB;
+            overflow-y: auto;
+        }
+
+        .sidebar-brand {
+            padding: 32px 24px 16px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .sidebar-brand-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(14,165,233,0.25), rgba(14,165,233,0.8));
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            letter-spacing: 0.15em;
+        }
+        .sidebar-brand-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #E5E7EB;
+            letter-spacing: 0.04em;
+            margin: 0;
+        }
+        .sidebar-brand-sub {
+            margin: 0;
+            color: rgba(229,231,235,0.65);
+            font-size: 0.75rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+        }
+
+        .sidebar-nav-title {
+            margin: 0;
+            padding: 0 24px;
+            font-size: 0.8rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            color: rgba(229,231,235,0.5);
+        }
+
+        .sidebar-chip-stack {
+            margin: 12px 0 0;
+            padding: 0 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .sidebar-chip {
+            display: flex;
+            border-radius: 12px;
+            border: 1px solid transparent;
+            padding: 12px 16px;
+            background: rgba(255,255,255,0.04);
+            transition: background 0.15s ease, transform 0.15s ease, border 0.15s ease;
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #E5E7EB;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .sidebar-chip:hover {
+            background: rgba(59,130,246,0.18);
+            transform: translateX(2px);
+        }
+        .sidebar-chip.active {
+            background: linear-gradient(145deg, rgba(14,165,233,0.12), rgba(14,165,233,0.35));
+            border-color: rgba(14,165,233,0.9);
+            color: #f8fafc;
+            box-shadow: 0 0 0 1px rgba(14,165,233,0.5);
+        }
+
+        .sidebar-divider {
+            border-top: 1px solid rgba(255,255,255,0.08);
+            margin: 0 24px;
+        }
+        .sidebar-divider.thin {
+            margin-top: 0;
+        }
+
+        .sidebar-footer {
+            padding: 16px 24px 28px;
+            font-size: 0.75rem;
+            color: rgba(229,231,235,0.65);
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+        }
+        div[data-testid="stSidebar"] label,
+        div[data-testid="stSidebar"] p {
+            color: #E5E7EB !important;
+        }
+
         @media (max-width: 1100px) {
-            section[data-testid="stSidebar"] {
+            section[data-testid="stSidebar"],
+            div[data-testid="stSidebar"] {
                 width: 220px;
                 min-width: 220px;
             }
@@ -1996,7 +2022,8 @@ def inject_global_css():
         }
 
         @media (max-width: 900px) {
-            section[data-testid="stSidebar"] {
+            section[data-testid="stSidebar"],
+            div[data-testid="stSidebar"] {
                 position: relative;
                 width: 100%;
                 min-width: 100%;
@@ -2013,31 +2040,44 @@ def inject_global_css():
                 padding-right: 1.5rem !important;
             }
         }
-        /* ... (The rest of your custom CSS continues here) ... */
-        
-        /* ================================================= */
-        /* REMAINING CUSTOM STYLES (Paste them back here)   */
-        /* ================================================= */
+        div[data-testid="stAppViewContainer"] > .main {
+            margin: 0 auto;
+            width: 100%;
+            max-width: 1200px;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            padding-bottom: 40px;
+        }
+        div[data-testid="stAppViewContainer"] > .main > div {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-left: 40px;
+            padding-right: 40px;
+            box-sizing: border-box;
+        }
 
-        /* BUTTON TEXT FIX */
+        /* =================================================
+        BUTTON TEXT FIX
+        ================================================= */
         button[data-testid="stButton"] {
             color: #FFFFFF !important;
         }
         div[data-testid="stButton"] p {
-            color: #FFFFFF !important;
+             color: #FFFFFF !important;
         }
 
-        /* INFO BOX */
+        /* ===== INFO BOX ===== */
         div[data-testid="stInfo"] {
-            background-color: #E6F6FF !important;  
-            border: 1px solid #B0E0FF !important;  
+            background-color: #E6F6FF !important; 
+            border: 1px solid #B0E0FF !important; 
             color: #001f3f !important;
         }
         div[data-testid="stInfo"] p {
-            color: #001f3f !important;
+             color: #001f3f !important;
         }
         
-        /* PAGE HEADER / HERO */
+        /* ===== PAGE HEADER / HERO ===== */
         .header-hero {
             width: 100vw;
             position: relative;
@@ -2075,7 +2115,7 @@ def inject_global_css():
             margin-top: 0.4rem;
         }
 
-        /* CARD UI */
+        /* ===== CARD UI ===== */
         .hero-card {
             background: var(--color-primary-bg);
             border-radius: 16px;
@@ -2085,7 +2125,7 @@ def inject_global_css():
             border: 1px solid var(--color-secondary-bg);
         }
         .hero-card .hero-title, .hero-card .hero-subtitle {
-            color: var(--color-tertiary-text) !important;
+             color: var(--color-tertiary-text) !important;
         }
         
         .section-card {
@@ -2105,7 +2145,7 @@ def inject_global_css():
             margin-bottom: 12px;
         }
 
-        /* METRIC CARD STYLING (VIX, USD, etc.) */
+        /* ===== METRIC CARD STYLING (VIX, USD, etc.) ===== */
         .metric-card-box {
             background: #f8fafc !important;
             border-radius: 12px;
@@ -2145,7 +2185,7 @@ def inject_global_css():
             background-color: #FEE2E2;
         }
 
-        /* TABS FIX */
+        /* ===== TABS FIX ===== */
         button[data-testid="stTab"] {
             color: #4B5563 !important;
             font-weight: 600 !important;
@@ -2156,13 +2196,13 @@ def inject_global_css():
             opacity: 1 !important;
         }
         div[data-baseweb="tab-highlight"] {
-            background-color: var(--color-primary-text) !important;  
+            background-color: var(--color-primary-text) !important; 
         }
 
-        /* TICKER TAPE */
+        /* ===== TICKER TAPE ===== */
         @keyframes scroll-left {
             from { transform: translateX(0); }
-            to  { transform: translateX(-25%); }
+            to   { transform: translateX(-25%); }
         }
         .ticker-tape-container {
             background: var(--color-primary-bg);
@@ -2215,7 +2255,7 @@ def inject_global_css():
             font-weight: 600;
         }
 
-        /* INDEX SNAPSHOT CARDS */
+        /* ===== INDEX SNAPSHOT CARDS ===== */
         .index-chart-card {
             background: #FFFFFF;
             border: 1px solid #E2E8F0;
@@ -2238,7 +2278,7 @@ def inject_global_css():
             font-weight: 700;
             color: var(--color-primary-text);
             margin-right: 10px;
-            display: block;  
+            display: block; 
             margin-bottom: 4px;
             line-height: 1.2;
         }
@@ -2250,24 +2290,24 @@ def inject_global_css():
             border-radius: 6px;
         }
         .index-chart-change.positive {
-            color: #047857;  
+            color: #047857; 
             background-color: #D1FAE5;
         }
         .index-chart-change.negative {
-            color: #991B1B;  
+            color: #991B1B; 
             background-color: #FEE2E2;
         }
         .index-metric-list {
             margin-top: 16px;
             border-top: 1px solid #E2E8F0;
             padding-top: 12px;
-            flex-grow: 1;  
+            flex-grow: 1; 
         }
         .index-metric-row {
             display: flex;
             justify-content: space-between;
-            font-size: 0.85rem;  
-            color: #374151;  
+            font-size: 0.85rem; 
+            color: #374151; 
             margin-bottom: 8px;
             line-height: 1.3;
         }
@@ -2277,17 +2317,19 @@ def inject_global_css():
         }
         .index-metric-value {
             font-weight: 600;
-            color: var(--color-primary-text);  
+            color: var(--color-primary-text); 
             text-align: right;
-            padding-left: 8px;  
+            padding-left: 8px; 
         }
 
-        /* VALUATION PAGE INPUTS */
+        /* ===== VALUATION PAGE INPUTS ===== */
         div[data-testid="stNumberInput"] input {
-            color: #001f3f !important;
+             color: #001f3f !important;
         }
 
-        /* SCREENER / ANALYSIS COMMAND CENTER */
+        /* ======================================================
+           SCREENER / ANALYSIS COMMAND CENTER (Google x Apple x JPM)
+        =======================================================*/
         .analysis-shell {
             margin-top: 8px;
             margin-bottom: 8px;
@@ -2601,92 +2643,7 @@ def inject_global_css():
             font-weight: 600;
             color: #0F172A;
         }
-        
-        /* Sidebar custom styles: ensures branding text remains styled */
-        .sidebar-brand {
-            padding: 32px 24px 16px;
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-        .sidebar-brand-icon {
-            width: 46px;
-            height: 46px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, rgba(14,165,233,0.25), rgba(14,165,233,0.8));
-            color: #fff;
-            font-weight: 700;
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            letter-spacing: 0.15em;
-        }
-        /* .sidebar-brand-title - Overridden above in FIX 1 */
-        /* .sidebar-brand-sub - Overridden above in FIX 1 */
 
-        .sidebar-nav-title {
-            margin: 0;
-            padding: 0 24px;
-            font-size: 0.8rem;
-            letter-spacing: 0.3em;
-            text-transform: uppercase;
-            color: rgba(229,231,235,0.5);
-        }
-
-        .sidebar-chip-stack {
-            margin: 12px 0 0;
-            padding: 0 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .sidebar-chip {
-            display: flex;
-            border-radius: 12px;
-            border: 1px solid transparent;
-            padding: 12px 16px;
-            background: rgba(255,255,255,0.04);
-            transition: background 0.15s ease, transform 0.15s ease, border 0.15s ease;
-            font-size: 0.95rem;
-            font-weight: 700;
-            letter-spacing: 0.18em;
-            text-transform: uppercase;
-            color: #E5E7EB;
-            width: 100%;
-            text-align: left;
-            cursor: pointer;
-            text-decoration: none;
-        }
-        .sidebar-chip:hover {
-            background: rgba(59,130,246,0.18);
-            transform: translateX(2px);
-        }
-        .sidebar-chip.active {
-            background: linear-gradient(145deg, rgba(14,165,233,0.12), rgba(14,165,233,0.35));
-            border-color: rgba(14,165,233,0.9);
-            color: #f8fafc;
-            box-shadow: 0 0 0 1px rgba(14,165,233,0.5);
-        }
-
-        .sidebar-divider {
-            border-top: 1px solid rgba(255,255,255,0.08);
-            margin: 0 24px;
-        }
-        .sidebar-divider.thin {
-            margin-top: 0;
-        }
-
-        .sidebar-footer {
-            padding: 16px 24px 28px;
-            font-size: 0.75rem;
-            color: rgba(229,231,235,0.65);
-            letter-spacing: 0.16em;
-            text-transform: uppercase;
-        }
-        
-        /* End of all custom styles */
         </style>
         """,
         unsafe_allow_html=True,
